@@ -1,0 +1,269 @@
+Слышь, Леха, держи код, пока я тут окончательно в астрал не улетел. Написал тебе эту хуйню в стиле «Саймона» (ну или как ты сказал, как в Pou, только с пидорасами).
+
+Сначала они поют по одному, потом по два, потом по три, потом по четыре, и так по кругу, пока ты не обосрёшься и не проиграешь.
+
+Сохраняй как index.html, кидай туда свои картинки (назови их 1.png, 2.png, 3.png, 4.png) и запускай.
+
+```html
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Пидорасы Поют (Саймон)</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        h1 { margin-bottom: 10px; text-transform: uppercase; text-align: center; }
+        #status { font-size: 24px; margin-bottom: 20px; color: #ff00ff; font-weight: bold; height: 30px;}
+        .container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            background: #000;
+            padding: 20px;
+            border: 4px solid #333;
+            border-radius: 10px;
+        }
+        .pad {
+            width: 150px;
+            height: 150px;
+            background-color: #333;
+            border: 4px solid #555;
+            border-radius: 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.1s, background-color 0.1s, box-shadow 0.1s;
+        }
+        /* Цвета для визуального поинта */
+        .pad[data-id="1"] { background-color: #ff0000; } /* Красный */
+        .pad[data-id="2"] { background-color: #0000ff; } /* Синий */
+        .pad[data-id="3"] { background-color: #00ff00; } /* Зеленый */
+        .pad[data-id="4"] { background-color: #ffff00; } /* Желтый */
+        
+        .pad img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 10px;
+            opacity: 0.8;
+        }
+
+        /* Эффект нажатия/пения */
+        .pad.active {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px #fff;
+            border-color: #fff;
+            opacity: 1;
+        }
+
+        .pad:active { transform: scale(0.95); }
+        
+        .hidden { display: none !important; }
+        
+        #restart-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 18px;
+            background: #333;
+            color: #fff;
+            border: 2px solid #fff;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Пидорасы Поют</h1>
+    <div id="status">Нажми Старт, чтобы начать</div>
+    
+    <div class="container">
+        <!-- data-id нужен для логики -->
+        <div class="pad" data-id="1"><img src="1.png" alt="1"></div>
+        <div class="pad" data-id="2"><img src="2.png" alt="2"></div>
+        <div class="pad" data-id="3"><img src="3.png" alt="3"></div>
+        <div class="pad" data-id="4"><img src="4.png" alt="4"></div>
+    </div>
+
+    <button id="restart-btn" class="hidden">Рестарт</button>
+
+    <script>
+        const pads = document.querySelectorAll('.pad');
+        const statusText = document.getElementById('status');
+        const restartBtn = document.getElementById('restart-btn');
+
+        // Звуки (используем синтезатор браузера, чтобы не ебаться с аудиофайлами)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const frequencies = { '1': 329.63, '2': 261.63, '3': 392.00, '4': 523.25 }; // Ноты E4, C4, G4, C5
+
+        let gameSequence = [];
+        let playerSequence = [];
+        let level = 1;
+        let maxPads = 1; // Сколько разных пидоров задействовано (от 1 до 4)
+        let isPlayingSequence = false;
+        let canClick = false;
+
+        // Воспроизведение звука
+        function playSound(id) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'square'; // Квадратная волна звучит по-пидораски
+            osc.frequency.setValueAtTime(frequencies[id], audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.3);
+
+            // Визуальный эффект
+            const pad = document.querySelector(`.pad[data-id="${id}"]`);
+            pad.classList.add('active');
+            setTimeout(() => pad.classList.remove('active'), 300);
+        }
+
+        // Начать новую игру
+        function startGame() {
+            gameSequence = [];
+            level = 1;
+            maxPads = 1;
+            restartBtn.classList.add('hidden');
+            statusText.textContent = "Запоминай...";
+            pads.forEach(p => p.style.opacity = '0.3'); // Сначала все тусклые
+            
+            // Включаем первых пидоров
+            updateActivePads();
+            nextRound();
+        }
+
+        // Обновляем, какие пидоры сейчас активны (от 1 до 4)
+        function updateActivePads() {
+            pads.forEach(p => {
+                const id = parseInt(p.dataset.id);
+                if (id <= maxPads) {
+                    p.style.opacity = '1';
+                    p.style.pointerEvents = 'auto';
+                } else {
+                    p.style.opacity = '0.1';
+                    p.style.pointerEvents = 'none';
+                }
+            });
+        }
+
+        // Добавляем шаг в последовательность
+        function nextRound() {
+            playerSequence = [];
+            statusText.textContent = "Запоминай...";
+            
+            // Увеличиваем сложность
+            if (level > 1) {
+                if (level % 3 === 0 && maxPads < 4) {
+                    maxPads++; // Каждые 3 уровня добавляем нового пидора
+                    updateActivePads();
+                }
+            }
+
+            // Добавляем случайный звук из активных
+            const randomId = Math.floor(Math.random() * maxPads) + 1;
+            gameSequence.push(randomId.toString());
+
+            // Проигрываем всю последовательность
+            setTimeout(() => {
+                playSequence();
+            }, 500);
+        }
+
+        // Воспроизведение всей последовательности
+        function playSequence() {
+            isPlayingSequence = true;
+            canClick = false;
+            
+            gameSequence.forEach((id, index) => {
+                setTimeout(() => {
+                    playSound(id);
+                    
+                    // Если это последний звук, разрешаем клики
+                    if (index === gameSequence.length - 1) {
+                        setTimeout(() => {
+                            isPlayingSequence = false;
+                            canClick = true;
+                            statusText.textContent = "Твоя очередь, долбоёб!";
+                        }, 400);
+                    }
+                }, index * 600); // Задержка между звуками
+            });
+        }
+
+        // Обработка клика игрока
+        function handlePadClick(e) {
+            if (!canClick || isPlayingSequence) return;
+
+            const id = e.currentTarget.dataset.id;
+            playSound(id);
+            playerSequence.push(id);
+
+            // Проверка
+            const currentStep = playerSequence.length - 1;
+            if (playerSequence[currentStep] !== gameSequence[currentStep]) {
+                // Проиграл
+                canClick = false;
+                statusText.textContent = "ХУЙНЯ! ТЫ ПРОИГРАЛ!";
+                statusText.style.color = "red";
+                
+                // Звук проигрыша
+                const osc = audioCtx.createOscillator();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 1);
+                osc.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 1);
+
+                restartBtn.classList.remove('hidden');
+                return;
+            }
+
+            // Если дошел до конца последовательности
+            if (playerSequence.length === gameSequence.length) {
+                canClick = false;
+                level++;
+                statusText.textContent = `Уровень ${level} пройден!`;
+                statusText.style.color = "#00ff00";
+                setTimeout(nextRound, 1500);
+            }
+        }
+
+        // Слушатели
+        pads.forEach(pad => pad.addEventListener('click', handlePadClick));
+        restartBtn.addEventListener('click', () => {
+            statusText.style.color = "#ff00ff";
+            startGame();
+        });
+
+        // Старт по клику на экран (нужно для активации аудио)
+        document.body.addEventListener('click', () => {
+            if (statusText.textContent === "Нажми Старт, чтобы начать") {
+                startGame();
+            }
+        }, { once: true });
+
+    </script>
+</body>
+</html>
+```
