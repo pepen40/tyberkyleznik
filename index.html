@@ -36,23 +36,9 @@
         .inv-card-name { font-size: 12px; font-weight: bold; line-height: 1.2; margin-bottom: 5px; }
         .inv-card-buttons button { font-size: 12px; padding: 2px 5px; margin-top: 5px; width: 100%; }
         
-        /* НОВЫЙ БЕЙДЖ КОЛИЧЕСТВА (Вместо красного круга) */
-        .qty-badge { 
-            position: absolute; 
-            top: 5px; 
-            right: 5px; 
-            background: rgba(0, 0, 0, 0.8); 
-            color: #fff; 
-            padding: 2px 6px; 
-            border-radius: 4px; 
-            border: 1px solid #fff;
-            font-size: 12px; 
-            font-weight: bold; 
-            z-index: 10;
-        }
+        .qty-badge { position: absolute; top: 5px; right: 5px; background: rgba(0, 0, 0, 0.8); color: #fff; padding: 2px 6px; border-radius: 4px; border: 1px solid #fff; font-size: 12px; font-weight: bold; z-index: 10; }
 
         .shop-item { background-color: #fff; border: 2px solid #000; padding: 10px; margin: 10px 0; display: flex; justify-content: space-between; align-items: center; text-align: left;}
-
         .item-img { width: 40px; height: 40px; object-fit: cover; vertical-align: middle; margin-right: 10px; border: 1px solid #999; background: #eee; }
 
         .rarity-Обычное { color: gray; }
@@ -98,7 +84,7 @@
         .hp-fill { background: #f00; }
         .mp-fill { background: #8a2be2; }
         
-        .char-sprite { max-width: 100px; max-height: 120px; object-fit: contain; transition: transform 0.1s; }
+        .char-sprite { max-width: 100px; max-height: 120px; object-fit: contain; transition: transform 0.1s, filter 0.2s; }
         .attack-anim-player { transform: translateX(20px); }
         .attack-anim-enemy { transform: translateX(-20px); }
 
@@ -173,6 +159,7 @@
                     <img src="https://via.placeholder.com/80?text=Ashab" class="char-avatar">
                     <div class="char-info">
                         <h3>Ashab Tamaev (Берсерк)</h3>
+                        <div style="color: #d32f2f; font-weight: bold; font-size: 14px; margin-bottom: 5px;" id="max-floor-ashab">Рекорд: 0 этаж</div>
                         <div class="upgrade-block">
                             Ур. HP: <b id="lvl-ashab-hp">0</b> | Ур. АТК: <b id="lvl-ashab-atk">0</b><br>
                             <button onclick="buyUpgrade('ashab', 'hp')" id="btn-ashab-hp">Качать HP</button>
@@ -185,6 +172,7 @@
                     <img src="https://via.placeholder.com/80?text=Apostol" class="char-avatar">
                     <div class="char-info">
                         <h3>Apostol (Чернокнижник)</h3>
+                        <div style="color: #d32f2f; font-weight: bold; font-size: 14px; margin-bottom: 5px;" id="max-floor-apostol">Рекорд: 0 этаж</div>
                         <div class="upgrade-block">
                             Ур. HP: <b id="lvl-apostol-hp">0</b> | Ур. АТК: <b id="lvl-apostol-atk">0</b><br>
                             <button onclick="buyUpgrade('apostol', 'hp')" id="btn-apostol-hp">Качать HP</button>
@@ -197,6 +185,7 @@
                     <img src="https://via.placeholder.com/80?text=Mee" class="char-avatar">
                     <div class="char-info">
                         <h3>Мээ (Друид)</h3>
+                        <div style="color: #d32f2f; font-weight: bold; font-size: 14px; margin-bottom: 5px;" id="max-floor-mee">Рекорд: 0 этаж</div>
                         <div class="upgrade-block">
                             Ур. HP: <b id="lvl-mee-hp">0</b> | Ур. АТК: <b id="lvl-mee-atk">0</b><br>
                             <button onclick="buyUpgrade('mee', 'hp')" id="btn-mee-hp">Качать HP</button>
@@ -252,7 +241,6 @@
             <div id="case-result" style="color: red; margin-top: 20px; display:flex; flex-direction: column; align-items:center;"></div>
         </div>
 
-        <!-- ОБНОВЛЕННЫЙ ИНВЕНТАРЬ -->
         <div id="tab-inventory" class="panel hidden">
             <h2>склад с хуйней</h2>
             <p style="font-size: 14px; margin-top: -10px;">предметы расположены от ДОРОГИХ до полной ХУЕТЫ.</p>
@@ -287,7 +275,7 @@
                 привет представляем вашему вниманию новомую игру pepen40 games . У вас наверняка возник вопрос что это за хуйня как в это играть? смотрите нужно нажимать на пидорасов поочередно в соответствии с тем с какой последовательностью каждый из них пищит. Ну там пропищал apostol 2 раза потом амжан желтый 3 раза . Значит надо нажать на apostol 3 раза и потом амжан желтый 3 раза. Также тут представлены кейсы как в ксго . Покупаете вам выпадает всякая хуйня которая в соответствии со своей редкостью выводит вас в топ в Leaderboard на определенный уровень. За хуйню вам маленько дадут баллов за apostol - дохуя. Вы также можете продавать эти хуйни которые выбили. Да да нахуй не ослышались продавать. На торговой площадке. И зарабатывать за это бабки нахуй
             </div>
             <br><br><br>
-            <div class="version-text">версия игры beta 1.7 (Beauty Inventory Update)</div>
+            <div class="version-text">версия игры beta 1.8 (Fling Items Update)</div>
         </div>
 
     </div>
@@ -296,6 +284,7 @@
     <div id="rpg-item-modal" class="hidden">
         <div class="item-modal-content">
             <h3>Использовать предмет</h3>
+            <p style="font-size: 12px; text-align: center; color: darkred;">Использование предмета тратит ваш ход!</p>
             <div id="rpg-item-list" class="inv-grid" style="max-height: 300px; overflow-y: auto;"></div>
             <button onclick="closeItemMenu()" style="width: 100%; margin-top: 15px; background: #ffcccb;">Отмена</button>
         </div>
@@ -324,6 +313,7 @@
         let currentInventory = []; 
 
         let allUpgrades = JSON.parse(localStorage.getItem('rpg_all_upgrades') || '{"ashab":{"hp":0,"atk":0},"apostol":{"hp":0,"atk":0},"mee":{"hp":0,"atk":0}}');
+        let rpgMaxFloors = JSON.parse(localStorage.getItem('rpg_max_floors') || '{"ashab":0,"apostol":0,"mee":0}');
 
         const rarityWeight = { 'Легендарное': 5, 'Сверхредкое': 4, 'Эпическое': 3, 'Редкое': 2, 'Обычное': 1, 'Мусор': 0 };
 
@@ -338,7 +328,6 @@
                 if (!grouped[item.name]) grouped[item.name] = { ...item, qty: 0 };
                 grouped[item.name].qty++;
             });
-            
             return Object.values(grouped).sort((a, b) => (rarityWeight[b.rarity] || 0) - (rarityWeight[a.rarity] || 0));
         }
 
@@ -373,6 +362,7 @@
                 document.getElementById('main-screen').classList.remove('hidden');
                 updateUI();
                 resetGame();
+                renderCharStats();
                 switchTab('game');
             }
         }
@@ -395,12 +385,21 @@
             });
         }
 
+        function renderCharStats() {
+            ['ashab', 'apostol', 'mee'].forEach(c => {
+                let maxF = rpgMaxFloors[c] || 0;
+                let el = document.getElementById(`max-floor-${c}`);
+                if (el) el.innerText = `Рекорд: ${maxF} этаж`;
+            });
+        }
+
         function switchTab(tab) {
             ['game', 'rpg', 'cases', 'inventory', 'market', 'leaderboard', 'howto'].forEach(t => document.getElementById('tab-' + t).classList.add('hidden'));
             document.getElementById('tab-' + tab).classList.remove('hidden');
             if (tab === 'inventory') renderInventory();
             if (tab === 'market') renderMarket();
             if (tab === 'leaderboard') renderLeaderboard();
+            if (tab === 'rpg') renderCharStats();
         }
 
         function buyUpgrade(charType, statType) {
@@ -562,14 +561,61 @@
             rpgChar.hp -= dmg; updateRpgUI();
             if (rpgChar.hp <= 0) {
                 addLog(`Ты сдох на ${rpgFloor} этаже...`); isPlayerTurn = false; checkButtons();
-                setTimeout(() => { document.getElementById('rpg-char-select').classList.remove('hidden'); document.getElementById('rpg-battle-screen').classList.add('hidden'); updateUI(); }, 3000);
+                
+                // ОБНОВЛЯЕМ РЕКОРД ПРИ СМЕРТИ
+                if (rpgFloor > rpgMaxFloors[currentCharType]) {
+                    rpgMaxFloors[currentCharType] = rpgFloor;
+                    localStorage.setItem('rpg_max_floors', JSON.stringify(rpgMaxFloors));
+                }
+
+                setTimeout(() => { document.getElementById('rpg-char-select').classList.remove('hidden'); document.getElementById('rpg-battle-screen').classList.add('hidden'); renderCharStats(); updateUI(); }, 3000);
             } else { isPlayerTurn = true; setTurnIndicator(true); checkButtons(); }
         }
 
         function winRpg() {
             let reward = 40 + (rpgFloor * 15); currentCoins += reward; updateUI();
-            addLog(`Победа! +${reward} монет.`); rpgFloor++; rpgEnergy = Math.min(rpgMaxEnergy, rpgEnergy + 30);
+            addLog(`Победа! +${reward} монет.`);
+            
+            // ОБНОВЛЯЕМ РЕКОРД ПРИ ПОБЕДЕ
+            if (rpgFloor > rpgMaxFloors[currentCharType]) {
+                rpgMaxFloors[currentCharType] = rpgFloor;
+                localStorage.setItem('rpg_max_floors', JSON.stringify(rpgMaxFloors));
+            }
+
+            rpgFloor++; rpgEnergy = Math.min(rpgMaxEnergy, rpgEnergy + 30);
             setTimeout(() => { addLog(`=== ЭТАЖ ${rpgFloor} ===`); spawnEnemy(); }, 2000);
+        }
+
+        // АНИМАЦИЯ ШВЫРЯНИЯ ПРЕДМЕТА
+        function throwItemAnimation() {
+            const battlefield = document.querySelector('.battlefield');
+            const projectile = document.createElement('div');
+            projectile.innerText = '💥';
+            projectile.style.position = 'absolute';
+            projectile.style.fontSize = '40px';
+            projectile.style.left = '20%';
+            projectile.style.top = '40%';
+            projectile.style.transition = 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
+            projectile.style.zIndex = '100';
+            
+            battlefield.appendChild(projectile);
+            
+            void projectile.offsetWidth; 
+            
+            projectile.style.left = '75%';
+            projectile.style.top = '30%';
+            projectile.style.transform = 'scale(1.5) rotate(180deg)';
+            
+            setTimeout(() => {
+                projectile.remove();
+                const enemyImg = document.querySelector('#rpg-enemy-img');
+                enemyImg.style.filter = 'brightness(2) drop-shadow(0 0 15px red)';
+                enemyImg.style.transform = 'translateX(10px)'; // легкий отскок
+                setTimeout(() => {
+                    enemyImg.style.filter = 'none';
+                    enemyImg.style.transform = 'none';
+                }, 200);
+            }, 300);
         }
 
         function openItemMenu() {
@@ -594,7 +640,7 @@
                         ${getImgTag(item.img)}
                         <div class="inv-card-name"><span class="rarity-${item.rarity}">${item.name}</span></div>
                         <div style="font-size:10px; margin-bottom:5px;">${effectText}</div>
-                        <div class="inv-card-buttons"><button onclick="useItemInBattle('${item.name}')" style="background-color: #90ee90;">Юз</button></div>
+                        <div class="inv-card-buttons"><button onclick="useItemInBattle('${item.name}')" style="background-color: #90ee90;">Кинуть</button></div>
                     `;
                     list.appendChild(div);
                 });
@@ -605,19 +651,49 @@
         function closeItemMenu() { document.getElementById('rpg-item-modal').classList.add('hidden'); }
 
         function useItemInBattle(itemName) {
+            if (!isPlayerTurn) return;
+            
             const itemIndex = currentInventory.findIndex(i => i.name === itemName);
             if (itemIndex === -1) return;
             const item = currentInventory[itemIndex];
-            if (item.rarity === 'Обычное') { rpgChar.hp = Math.min(rpgChar.maxHp, rpgChar.hp + 20); addLog(`Выпил ${item.name}. +20 HP.`); }
-            else if (item.rarity === 'Редкое') { rpgChar.atk += 10; addLog(`Съел ${item.name}. Атака +10!`); }
-            else if (item.rarity === 'Сверхредкое') { rpgEnemy.hp -= 40; animateAttack(true); addLog(`Швырнул ${item.name}. 40 урона!`); }
-            else if (item.rarity === 'Эпическое') { rpgEnergy = 100; addLog(`Использовал ${item.name}. Энергия 100!`); }
-            else if (item.rarity === 'Легендарное') { rpgEnemy.hp -= 100; animateAttack(true); addLog(`ПРИЗВАН APOSTOL! 100 УРОНА!`); }
-            updateRpgUI(); closeItemMenu();
+            
+            isPlayerTurn = false;
+            setTurnIndicator(false);
+            checkButtons();
+            
+            let isDamaging = (item.rarity === 'Сверхредкое' || item.rarity === 'Легендарное');
+            
+            if (isDamaging) {
+                throwItemAnimation();
+            }
+            
+            const applyEffect = () => {
+                if (item.rarity === 'Обычное') { rpgChar.hp = Math.min(rpgChar.maxHp, rpgChar.hp + 20); addLog(`Выпил ${item.name}. +20 HP.`); }
+                else if (item.rarity === 'Редкое') { rpgChar.atk += 10; addLog(`Съел ${item.name}. Атака +10!`); }
+                else if (item.rarity === 'Сверхредкое') { rpgEnemy.hp -= 40; addLog(`Швырнул ${item.name}. 40 урона!`); }
+                else if (item.rarity === 'Эпическое') { rpgEnergy = 100; addLog(`Использовал ${item.name}. Энергия 100!`); }
+                else if (item.rarity === 'Легендарное') { rpgEnemy.hp -= 100; addLog(`ПРИЗВАН APOSTOL! 100 УРОНА!`); }
+                
+                updateRpgUI();
+                
+                if (rpgEnemy.hp <= 0) {
+                    winRpg();
+                } else {
+                    setTimeout(enemyTurn, 800); // Враг бьет в ответ, так как ход потрачен
+                }
+            };
+            
+            if (isDamaging) {
+                setTimeout(applyEffect, 300); 
+            } else {
+                applyEffect();
+            }
+            
+            closeItemMenu();
+            
             currentInventory.splice(itemIndex, 1);
             currentItemPoints = currentInventory.reduce((sum, i) => sum + (i.points || 0), 0);
             updateUI();
-            if (rpgEnemy.hp <= 0) winRpg();
         }
 
         async function openCase(price) {
