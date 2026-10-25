@@ -161,13 +161,10 @@
     </div>
 
     <script>
-        // ==========================================
-        // ВСТАВЬ СЮДА СВОИ ДАННЫЕ ИЗ SUPABASE
-        // ==========================================
-        const SUPABASE_URL = 'YOUR_SUPABASE_URL'; 
-        const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        // ТВОИ КЛЮЧИ ИЗ ЗИМБАБВЕ
+        const SUPABASE_URL = 'https://zfvinbamwavibnhmfwnz.supabase.co'; 
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpmdmluYmFtd2F2aWJuaG1md256Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4ODE2MjAsImV4cCI6MjEwODQ1NzYyMH0.FT5tlKgLUCrFs0zzY-BGimCmU9qNZmIzMW8LyysMmgE';
         
-        // Инициализация клиента
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let currentUser = null;
@@ -187,7 +184,6 @@
             msg.style.color = "yellow";
             msg.textContent = "Стучимся в базу...";
 
-            // Проверяем, есть ли уже такой юзер
             const { data: existing } = await supabaseClient
                 .from('players')
                 .select('username')
@@ -199,7 +195,6 @@
                 return;
             }
 
-            // Создаем нового
             const { error } = await supabaseClient
                 .from('players')
                 .insert([{ username: u, password: p, max_score: 0 }]);
@@ -257,7 +252,6 @@
             const tbody = document.getElementById('leaderboard-body');
             tbody.innerHTML = '<tr><td colspan="3">Загружаем...</td></tr>';
 
-            // Берем топ-10 игроков
             const { data, error } = await supabaseClient
                 .from('players')
                 .select('username, max_score')
@@ -405,22 +399,19 @@
                 statusText.textContent = "ХУЙНЯ! ТЫ ПРОИГРАЛ!";
                 statusText.style.color = "#FF0000";
                 
-                let currentScore = level - 1; // Очки = пройденные уровни
+                let currentScore = level - 1;
                 
-                // Если побил свой рекорд - шлем в базу
                 if (currentScore > currentHighScore) {
                     currentHighScore = currentScore;
                     updateUI();
                     statusText.textContent += " (НОВЫЙ РЕКОРД!)";
                     
-                    // Обновляем в Supabase
                     await supabaseClient
                         .from('players')
                         .update({ max_score: currentHighScore })
                         .eq('username', currentUser);
                 }
 
-                // Звук проигрыша
                 const osc = audioCtx.createOscillator();
                 osc.type = 'sawtooth';
                 osc.frequency.setValueAtTime(150, audioCtx.currentTime);
@@ -433,7 +424,6 @@
                 return;
             }
 
-            // Если дошел до конца
             if (playerSequence.length === gameSequence.length) {
                 canClick = false;
                 level++;
