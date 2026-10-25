@@ -158,7 +158,8 @@
             <div id="rpg-char-select">
                 <p>Выбери бойца:</p>
                 <div class="rpg-char-card">
-                    <img src="https://via.placeholder.com/80?text=Ashab" class="char-avatar">
+                    <!-- Поменял на твой джипег -->
+                    <img src="IMG_3545.jpeg" class="char-avatar">
                     <div class="char-info">
                         <h3>Ashab Tamaev (Берсерк)</h3>
                         <div style="color: #d32f2f; font-weight: bold; font-size: 14px; margin-bottom: 5px;" id="max-floor-ashab">Рекорд: 0.0 этаж</div>
@@ -171,7 +172,8 @@
                     </div>
                 </div>
                 <div class="rpg-char-card">
-                    <img src="https://via.placeholder.com/80?text=Apostol" class="char-avatar">
+                    <!-- Поменял на твой джипег -->
+                    <img src="IMG_3544.jpeg" class="char-avatar">
                     <div class="char-info">
                         <h3>Apostol (Чернокнижник)</h3>
                         <div style="color: #d32f2f; font-weight: bold; font-size: 14px; margin-bottom: 5px;" id="max-floor-apostol">Рекорд: 0.0 этаж</div>
@@ -184,7 +186,8 @@
                     </div>
                 </div>
                 <div class="rpg-char-card">
-                    <img src="https://via.placeholder.com/80?text=Mee" class="char-avatar">
+                    <!-- Поменял на твой джипег -->
+                    <img src="IMG_3546.jpeg" class="char-avatar">
                     <div class="char-info">
                         <h3>Мээ (Друид)</h3>
                         <div style="color: #d32f2f; font-weight: bold; font-size: 14px; margin-bottom: 5px;" id="max-floor-mee">Рекорд: 0.0 этаж</div>
@@ -277,7 +280,7 @@
                 привет представляем вашему вниманию новомую игру pepen40 games . У вас наверняка возник вопрос что это за хуйня как в это играть? смотрите нужно нажимать на пидорасов поочередно в соответствии с тем с какой последовательностью каждый из них пищит. Ну там пропищал apostol 2 раза потом амжан желтый 3 раза . Значит надо нажать на apostol 3 раза и потом амжан желтый 3 раза. Также тут представлены кейсы как в ксго . Покупаете вам выпадает всякая хуйня которая в соответствии со своей редкостью выводит вас в топ в Leaderboard на определенный уровень. За хуйню вам маленько дадут баллов за apostol - дохуя. Вы также можете продавать эти хуйни которые выбили. Да да нахуй не ослышались продавать. На торговой площадке. И зарабатывать за это бабки нахуй
             </div>
             <br><br><br>
-            <div class="version-text">версия игры beta 2.1 (Sub-Floors Update)</div>
+            <div class="version-text">версия игры beta 2.2 (Visuals Update)</div>
         </div>
 
     </div>
@@ -485,9 +488,19 @@
             currentCharType = type;
             let baseHp = 0, baseAtk = 0, mpGain = 0, name = "", charClass = "", imgUrl = "";
 
-            if (type === 'ashab') { baseHp = 150; baseAtk = 20; mpGain = 20; name = "Ashab Tamaev"; charClass = "Берсерк"; imgUrl = "https://via.placeholder.com/100?text=Ashab"; }
-            else if (type === 'apostol') { baseHp = 80; baseAtk = 30; mpGain = 35; name = "Apostol"; charClass = "Чернокнижник"; imgUrl = "https://via.placeholder.com/100?text=Apostol"; }
-            else if (type === 'mee') { baseHp = 110; baseAtk = 18; mpGain = 25; name = "Мээ"; charClass = "Друид"; imgUrl = "https://via.placeholder.com/100?text=Mee"; }
+            // ТУТ ТВОИ КАРТИНКИ ДЛЯ ПЕРСОНАЖЕЙ
+            if (type === 'ashab') { 
+                baseHp = 150; baseAtk = 20; mpGain = 20; name = "Ashab Tamaev"; charClass = "Берсерк"; 
+                imgUrl = "IMG_3545.jpeg"; // верхний правый
+            }
+            else if (type === 'apostol') { 
+                baseHp = 80; baseAtk = 30; mpGain = 35; name = "Apostol"; charClass = "Чернокнижник"; 
+                imgUrl = "IMG_3544.jpeg"; // левый верхний
+            }
+            else if (type === 'mee') { 
+                baseHp = 110; baseAtk = 18; mpGain = 25; name = "Мээ"; charClass = "Друид"; 
+                imgUrl = "IMG_3546.jpeg"; // нижний левый
+            }
             
             let u = currentUpgrades[type];
             rpgChar = { 
@@ -520,11 +533,11 @@
             let baseHp = 60 + (rpgFloorMain * 25);
             let baseAtk = 10 + (rpgFloorMain * 4);
             
+            // ТУТ НОВЫЕ ВРАГИ
             const enemyTypes = [
-                { name: "Тугарин Змей", hpMult: 1.2, atkMult: 1, img: "https://via.placeholder.com/100/ff0000/ffffff?text=Zmey" },
-                { name: "Конюх", hpMult: 1, atkMult: 1.3, img: "https://via.placeholder.com/100/00ff00/ffffff?text=Konyuh" },
-                { name: "Бомж", hpMult: 0.8, atkMult: 1, img: "https://via.placeholder.com/100/0000ff/ffffff?text=Bomj" },
-                { name: "Пидор с рынка", hpMult: 1.5, atkMult: 0.8, img: "https://via.placeholder.com/100/ff00ff/ffffff?text=Pidor" }
+                { name: "Пидор", hpMult: 1.2, atkMult: 1, img: "enemy_pidor.png" },
+                { name: "Голый чювак", hpMult: 1, atkMult: 1.3, img: "enemy_chuvak.png" },
+                { name: "Бедуин", hpMult: 1.5, atkMult: 0.8, img: "enemy_beduin.png" }
             ];
             let eType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
             let eHp = Math.floor(baseHp * eType.hpMult);
