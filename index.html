@@ -52,8 +52,8 @@
         .leaderboard-table th { background-color: #000080; color: #fff; font-size: 14px;}
 
         #auth-msg { color: red; font-weight: bold; height: 20px; }
-        .top-info { font-size: 18px; font-weight: bold; margin-bottom: 15px; background: #000; color: #0f0; padding: 5px; font-family: monospace; display: flex; justify-content: space-around; flex-wrap: wrap; }
-        .top-info span { margin: 0 5px; }
+        .top-info { font-size: 16px; font-weight: bold; margin-bottom: 15px; background: #000; color: #0f0; padding: 5px; font-family: monospace; display: flex; justify-content: space-around; flex-wrap: wrap; gap: 5px; }
+        .top-info span { margin: 0 2px; }
 
         #profile-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 100; }
         .modal-content { background: #c0c0c0; border: 4px outset #fff; padding: 20px; width: 90%; max-width: 500px; text-align: left; }
@@ -133,6 +133,8 @@
             <span>Онлайн: <span id="ui-online" style="color: #ff00ff;">0</span></span>
             <span>Игрок: <span id="ui-username" style="color: #fff;"></span></span>
             <span>Бабки: <span id="ui-coins" style="color: yellow;"></span></span>
+            <!-- ВЕРНУЛ ОЧКИ ВЕЩЕЙ -->
+            <span>Очки вещей: <span id="ui-item-points" style="color: magenta;"></span></span>
             <span>PTS: <span id="ui-pvp" style="color: #ff4500;"></span></span>
             <span>Рекорд: <span id="ui-highscore" style="color: cyan;"></span></span>
         </div>
@@ -322,7 +324,7 @@
                 привет представляем вашему вниманию новомую игру pepen40 games . У вас наверняка возник вопрос что это за хуйня как в это играть? смотрите нужно нажимать на пидорасов поочередно в соответствии с тем с какой последовательностью каждый из них пищит. Ну там пропищал apostol 2 раза потом амжан желтый 3 раза . Значит надо нажать на apostol 3 раза и потом амжан желтый 3 раза. Также тут представлены кейсы как в ксго . Покупаете вам выпадает всякая хуйня которая в соответствии со своей редкостью выводит вас в топ в Leaderboard на определенный уровень. За хуйню вам маленько дадут баллов за apostol - дохуя. Вы также можете продавать эти хуйни которые выбили. Да да нахуй не ослышались продавать. На торговой площадке. И зарабатывать за это бабки нахуй
             </div>
             <br><br><br>
-            <div class="version-text">версия игры beta 3.2 (Server Fix Update)</div>
+            <div class="version-text">версия игры beta 3.3 (UI Fix Update)</div>
         </div>
     </div>
 
@@ -489,15 +491,24 @@
             document.getElementById('ui-username').textContent = currentUser;
             document.getElementById('ui-highscore').textContent = currentHighScore;
             document.getElementById('ui-coins').textContent = currentCoins;
-            document.getElementById('ui-item-points').textContent = currentItemPoints;
-            document.getElementById('ui-pvp').textContent = currentPvpPts;
+            // Защита от null
+            let elItemPoints = document.getElementById('ui-item-points');
+            if (elItemPoints) elItemPoints.textContent = currentItemPoints;
+            
+            let elPvp = document.getElementById('ui-pvp');
+            if (elPvp) elPvp.textContent = currentPvpPts;
             
             ['ashab', 'apostol', 'mee'].forEach(c => {
                 let u = currentUpgrades[c];
-                document.getElementById(`lvl-${c}-hp`).innerText = u.hp;
-                document.getElementById(`lvl-${c}-atk`).innerText = u.atk;
-                document.getElementById(`btn-${c}-hp`).innerText = `Качать HP (${100 + (u.hp * 50)}м)`;
-                document.getElementById(`btn-${c}-atk`).innerText = `Качать АТК (${150 + (u.atk * 50)}м)`;
+                let elHpLvl = document.getElementById(`lvl-${c}-hp`);
+                let elAtkLvl = document.getElementById(`lvl-${c}-atk`);
+                let btnHp = document.getElementById(`btn-${c}-hp`);
+                let btnAtk = document.getElementById(`btn-${c}-atk`);
+                
+                if(elHpLvl) elHpLvl.innerText = u.hp;
+                if(elAtkLvl) elAtkLvl.innerText = u.atk;
+                if(btnHp) btnHp.innerText = `Качать HP (${100 + (u.hp * 50)}м)`;
+                if(btnAtk) btnAtk.innerText = `Качать АТК (${150 + (u.atk * 50)}м)`;
             });
         }
 
