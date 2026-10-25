@@ -133,7 +133,6 @@
             <span>Онлайн: <span id="ui-online" style="color: #ff00ff;">0</span></span>
             <span>Игрок: <span id="ui-username" style="color: #fff;"></span></span>
             <span>Бабки: <span id="ui-coins" style="color: yellow;"></span></span>
-            <!-- ВЕРНУЛ ОЧКИ ВЕЩЕЙ -->
             <span>Очки вещей: <span id="ui-item-points" style="color: magenta;"></span></span>
             <span>PTS: <span id="ui-pvp" style="color: #ff4500;"></span></span>
             <span>Рекорд: <span id="ui-highscore" style="color: cyan;"></span></span>
@@ -241,17 +240,17 @@
                 
                 <div class="rpg-log" id="rpg-log">Бой начался!</div>
                 
-                <div class="rpg-actions">
-                    <button class="btn-atk" onclick="rpgAttack()">Обычный удар (+25 эн.)</button>
-                    <button class="btn-def" onclick="rpgDefend()">Защита (+15 эн.)</button>
-                    <button id="rpg-skill-btn" class="btn-skill" onclick="rpgSkill()" disabled>Способность (100 эн.)</button>
-                    <button class="btn-item" onclick="openItemMenu()">🎒 Инвентарь</button>
+                <div class="rpg-actions" style="display:flex; flex-wrap:wrap; gap:5px;">
+                    <button class="btn-atk" style="width:48%;" onclick="rpgAttack()">Обычный удар (+25 эн.)</button>
+                    <button class="btn-def" style="width:48%;" onclick="rpgDefend()">Защита (+15 эн.)</button>
+                    <button id="rpg-skill-btn" class="btn-skill" style="width:100%;" onclick="rpgSkill()" disabled>Способность (100 эн.)</button>
+                    <button class="btn-item" style="width:100%;" onclick="openItemMenu()">🎒 Инвентарь</button>
                 </div>
             </div>
             
             <!-- PVP БОЙ -->
             <div id="pvp-battle-screen" class="hidden">
-                <div id="pvp-turn-indicator" class="turn-indicator turn-player">ВАШ ХОД</div>
+                <div id="pvp-turn-indicator" class="turn-indicator">ОЖИДАНИЕ</div>
                 <h3 style="margin: 0 0 10px 0; color: #000080;">PVP БОЙ</h3>
                 
                 <div class="battlefield" id="pvp-battlefield-bg">
@@ -260,6 +259,8 @@
                             <b id="pvp-player-name">Ты</b><br>
                             HP: <span id="pvp-player-hp-text">100/100</span>
                             <div class="bar-container"><div id="pvp-player-hp-bar" class="bar-fill hp-fill" style="width: 100%;"></div></div>
+                            Энергия: <span id="pvp-player-mp-text">0/100</span>
+                            <div class="bar-container"><div id="pvp-player-mp-bar" class="bar-fill mp-fill" style="width: 0%;"></div></div>
                         </div>
                         <img id="pvp-player-img" src="https://via.placeholder.com/100?text=YOU" class="char-sprite">
                     </div>
@@ -275,9 +276,12 @@
                 
                 <div class="rpg-log" id="pvp-log">Ожидание соперника...</div>
                 
-                <div class="rpg-actions" style="display:flex; gap:10px;">
-                    <button class="btn-atk" id="pvp-atk-btn" onclick="pvpAttack()" style="width:50%; display:none;" disabled>Атаковать!</button>
-                    <button class="btn-def" id="pvp-leave-btn" onclick="leavePvpRoom()" style="width:50%; background:#ffcccb;">Выйти</button>
+                <div class="rpg-actions" style="display:flex; flex-wrap:wrap; gap:5px;">
+                    <button class="btn-atk" style="width:48%;" id="pvp-atk-btn" onclick="pvpAttack()" disabled>Атака</button>
+                    <button class="btn-def" style="width:48%;" id="pvp-def-btn" onclick="pvpDefend()" disabled>Защита</button>
+                    <button class="btn-skill" style="width:100%;" id="pvp-skill-btn" onclick="pvpSkill()" disabled>Способность (100 эн.)</button>
+                    <button class="btn-item" style="width:100%;" id="pvp-item-btn" onclick="openPvpItemMenu()" disabled>🎒 Использовать предмет</button>
+                    <button class="btn-def" style="width:100%; background:#ffcccb;" id="pvp-leave-btn" onclick="leavePvpRoom()">Выйти</button>
                 </div>
             </div>
         </div>
@@ -324,7 +328,7 @@
                 привет представляем вашему вниманию новомую игру pepen40 games . У вас наверняка возник вопрос что это за хуйня как в это играть? смотрите нужно нажимать на пидорасов поочередно в соответствии с тем с какой последовательностью каждый из них пищит. Ну там пропищал apostol 2 раза потом амжан желтый 3 раза . Значит надо нажать на apostol 3 раза и потом амжан желтый 3 раза. Также тут представлены кейсы как в ксго . Покупаете вам выпадает всякая хуйня которая в соответствии со своей редкостью выводит вас в топ в Leaderboard на определенный уровень. За хуйню вам маленько дадут баллов за apostol - дохуя. Вы также можете продавать эти хуйни которые выбили. Да да нахуй не ослышались продавать. На торговой площадке. И зарабатывать за это бабки нахуй
             </div>
             <br><br><br>
-            <div class="version-text">версия игры beta 3.3 (UI Fix Update)</div>
+            <div class="version-text">версия игры beta 3.4 (PVP Full Update)</div>
         </div>
     </div>
 
@@ -491,10 +495,8 @@
             document.getElementById('ui-username').textContent = currentUser;
             document.getElementById('ui-highscore').textContent = currentHighScore;
             document.getElementById('ui-coins').textContent = currentCoins;
-            // Защита от null
             let elItemPoints = document.getElementById('ui-item-points');
             if (elItemPoints) elItemPoints.textContent = currentItemPoints;
-            
             let elPvp = document.getElementById('ui-pvp');
             if (elPvp) elPvp.textContent = currentPvpPts;
             
@@ -504,7 +506,6 @@
                 let elAtkLvl = document.getElementById(`lvl-${c}-atk`);
                 let btnHp = document.getElementById(`btn-${c}-hp`);
                 let btnAtk = document.getElementById(`btn-${c}-atk`);
-                
                 if(elHpLvl) elHpLvl.innerText = u.hp;
                 if(elAtkLvl) elAtkLvl.innerText = u.atk;
                 if(btnHp) btnHp.innerText = `Качать HP (${100 + (u.hp * 50)}м)`;
@@ -547,7 +548,7 @@
         // ==========================================
         let currentPvpChar = null;
         let isPvpHost = false;
-        let pvpGameState = { myHp: 0, enemyHp: 0, myMaxHp: 0, enemyMaxHp: 0, isMyTurn: false };
+        let pvpGameState = { myHp: 0, enemyHp: 0, myMaxHp: 0, enemyMaxHp: 0, myMp: 0, enemyMp: 0, isMyTurn: false };
         
         function openPvpLobby() {
             document.getElementById('pvp-lobby-modal').classList.remove('hidden');
@@ -604,7 +605,7 @@
                 roomChannel.send({ type: 'broadcast', event: 'start_game', payload: { charName: charName, hp, atk, username: currentUser } });
             });
 
-            roomChannel.on('broadcast', { event: 'enemy_attack' }, (payload) => { handlePvpEnemyAttack(payload.payload.dmg); });
+            roomChannel.on('broadcast', { event: 'enemy_action' }, (payload) => { handlePvpEnemyAction(payload.payload); });
             roomChannel.on('broadcast', { event: 'leave' }, () => { if (pvpGameState.myHp > 0) alert("Соперник покинул комнату."); leavePvpRoom(false); });
             roomChannel.subscribe();
 
@@ -616,8 +617,10 @@
             document.getElementById('pvp-log').innerHTML = "Ожидаем соперника...";
             document.getElementById('pvp-turn-indicator').innerText = "ОЖИДАНИЕ";
             document.getElementById('pvp-turn-indicator').className = "turn-indicator";
-            document.getElementById('pvp-atk-btn').style.display = 'none';
-            document.getElementById('pvp-leave-btn').style.display = 'block';
+            disablePvpButtons();
+
+            const bgMusic = document.getElementById('battle-music');
+            bgMusic.currentTime = 0; bgMusic.volume = 0.5; bgMusic.play().catch(e => console.log("Audio blocked"));
         }
 
         async function joinPvpRoom(roomId) {
@@ -644,8 +647,7 @@
             document.getElementById('pvp-log').innerHTML = "Подключаемся к бою...";
             document.getElementById('pvp-turn-indicator').innerText = "ОЖИДАНИЕ";
             document.getElementById('pvp-turn-indicator').className = "turn-indicator";
-            document.getElementById('pvp-atk-btn').style.display = 'none';
-            document.getElementById('pvp-leave-btn').style.display = 'block';
+            disablePvpButtons();
 
             if(roomChannel) supabaseClient.removeChannel(roomChannel);
             roomChannel = supabaseClient.channel(roomId, { config: { broadcast: { self: false } } });
@@ -655,7 +657,7 @@
                 startPvpBattle(host.charName, host.hp, host.atk, host.username);
                 setPvpTurn(false);
             });
-            roomChannel.on('broadcast', { event: 'enemy_attack' }, (payload) => { handlePvpEnemyAttack(payload.payload.dmg); });
+            roomChannel.on('broadcast', { event: 'enemy_action' }, (payload) => { handlePvpEnemyAction(payload.payload); });
 
             roomChannel.subscribe((status) => {
                 if (status === 'SUBSCRIBED') { roomChannel.send({ type: 'broadcast', event: 'join_request', payload: { username: currentUser, charName, hp, atk } }); }
@@ -669,37 +671,132 @@
             let hp = baseHp + (currentUpgrades[charType].hp * 20);
             let atk = baseAtk + (currentUpgrades[charType].atk * 5);
 
-            pvpGameState = { myHp: hp, myMaxHp: hp, myAtk: atk, enemyHp: enemyHp, enemyMaxHp: enemyHp, enemyName: enemyName, isMyTurn: isPvpHost };
+            pvpGameState = { myHp: hp, myMaxHp: hp, myAtk: atk, myMp: 0, enemyHp: enemyHp, enemyMaxHp: enemyHp, enemyName: enemyName, enemyMp: 0, isMyTurn: isPvpHost };
 
             document.getElementById('pvp-enemy-name').innerText = enemyName;
             document.getElementById('pvp-enemy-img').src = "https://via.placeholder.com/100?text=ENEMY"; 
             updatePvpUI(); logPvp(`Бой начался против ${enemyName}!`);
-            document.getElementById('pvp-atk-btn').style.display = 'block';
-            document.getElementById('pvp-leave-btn').style.display = 'none';
             
-            if (isPvpHost) { setPvpTurn(true); document.getElementById('pvp-atk-btn').disabled = false; } 
-            else { setPvpTurn(false); document.getElementById('pvp-atk-btn').disabled = true; }
+            if (isPvpHost) { setPvpTurn(true); enablePvpButtons(); } 
+            else { setPvpTurn(false); disablePvpButtons(); }
+
+            const bgMusic = document.getElementById('battle-music');
+            if (bgMusic.paused) { bgMusic.currentTime = 0; bgMusic.volume = 0.5; bgMusic.play().catch(e => console.log("Audio blocked")); }
         }
 
-        function handlePvpEnemyAttack(dmg) {
+        function handlePvpEnemyAction(payload) {
             if (pvpGameState.myHp <= 0) return; 
-            pvpGameState.myHp -= dmg; updatePvpUI(); logPvp(`Враг бьет на ${dmg} урона!`);
+
+            if (payload.type === 'attack') {
+                pvpGameState.myHp -= payload.dmg;
+                logPvp(`Враг бьет на ${payload.dmg} урона!`);
+            } else if (payload.type === 'defend') {
+                logPvp(`Враг встает в защиту.`);
+            } else if (payload.type === 'skill') {
+                pvpGameState.myHp -= payload.dmg;
+                logPvp(`Враг использует способность! Урон: ${payload.dmg}`);
+            } else if (payload.type === 'item') {
+                if (payload.effect === 'heal') { pvpGameState.enemyHp += payload.val; logPvp(`Враг хилится на ${payload.val}!`); }
+                else if (payload.effect === 'damage') { pvpGameState.myHp -= payload.val; logPvp(`Враг швыряет предмет! Урон: ${payload.val}`); }
+                else if (payload.effect === 'atk') { logPvp(`Враг юзает бафф на атаку!`); }
+            }
+
+            updatePvpUI();
             if (pvpGameState.myHp <= 0) { endPvpBattle(false); } 
-            else { pvpGameState.isMyTurn = true; setPvpTurn(true); document.getElementById('pvp-atk-btn').disabled = false; }
+            else { pvpGameState.isMyTurn = true; setPvpTurn(true); enablePvpButtons(); }
         }
 
         function pvpAttack() {
-            if (!pvpGameState.isMyTurn || pvpGameState.enemyHp <= 0) return;
-            pvpGameState.isMyTurn = false; document.getElementById('pvp-atk-btn').disabled = true; setPvpTurn(false);
+            if (!pvpGameState.isMyTurn) return;
+            pvpGameState.isMyTurn = false; disablePvpButtons(); setPvpTurn(false);
             let dmg = Math.floor(Math.random() * 10) + pvpGameState.myAtk;
-            pvpGameState.enemyHp -= dmg; updatePvpUI(); logPvp(`Ты бьешь на ${dmg} урона!`);
-            if(roomChannel) roomChannel.send({ type: 'broadcast', event: 'enemy_attack', payload: { dmg } });
+            pvpGameState.enemyHp -= dmg; 
+            pvpGameState.myMp = Math.min(100, pvpGameState.myMp + 20);
+            updatePvpUI(); logPvp(`Ты бьешь на ${dmg} урона! (+20 эн.)`);
+            if(roomChannel) roomChannel.send({ type: 'broadcast', event: 'enemy_action', payload: { type: 'attack', dmg } });
+            if (pvpGameState.enemyHp <= 0) { endPvpBattle(true); }
+        }
+
+        function pvpDefend() {
+            if (!pvpGameState.isMyTurn) return;
+            pvpGameState.isMyTurn = false; disablePvpButtons(); setPvpTurn(false);
+            pvpGameState.myMp = Math.min(100, pvpGameState.myMp + 15);
+            updatePvpUI(); logPvp(`Ты встаешь в защиту. (+15 эн.)`);
+            if(roomChannel) roomChannel.send({ type: 'broadcast', event: 'enemy_action', payload: { type: 'defend' } });
+        }
+
+        function pvpSkill() {
+            if (!pvpGameState.isMyTurn || pvpGameState.myMp < 100) return;
+            pvpGameState.isMyTurn = false; pvpGameState.myMp = 0; disablePvpButtons(); setPvpTurn(false);
+            let dmg = 0;
+            let charType = currentPvpChar;
+            if (charType === 'ashab') dmg = 60 + (currentUpgrades[charType].atk * 10);
+            else if (charType === 'apostol') dmg = Math.floor(Math.random() * 30) + 70 + (currentUpgrades[charType].atk * 10);
+            else if (charType === 'mee') { dmg = 0; pvpGameState.myHp = Math.min(pvpGameState.myMaxHp, pvpGameState.myHp + 50); logPvp(`Ты хилишься на 50 HP!`); }
+
+            pvpGameState.enemyHp -= dmg; 
+            updatePvpUI(); 
+            if (dmg > 0) logPvp(`Ты ебашишь способностью на ${dmg} урона!`);
+            if(roomChannel) roomChannel.send({ type: 'broadcast', event: 'enemy_action', payload: { type: 'skill', dmg } });
+            if (pvpGameState.enemyHp <= 0) { endPvpBattle(true); }
+        }
+
+        function openPvpItemMenu() {
+            if (!pvpGameState.isMyTurn) return;
+            const list = document.getElementById('rpg-item-list');
+            list.innerHTML = '';
+            let processedInv = getProcessedInventory();
+            if (processedInv.length === 0) { list.innerHTML = '<p style="grid-column: 1/-1; text-align:center;">У тебя пусто.</p>'; } 
+            else {
+                processedInv.forEach((item) => {
+                    let effectText = ""; let btnText = "Юз"; let effectType = ""; let val = 0;
+                    if (item.rarity === 'Обычное') { effectText = "Лечит 20 HP"; effectType = 'heal'; val = 20; }
+                    if (item.rarity === 'Редкое') { effectText = "+10 к Атаке"; effectType = 'atk'; val = 10; }
+                    if (item.rarity === 'Сверхредкое') { effectText = "40 урона"; effectType = 'damage'; val = 40; btnText = "Ебнуть"; } 
+                    if (item.rarity === 'Эпическое') { effectText = "100 энергии"; effectType = 'mp'; val = 100; }
+                    if (item.rarity === 'Легендарное') { effectText = "100 урона"; effectType = 'damage'; val = 100; btnText = "Ебнуть"; } 
+
+                    const div = document.createElement('div'); div.className = 'inv-card';
+                    if (item.qty > 1) div.innerHTML += `<div class="qty-badge">x${item.qty}</div>`;
+                    div.innerHTML += `
+                        ${getImgTag(item.img)}
+                        <div class="inv-card-name"><span class="rarity-${item.rarity}">${item.name}</span></div>
+                        <div style="font-size:10px; margin-bottom:5px;">${effectText}</div>
+                        <div class="inv-card-buttons"><button onclick="pvpUseItem('${item.name}', '${effectType}', ${val})" style="background-color: #90ee90;">${btnText}</button></div>
+                    `;
+                    list.appendChild(div);
+                });
+            }
+            document.getElementById('rpg-item-modal').classList.remove('hidden');
+        }
+
+        async function pvpUseItem(itemName, effectType, val) {
+            if (!pvpGameState.isMyTurn) return;
+            const itemIndex = currentInventory.findIndex(i => i.name === itemName);
+            if (itemIndex === -1) return;
+            const item = currentInventory[itemIndex];
+
+            pvpGameState.isMyTurn = false; disablePvpButtons(); setPvpTurn(false); closeItemMenu();
+            try {
+                const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'consume_item', username: currentUser, data: { item_id: item.id } } });
+                if (!error && data.success) { currentInventory = data.newInventory; currentItemPoints = data.newItemPoints; updateUI(); } 
+                else { logPvp("Ошибка использования."); pvpGameState.isMyTurn = true; enablePvpButtons(); return; }
+            } catch(e) { logPvp("Ошибка сервера."); pvpGameState.isMyTurn = true; enablePvpButtons(); return; }
+
+            if (effectType === 'heal') { pvpGameState.myHp = Math.min(pvpGameState.myMaxHp, pvpGameState.myHp + val); logPvp(`Ты хилишься на ${val} HP.`); }
+            else if (effectType === 'damage') { pvpGameState.enemyHp -= val; logPvp(`Ты швырнул ${item.name} на ${val} урона!`); }
+            else if (effectType === 'mp') { pvpGameState.myMp = 100; logPvp(`Ты восстановил 100 энергии!`); }
+            else if (effectType === 'atk') { pvpGameState.myAtk += val; logPvp(`Ты повысил атаку на ${val}!`); }
+
+            updatePvpUI();
+            if(roomChannel) roomChannel.send({ type: 'broadcast', event: 'enemy_action', payload: { type: 'item', effect: effectType, val } });
             if (pvpGameState.enemyHp <= 0) { endPvpBattle(true); }
         }
 
         async function endPvpBattle(isWin) {
-            document.getElementById('pvp-atk-btn').disabled = true;
-            document.getElementById('battle-music').pause();
+            disablePvpButtons();
+            const bgMusic = document.getElementById('battle-music');
+            bgMusic.pause();
             if (isWin) { logPvp("ТЫ ПОБЕДИЛ! +15 PTS"); currentPvpPts += 15; await supabaseClient.from('players').update({ pvp_pts: currentPvpPts }).eq('username', currentUser); } 
             else { logPvp("ТЫ ПРОИГРАЛ! -15 PTS"); currentPvpPts = Math.max(0, currentPvpPts - 15); await supabaseClient.from('players').update({ pvp_pts: currentPvpPts }).eq('username', currentUser); }
             updateUI();
@@ -711,15 +808,17 @@
             if (isPvpHost && lobbyChannel) { await lobbyChannel.track({ online: true }); }
             document.getElementById('pvp-battle-screen').classList.add('hidden');
             document.getElementById('rpg-char-select').classList.remove('hidden');
-            document.getElementById('pvp-atk-btn').disabled = true;
-            document.getElementById('pvp-atk-btn').style.display = 'none';
-            document.getElementById('pvp-leave-btn').style.display = 'block';
+            disablePvpButtons();
+            document.getElementById('battle-music').pause();
             myRoomId = null;
         }
 
         function updatePvpUI() {
             document.getElementById('pvp-player-hp-text').innerText = `${Math.max(0, pvpGameState.myHp)}/${pvpGameState.myMaxHp}`;
             document.getElementById('pvp-player-hp-bar').style.width = (Math.max(0, pvpGameState.myHp) / pvpGameState.myMaxHp) * 100 + '%';
+            document.getElementById('pvp-player-mp-text').innerText = `${pvpGameState.myMp}/100`;
+            document.getElementById('pvp-player-mp-bar').style.width = pvpGameState.myMp + '%';
+            
             document.getElementById('pvp-enemy-hp-text').innerText = `${Math.max(0, pvpGameState.enemyHp)}/${pvpGameState.enemyMaxHp}`;
             document.getElementById('pvp-enemy-hp-bar').style.width = (Math.max(0, pvpGameState.enemyHp) / pvpGameState.enemyMaxHp) * 100 + '%';
         }
@@ -728,6 +827,24 @@
             const ind = document.getElementById('pvp-turn-indicator');
             if (isPlayer) { ind.innerText = "ВАШ ХОД"; ind.className = "turn-indicator turn-player"; } 
             else { ind.innerText = "ХОД ВРАГА"; ind.className = "turn-indicator turn-enemy"; }
+        }
+
+        function disablePvpButtons() {
+            ['pvp-atk-btn', 'pvp-def-btn', 'pvp-skill-btn', 'pvp-item-btn'].forEach(id => {
+                let btn = document.getElementById(id);
+                if (btn) btn.disabled = true;
+            });
+        }
+
+        function enablePvpButtons() {
+            let atk = document.getElementById('pvp-atk-btn');
+            let def = document.getElementById('pvp-def-btn');
+            let skill = document.getElementById('pvp-skill-btn');
+            let item = document.getElementById('pvp-item-btn');
+            if (atk) atk.disabled = false;
+            if (def) def.disabled = false;
+            if (item) item.disabled = false;
+            if (skill) skill.disabled = pvpGameState.myMp < 100;
         }
 
         function logPvp(msg) { const log = document.getElementById('pvp-log'); log.innerHTML += `<br>> ${msg}`; log.scrollTop = log.scrollHeight; }
