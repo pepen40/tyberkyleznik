@@ -55,22 +55,38 @@
         .howto-text { text-align: left; font-size: 18px; line-height: 1.5; background: #fff; border: 2px inset #fff; padding: 15px; margin-top: 10px;}
         .version-text { text-align: center; font-weight: bold; margin-top: 30px; font-size: 16px; color: #000080; }
 
-        /* Стили для РПГ */
+        /* Стили для РПГ 2.0 */
         .rpg-char-card { background: #fff; border: 3px solid #000; padding: 10px; margin: 10px 0; cursor: pointer; text-align: left; }
         .rpg-char-card:hover { background: #e0e0e0; }
-        .rpg-char-card h3 { margin: 0 0 5px 0; }
         .rpg-battle { display: flex; justify-content: space-between; margin-bottom: 15px; background: #fff; padding: 10px; border: 2px solid #000;}
         .rpg-stats { width: 48%; text-align: left; font-size: 14px; }
-        .rpg-log { height: 180px; overflow-y: auto; background: #000; color: #0f0; font-family: monospace; text-align: left; padding: 10px; border: 2px inset #fff; font-size: 14px; margin-bottom: 10px; }
-        .bar-container { width: 100%; height: 15px; background: #555; border: 1px solid #000; margin-top: 5px;}
+        .rpg-log { height: 150px; overflow-y: auto; background: #000; color: #0f0; font-family: monospace; text-align: left; padding: 10px; border: 2px inset #fff; font-size: 13px; margin-bottom: 10px; }
+        .bar-container { width: 100%; height: 15px; background: #555; border: 1px solid #000; margin-top: 5px; margin-bottom: 5px;}
         .bar-fill { height: 100%; transition: width 0.3s; }
         .hp-fill { background: #f00; }
-        .mp-fill { background: #8a2be2; } /* Фиолетовый для энергии */
+        .mp-fill { background: #8a2be2; }
         
+        /* Индикатор хода */
+        .turn-indicator { padding: 10px; font-size: 24px; font-weight: bold; text-align: center; border: 3px solid #000; margin-bottom: 10px; text-transform: uppercase; }
+        .turn-player { background-color: #00ff00; color: #000; animation: pulse-green 1s infinite; }
+        .turn-enemy { background-color: #ff0000; color: #fff; animation: pulse-red 1s infinite; }
+        @keyframes pulse-green { 0% { box-shadow: 0 0 5px #00ff00; } 50% { box-shadow: 0 0 20px #00ff00; } 100% { box-shadow: 0 0 5px #00ff00; } }
+        @keyframes pulse-red { 0% { box-shadow: 0 0 5px #ff0000; } 50% { box-shadow: 0 0 20px #ff0000; } 100% { box-shadow: 0 0 5px #ff0000; } }
+
         .rpg-actions button { width: 100%; margin: 5px 0; padding: 10px; font-size: 16px; }
         .btn-atk { background-color: #ffcccb; }
         .btn-def { background-color: #add8e6; }
         .btn-skill { background-color: #90ee90; }
+        .btn-item { background-color: #ffd700; }
+
+        /* Модалка предметов в бою */
+        #rpg-item-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; justify-content: center; align-items: center; z-index: 200; }
+        .item-modal-content { background: #c0c0c0; border: 4px outset #fff; padding: 20px; width: 90%; max-width: 400px; text-align: left; }
+        .item-modal-content h3 { margin-top: 0; text-align: center; }
+        
+        /* Меню прокачки */
+        .upgrade-section { background: #fff; border: 3px solid #000; padding: 15px; margin-top: 15px; text-align: left; }
+        .upgrade-btn { width: 100%; margin-bottom: 5px; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -127,20 +143,32 @@
                 <p>Выбери своего бойца:</p>
                 <div class="rpg-char-card" onclick="selectChar('ashab')">
                     <h3>Ashab Tamaev</h3>
-                    <small>Класс: Берсерк. Много HP. Скилл: Мощный удар.</small>
+                    <small>Класс: Берсерк. Много HP. Копит энергию медленно.</small>
                 </div>
                 <div class="rpg-char-card" onclick="selectChar('apostol')">
                     <h3>Apostol</h3>
-                    <small>Класс: Чернокнижник. Мало HP, но быстро копит энергию. Скилл: Магия.</small>
+                    <small>Класс: Чернокнижник. Мало HP. Копит энергию быстро. Мощный скилл.</small>
                 </div>
                 <div class="rpg-char-card" onclick="selectChar('mee')">
                     <h3>Мээ</h3>
-                    <small>Класс: Друид. Сбалансирован. Скилл: Исцеление.</small>
+                    <small>Класс: Друид. Сбалансирован. Скилл лечит.</small>
+                </div>
+
+                <!-- ПРОКАЧКА -->
+                <div class="upgrade-section">
+                    <h3>Прокачка (Оффлайн-тест)</h3>
+                    <p style="font-size: 14px; margin: 0 0 10px 0;">Твои бабки: <b id="upg-coins-display">0</b></p>
+                    <button class="upgrade-btn" onclick="buyUpgrade('hp')" id="btn-upg-hp">Улучшить HP (Стоимость: 100)</button>
+                    <button class="upgrade-btn" onclick="buyUpgrade('atk')" id="btn-upg-atk">Улучшить Атаку (Стоимость: 150)</button>
                 </div>
             </div>
 
             <div id="rpg-battle-screen" class="hidden">
+                <!-- Индикатор хода -->
+                <div id="rpg-turn-indicator" class="turn-indicator turn-player">ВАШ ХОД</div>
+
                 <h3 id="rpg-floor" style="margin: 0 0 10px 0; color: #000080;">ЭТАЖ 1</h3>
+                
                 <div class="rpg-battle">
                     <div class="rpg-stats">
                         <b id="rpg-player-name">Игрок</b><br>
@@ -156,12 +184,13 @@
                     </div>
                 </div>
                 
-                <div class="rpg-log" id="rpg-log">Бой начался! Нажми атаковать.</div>
+                <div class="rpg-log" id="rpg-log">Бой начался! Жми атаковать.</div>
                 
                 <div class="rpg-actions">
-                    <button class="btn-atk" onclick="rpgAttack()">Обычный удар (+25 энергии)</button>
-                    <button class="btn-def" onclick="rpgDefend()">Защита (-50% урона, +15 энергии)</button>
-                    <button id="rpg-skill-btn" class="btn-skill" onclick="rpgSkill()" disabled>Способность (Нужно 100 энергии)</button>
+                    <button class="btn-atk" onclick="rpgAttack()">Обычный удар (+25 эн.)</button>
+                    <button class="btn-def" onclick="rpgDefend()">Защита (-50% урона, +15 эн.)</button>
+                    <button id="rpg-skill-btn" class="btn-skill" onclick="rpgSkill()" disabled>Способность (100 эн.)</button>
+                    <button class="btn-item" onclick="openItemMenu()">🎒 Использовать предмет</button>
                 </div>
             </div>
         </div>
@@ -208,9 +237,19 @@
                 привет представляем вашему вниманию новомую игру pepen40 games . У вас наверняка возник вопрос что это за хуйня как в это играть? смотрите нужно нажимать на пидорасов поочередно в соответствии с тем с какой последовательностью каждый из них пищит. Ну там пропищал apostol 2 раза потом амжан желтый 3 раза . Значит надо нажать на apostol 3 раза и потом амжан желтый 3 раза. Также тут представлены кейсы как в ксго . Покупаете вам выпадает всякая хуйня которая в соответствии со своей редкостью выводит вас в топ в Leaderboard на определенный уровень. За хуйню вам маленько дадут баллов за apostol - дохуя. Вы также можете продавать эти хуйни которые выбили. Да да нахуй не ослышались продавать. На торговой площадке. И зарабатывать за это бабки нахуй
             </div>
             <br><br><br>
-            <div class="version-text">версия игры beta 1.2 (Tactical RPG Update)</div>
+            <div class="version-text">версия игры beta 1.4 (Offline RPG Test)</div>
         </div>
 
+    </div>
+
+    <!-- Модалка предметов в РПГ -->
+    <div id="rpg-item-modal" class="hidden">
+        <div class="item-modal-content">
+            <h3>Использовать предмет</h3>
+            <p style="font-size: 12px; text-align: center;">Предмет сгорит навсегда. Выбирай мудро.</p>
+            <div id="rpg-item-list" style="max-height: 300px; overflow-y: auto;"></div>
+            <button onclick="closeItemMenu()" style="width: 100%; margin-top: 15px; background: #ffcccb;">Отмена</button>
+        </div>
     </div>
 
     <div id="profile-modal" class="hidden">
@@ -227,6 +266,7 @@
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpmdmluYmFtd2F2aWJuaG1md256Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4ODE2MjAsImV4cCI6MjEwODQ1NzYyMH0.FT5tlKgLUCrFs0zzY-BGimCmU9qNZmIzMW8LyysMmgE';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         
+        // Функция нужна только для работы кейсов/рынка, РПГ от нее не зависит
         const EDGE_FUNCTION_NAME = 'award-coins'; 
 
         let currentUser = null;
@@ -234,6 +274,10 @@
         let currentCoins = 0;
         let currentItemPoints = 0;
         let currentInventory = []; 
+
+        // Прокачка (локально)
+        let rpgUpgHp = parseInt(localStorage.getItem('rpg_upg_hp') || '0');
+        let rpgUpgAtk = parseInt(localStorage.getItem('rpg_upg_atk') || '0');
 
         function getImgTag(imgName) {
             if (!imgName) return '<span style="font-size: 30px; margin-right: 10px;">📎</span>';
@@ -280,6 +324,13 @@
             document.getElementById('ui-highscore').textContent = currentHighScore;
             document.getElementById('ui-coins').textContent = currentCoins;
             document.getElementById('ui-item-points').textContent = currentItemPoints;
+            
+            // Обновляем меню прокачки
+            let hpCost = 100 + (rpgUpgHp * 50);
+            let atkCost = 150 + (rpgUpgAtk * 50);
+            document.getElementById('upg-coins-display').innerText = currentCoins;
+            document.getElementById('btn-upg-hp').innerText = `Улучшить HP (Ур. ${rpgUpgHp}) - ${hpCost} монет`;
+            document.getElementById('btn-upg-atk').innerText = `Улучшить Атаку (Ур. ${rpgUpgAtk}) - ${atkCost} монет`;
         }
 
         function switchTab(tab) {
@@ -290,8 +341,34 @@
             if (tab === 'leaderboard') renderLeaderboard();
         }
 
+        // ==== ПРОКАЧКА ====
+        function buyUpgrade(type) {
+            let hpCost = 100 + (rpgUpgHp * 50);
+            let atkCost = 150 + (rpgUpgAtk * 50);
+            
+            if (type === 'hp') {
+                if (currentCoins >= hpCost) {
+                    currentCoins -= hpCost;
+                    rpgUpgHp++;
+                    localStorage.setItem('rpg_upg_hp', rpgUpgHp);
+                    alert("HP УСПЕШНО ПРОКАЧАНО!");
+                    if(rpgChar) { rpgChar.maxHp += 20; rpgChar.hp += 20; updateRpgUI(); }
+                    updateUI();
+                } else alert("Мало монет, бомж!");
+            } else if (type === 'atk') {
+                if (currentCoins >= atkCost) {
+                    currentCoins -= atkCost;
+                    rpgUpgAtk++;
+                    localStorage.setItem('rpg_upg_atk', rpgUpgAtk);
+                    alert("АТАКА УСПЕШНО ПРОКАЧАНА!");
+                    if(rpgChar) { rpgChar.atk += 5; updateRpgUI(); }
+                    updateUI();
+                } else alert("Мало монет, бомж!");
+            }
+        }
+
         // ==========================================
-        // НОВАЯ ЛОГИКА РПГ МЯСОРУБКИ (С ЭНЕРГИЕЙ)
+        // ЛОГИКА РПГ МЯСОРУБКИ (ОФФЛАЙН)
         // ==========================================
         let rpgChar = null;
         let rpgEnemy = null;
@@ -299,15 +376,26 @@
         let rpgEnergy = 0;
         let rpgMaxEnergy = 100;
         let isPlayerTurn = true;
+        let enemyIsCharging = false;
+        let currentCharType = null;
 
         function selectChar(type) {
+            currentCharType = type;
+            let baseHp = 0, baseAtk = 0, mpGain = 0, name = "", charClass = "";
+
             if (type === 'ashab') {
-                rpgChar = { name: "Ashab Tamaev", class: "Берсерк", hp: 150, maxHp: 150, atk: 20, mpGain: 20 }; // Копит медленно
+                baseHp = 150; baseAtk = 20; mpGain = 20; name = "Ashab Tamaev"; charClass = "Берсерк";
             } else if (type === 'apostol') {
-                rpgChar = { name: "Apostol", class: "Чернокнижник", hp: 80, maxHp: 80, atk: 30, mpGain: 35 }; // Копит быстро
+                baseHp = 80; baseAtk = 30; mpGain = 35; name = "Apostol"; charClass = "Чернокнижник";
             } else if (type === 'mee') {
-                rpgChar = { name: "Мээ", class: "Друид", hp: 110, maxHp: 110, atk: 18, mpGain: 25 }; // Средне
+                baseHp = 110; baseAtk = 18; mpGain = 25; name = "Мээ"; charClass = "Друид";
             }
+            
+            rpgChar = { 
+                name: name, class: charClass, 
+                maxHp: baseHp + (rpgUpgHp * 20), hp: baseHp + (rpgUpgHp * 20), 
+                atk: baseAtk + (rpgUpgAtk * 5), mpGain: mpGain 
+            };
             
             rpgFloor = 1;
             rpgEnergy = 0;
@@ -316,17 +404,16 @@
             document.getElementById('rpg-battle-screen').classList.remove('hidden');
             document.getElementById('rpg-log').innerHTML = `Ты выбрал ${rpgChar.name} (${rpgChar.class}).<br>Начало мясорубки!<br>`;
             
-            if (type === 'ashab') document.getElementById('rpg-skill-btn').innerText = "Сокрушающий удар (100 Энергии)";
-            if (type === 'apostol') document.getElementById('rpg-skill-btn').innerText = "Тёмный ритуал (100 Энергии)";
-            if (type === 'mee') document.getElementById('rpg-skill-btn').innerText = "Исцеление (100 Энергии)";
+            if (type === 'ashab') document.getElementById('rpg-skill-btn').innerText = "Сокрушающий удар (100)";
+            if (type === 'apostol') document.getElementById('rpg-skill-btn').innerText = "Тёмный ритуал (100)";
+            if (type === 'mee') document.getElementById('rpg-skill-btn').innerText = "Исцеление (100)";
             
             spawnEnemy();
         }
 
         function spawnEnemy() {
-            // Враги становятся сильнее с каждым этажом
-            let baseHp = 60 + (rpgFloor * 15);
-            let baseAtk = 10 + (rpgFloor * 2);
+            let baseHp = 60 + (rpgFloor * 25);
+            let baseAtk = 10 + (rpgFloor * 4);
             
             const enemyTypes = [
                 { name: "Тугарин Змей", hpMult: 1.2, atkMult: 1 },
@@ -340,15 +427,15 @@
             
             rpgEnemy = { 
                 name: `${eType.name} (Ур. ${rpgFloor})`, 
-                hp: eHp, 
-                maxHp: eHp, 
-                atk: Math.floor(baseAtk * eType.atkMult) 
+                hp: eHp, maxHp: eHp, atk: Math.floor(baseAtk * eType.atkMult) 
             };
             
             document.getElementById('rpg-floor').innerText = `ЭТАЖ ${rpgFloor}`;
             updateRpgUI();
             addLog(`На арене появился ${rpgEnemy.name}!`);
             isPlayerTurn = true;
+            enemyIsCharging = false;
+            setTurnIndicator(true);
             checkButtons();
         }
 
@@ -356,6 +443,17 @@
             const logBox = document.getElementById('rpg-log');
             logBox.innerHTML += `<br>> ${msg}`;
             logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function setTurnIndicator(isPlayer) {
+            const ind = document.getElementById('rpg-turn-indicator');
+            if (isPlayer) {
+                ind.innerText = "ВАШ ХОД";
+                ind.className = "turn-indicator turn-player";
+            } else {
+                ind.innerText = "ХОД ВРАГА";
+                ind.className = "turn-indicator turn-enemy";
+            }
         }
 
         function updateRpgUI() {
@@ -378,21 +476,25 @@
             const btnAtk = document.querySelector('.btn-atk');
             const btnDef = document.querySelector('.btn-def');
             const btnSkill = document.getElementById('rpg-skill-btn');
+            const btnItem = document.querySelector('.btn-item');
             
             if (isPlayerTurn) {
                 btnAtk.disabled = false;
                 btnDef.disabled = false;
-                btnSkill.disabled = rpgEnergy < 100; // Кнопка активна только если 100 энергии
+                btnSkill.disabled = rpgEnergy < 100;
+                btnItem.disabled = false;
             } else {
                 btnAtk.disabled = true;
                 btnDef.disabled = true;
                 btnSkill.disabled = true;
+                btnItem.disabled = true;
             }
         }
 
         function rpgAttack() {
             if (!isPlayerTurn || rpgChar.hp <= 0 || rpgEnemy.hp <= 0) return;
             isPlayerTurn = false;
+            setTurnIndicator(false);
             checkButtons();
             
             let dmg = Math.floor(Math.random() * 10) + rpgChar.atk;
@@ -412,32 +514,34 @@
         function rpgDefend() {
             if (!isPlayerTurn || rpgChar.hp <= 0 || rpgEnemy.hp <= 0) return;
             isPlayerTurn = false;
+            setTurnIndicator(false);
             checkButtons();
             
-            let defGain = Math.floor(rpgChar.mpGain * 0.6); // Меньше энергии за защиту
+            let defGain = Math.floor(rpgChar.mpGain * 0.6);
             rpgEnergy = Math.min(rpgMaxEnergy, rpgEnergy + defGain);
             addLog(`${rpgChar.name} встает в защиту. (+${defGain} энергии)`);
             updateRpgUI();
             
-            setTimeout(() => enemyTurn(true), 800); // Передаем true, чтобы снизить урон
+            setTimeout(() => enemyTurn(true), 800);
         }
 
         function rpgSkill() {
             if (!isPlayerTurn || rpgEnergy < 100 || rpgChar.hp <= 0 || rpgEnemy.hp <= 0) return;
             isPlayerTurn = false;
-            rpgEnergy = 0; // Тратим энергию
+            rpgEnergy = 0;
+            setTurnIndicator(false);
             checkButtons();
 
             if (rpgChar.class === "Берсерк") {
-                let dmg = 60; // Фиксированный огромный урон
+                let dmg = 60 + (rpgUpgAtk * 10); 
                 rpgEnemy.hp -= dmg;
                 addLog(`Ashab применяет Сокрушающий удар на ${dmg} урона!`);
             } else if (rpgChar.class === "Чернокнижник") {
-                let dmg = Math.floor(Math.random() * 30) + 70; // 70-100 урона
+                let dmg = Math.floor(Math.random() * 30) + 70 + (rpgUpgAtk * 10);
                 rpgEnemy.hp -= dmg;
                 addLog(`Apostol проводит Тёмный ритуал. Урон: ${dmg}!`);
             } else if (rpgChar.class === "Друид") {
-                let heal = 70;
+                let heal = 70 + (rpgUpgHp * 10);
                 rpgChar.hp = Math.min(rpgChar.maxHp, rpgChar.hp + heal);
                 addLog(`Мээ читает Исцеление и восстанавливает ${heal} HP!`);
             }
@@ -452,8 +556,24 @@
         }
 
         function enemyTurn(isPlayerDefending = false) {
+            setTurnIndicator(false);
             let dmg = Math.floor(Math.random() * 10) + rpgEnemy.atk;
             
+            if (!isPlayerDefending && Math.random() < 0.3 && !enemyIsCharging) {
+                enemyIsCharging = true;
+                addLog(`${rpgEnemy.name} копит силы для мощной атаки...`);
+                isPlayerTurn = true;
+                setTurnIndicator(true);
+                checkButtons();
+                return;
+            }
+
+            if (enemyIsCharging) {
+                dmg *= 2;
+                enemyIsCharging = false;
+                addLog(`ЕБАТЬ! ${rpgEnemy.name} наносит усиленный удар!`);
+            }
+
             if (isPlayerDefending) {
                 dmg = Math.floor(dmg / 2);
                 addLog(`${rpgEnemy.name} атакует, но защита поглотила половину. Урон: ${dmg}.`);
@@ -465,26 +585,28 @@
             updateRpgUI();
 
             if (rpgChar.hp <= 0) {
-                addLog(`Ты сдох на ${rpgFloor} этаже. Мясорубка перемолола тебя...`);
+                addLog(`Ты сдох на ${rpgFloor} этаже...`);
                 isPlayerTurn = false;
                 checkButtons();
                 setTimeout(() => {
                     document.getElementById('rpg-char-select').classList.remove('hidden');
                     document.getElementById('rpg-battle-screen').classList.add('hidden');
+                    updateUI();
                 }, 3000);
             } else {
                 isPlayerTurn = true;
+                setTurnIndicator(true);
                 checkButtons();
             }
         }
 
         function winRpg() {
-            let reward = 30 + (rpgFloor * 10); 
+            let reward = 40 + (rpgFloor * 15); 
             currentCoins += reward; 
             updateUI();
-            addLog(`Ты победил! +${reward} монет.`);
+            addLog(`Ты победил! +${reward} монет (локально).`);
             rpgFloor++;
-            rpgEnergy = Math.min(rpgMaxEnergy, rpgEnergy + 30); // Дают энергию за победу
+            rpgEnergy = Math.min(rpgMaxEnergy, rpgEnergy + 30);
             
             setTimeout(() => {
                 addLog(`=== ЭТАЖ ${rpgFloor} ===`);
@@ -492,8 +614,85 @@
             }, 2000);
         }
 
+        // ==== ИСПОЛЬЗОВАНИЕ ПРЕДМЕТОВ (ОФФЛАЙН) ====
+        function openItemMenu() {
+            if(!isPlayerTurn) return;
+            const list = document.getElementById('rpg-item-list');
+            list.innerHTML = '';
+            
+            if (currentInventory.length === 0) {
+                list.innerHTML = '<p>У тебя пусто.</p>';
+            } else {
+                currentInventory.forEach((item, index) => {
+                    let effectText = "";
+                    if (item.rarity === 'Обычное') effectText = "Лечит 20 HP";
+                    if (item.rarity === 'Редкое') effectText = "+10 к Атаке (до конца боя)";
+                    if (item.rarity === 'Сверхредкое') effectText = "40 урона врагу";
+                    if (item.rarity === 'Эпическое') effectText = "Восстанавливает 100 энергии";
+                    if (item.rarity === 'Легендарное') effectText = "100 урона врагу (ИМБА)";
+
+                    const div = document.createElement('div');
+                    div.className = 'inv-item';
+                    div.innerHTML = `
+                        <div style="display:flex; align-items:center;">
+                            ${getImgTag(item.img)}
+                            <div>
+                                <span class="rarity-${item.rarity}">${item.name}</span><br>
+                                <small>${effectText}</small>
+                            </div>
+                        </div>
+                        <div><button onclick="useItemInBattle(${index})" style="background-color: #90ee90; font-size: 14px;">Использовать</button></div>
+                    `;
+                    list.appendChild(div);
+                });
+            }
+            document.getElementById('rpg-item-modal').classList.remove('hidden');
+        }
+
+        function closeItemMenu() {
+            document.getElementById('rpg-item-modal').classList.add('hidden');
+        }
+
+        function useItemInBattle(index) {
+            const item = currentInventory[index];
+            if (!item) return;
+
+            // Применяем эффект
+            if (item.rarity === 'Обычное') {
+                rpgChar.hp = Math.min(rpgChar.maxHp, rpgChar.hp + 20);
+                addLog(`Использована ${item.name}. Восстановлено 20 HP.`);
+            } else if (item.rarity === 'Редкое') {
+                rpgChar.atk += 10;
+                addLog(`Съеден ${item.name}. Атака повышена на 10!`);
+            } else if (item.rarity === 'Сверхредкое') {
+                rpgEnemy.hp -= 40;
+                addLog(`Швырнул ${item.name} во врага. 40 урона!`);
+            } else if (item.rarity === 'Эпическое') {
+                rpgEnergy = 100;
+                addLog(`Использована ${item.name}. Энергия восстановлена до 100!`);
+            } else if (item.rarity === 'Легендарное') {
+                rpgEnemy.hp -= 100;
+                addLog(`ПРИЗВАН APOSTOL! ВРАГ ПОЛУЧАЕТ 100 УРОНА!`);
+            }
+
+            updateRpgUI();
+            closeItemMenu();
+
+            // Удаляем предмет локально (ОФФЛАЙН)
+            currentInventory.splice(index, 1);
+            // Пересчитываем очки предметов (чтобы в топе корректно отображалось)
+            currentItemPoints = currentInventory.reduce((sum, i) => sum + (i.points || 0), 0);
+            updateUI();
+
+            // Проверка на смерть врага от предмета
+            if (rpgEnemy.hp <= 0) {
+                winRpg();
+            }
+        }
+
+
         // ==========================================
-        // ОСТАЛЬНАЯ ЛОГИКА (КЕЙСЫ И Т.Д.)
+        // ОСТАЛЬНАЯ ЛОГИКА (КЕЙСЫ, СЕРВЕР)
         // ==========================================
         async function openCase(price) {
             const resBox = document.getElementById('case-result');
