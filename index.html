@@ -29,16 +29,25 @@
         .nav-bar { margin-bottom: 20px; background-color: #000080; padding: 10px; border: 3px outset #ffffff; }
         .nav-bar button { margin: 5px; background-color: #c0c0c0; font-size: 16px; }
         
+        /* СТИЛИ ДЛЯ ИНВЕНТАРЯ (Сетка) */
+        .inv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; margin-top: 10px; }
+        .inv-card { position: relative; background: #fff; border: 3px solid #000; padding: 10px 5px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; align-items: center; min-height: 130px; }
+        .inv-card-img { width: 50px; height: 50px; object-fit: cover; margin-bottom: 5px; }
+        .inv-card-name { font-size: 12px; font-weight: bold; line-height: 1.2; margin-bottom: 5px; }
+        .inv-card-buttons button { font-size: 12px; padding: 2px 5px; margin-top: 5px; width: 100%; }
+        
+        /* Бейдж количества (x5) */
+        .qty-badge { position: absolute; top: -10px; right: -10px; background: #ff0000; color: #fff; border: 2px solid #000; border-radius: 50%; width: 25px; height: 25px; display: flex; justify-content: center; align-items: center; font-size: 14px; font-weight: bold; z-index: 10;}
+
         .shop-item { background-color: #fff; border: 2px solid #000; padding: 10px; margin: 10px 0; display: flex; justify-content: space-between; align-items: center; text-align: left;}
-        .inv-item { background-color: #fff; border: 2px solid #000; padding: 10px; margin: 5px 0; text-align: left; display: flex; justify-content: space-between; align-items: center;}
 
         .item-img { width: 40px; height: 40px; object-fit: cover; vertical-align: middle; margin-right: 10px; border: 1px solid #999; background: #eee; }
 
-        .rarity-Обычное { color: gray; font-weight: bold; }
-        .rarity-Редкое { color: blue; font-weight: bold; }
-        .rarity-Эпическое { color: purple; font-weight: bold; }
-        .rarity-Сверхредкое { color: #FF4500; font-weight: bold; text-shadow: 1px 1px 0 #000; }
-        .rarity-Легендарное { font-weight: bold; animation: legendary-blink 1s infinite linear; }
+        .rarity-Обычное { color: gray; }
+        .rarity-Редкое { color: blue; }
+        .rarity-Эпическое { color: purple; }
+        .rarity-Сверхредкое { color: #FF4500; }
+        .rarity-Легендарное { color: #D4AF37; animation: legendary-blink 1s infinite linear; }
         @keyframes legendary-blink { 0% { color: red; text-shadow: 0 0 5px red; } 20% { color: orange; text-shadow: 0 0 5px orange; } 40% { color: yellow; text-shadow: 0 0 5px yellow; } 60% { color: lime; text-shadow: 0 0 5px lime; } 80% { color: cyan; text-shadow: 0 0 5px cyan; } 100% { color: magenta; text-shadow: 0 0 5px magenta; } }
         
         .leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 20px; background-color: #fff; border: 3px inset #ffffff; }
@@ -49,8 +58,8 @@
         .top-info { font-size: 18px; font-weight: bold; margin-bottom: 15px; background: #000; color: #0f0; padding: 5px; font-family: monospace; }
 
         #profile-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 100; }
-        .modal-content { background: #c0c0c0; border: 4px outset #fff; padding: 20px; width: 80%; max-width: 400px; text-align: left; }
-        .modal-content h3 { margin-top: 0; }
+        .modal-content { background: #c0c0c0; border: 4px outset #fff; padding: 20px; width: 90%; max-width: 500px; text-align: left; }
+        .modal-content h3 { margin-top: 0; text-align: center;}
         
         .howto-text { text-align: left; font-size: 18px; line-height: 1.5; background: #fff; border: 2px inset #fff; padding: 15px; margin-top: 10px;}
         .version-text { text-align: center; font-weight: bold; margin-top: 30px; font-size: 16px; color: #000080; }
@@ -66,30 +75,24 @@
         /* Поле боя */
         .battlefield {
             position: relative; height: 300px; background-color: #2c3e50; 
-            /* ВСТАВЬ СЮДА СВОЮ КАРТИНКУ ФОНА */
             background-image: url('https://via.placeholder.com/600x300/2c3e50/ffffff?text=BATTLEFIELD'); 
             background-size: cover; background-position: center;
             border: 4px inset #fff; margin-bottom: 15px; display: flex; justify-content: space-between; padding: 10px; overflow: hidden;
         }
         .combatant { width: 45%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; position: relative; }
         
-        /* Полоски над головами */
         .combatant-stats { position: absolute; top: 0; width: 100%; background: rgba(0,0,0,0.7); padding: 5px; border: 1px solid #fff; color: #fff; font-size: 12px; text-align: left; }
         .bar-container { width: 100%; height: 10px; background: #555; border: 1px solid #000; margin-top: 3px; position: relative; }
         .bar-fill { height: 100%; transition: width 0.3s; }
         .hp-fill { background: #f00; }
         .mp-fill { background: #8a2be2; }
         
-        /* Персонажи */
         .char-sprite { max-width: 100px; max-height: 120px; object-fit: contain; transition: transform 0.1s; }
-        /* Анимация удара */
         .attack-anim-player { transform: translateX(20px); }
         .attack-anim-enemy { transform: translateX(-20px); }
 
-        /* Лог и кнопки */
         .rpg-log { height: 120px; overflow-y: auto; background: #000; color: #0f0; font-family: monospace; text-align: left; padding: 10px; border: 2px inset #fff; font-size: 12px; margin-bottom: 10px; }
         
-        /* Индикатор хода */
         .turn-indicator { padding: 5px; font-size: 20px; font-weight: bold; text-align: center; border: 2px solid #000; margin-bottom: 10px; text-transform: uppercase; }
         .turn-player { background-color: #00ff00; color: #000; }
         .turn-enemy { background-color: #ff0000; color: #fff; }
@@ -101,7 +104,7 @@
         .btn-item { background-color: #ffd700; }
 
         #rpg-item-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; justify-content: center; align-items: center; z-index: 200; }
-        .item-modal-content { background: #c0c0c0; border: 4px outset #fff; padding: 20px; width: 90%; max-width: 400px; text-align: left; }
+        .item-modal-content { background: #c0c0c0; border: 4px outset #fff; padding: 20px; width: 95%; max-width: 500px; text-align: left; }
     </style>
 </head>
 <body>
@@ -136,7 +139,6 @@
 
         <div id="tab-game" class="panel">
             <h2>мини игра "пидоры и тугарин змей"</h2>
-            <p style="font-size: 14px; margin-top: -10px;">(20 монет за раунд. Первый раунд не в счет)</p>
             <div id="status">привет ножми</div>
             <table>
                 <tr>
@@ -151,19 +153,15 @@
             <button id="restart-btn" class="hidden" style="margin-top: 20px;">Рестарт</button>
         </div>
 
-        <!-- ВКЛАДКА РПГ (ВИЗУАЛ) -->
         <div id="tab-rpg" class="panel hidden">
             <h2>РПГ МЯСОРУБКА</h2>
             
             <div id="rpg-char-select">
-                <p>Выбери своего бойца и прокачай его:</p>
-                
-                <!-- ASHAB -->
+                <p>Выбери бойца:</p>
                 <div class="rpg-char-card">
-                    <img src="https://via.placeholder.com/80?text=Ashab" class="char-avatar" alt="Ashab">
+                    <img src="https://via.placeholder.com/80?text=Ashab" class="char-avatar">
                     <div class="char-info">
                         <h3>Ashab Tamaev (Берсерк)</h3>
-                        <small>Много HP. Копит энергию медленно.</small>
                         <div class="upgrade-block">
                             Ур. HP: <b id="lvl-ashab-hp">0</b> | Ур. АТК: <b id="lvl-ashab-atk">0</b><br>
                             <button onclick="buyUpgrade('ashab', 'hp')" id="btn-ashab-hp">Качать HP</button>
@@ -172,13 +170,10 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- APOSTOL -->
                 <div class="rpg-char-card">
-                    <img src="https://via.placeholder.com/80?text=Apostol" class="char-avatar" alt="Apostol">
+                    <img src="https://via.placeholder.com/80?text=Apostol" class="char-avatar">
                     <div class="char-info">
                         <h3>Apostol (Чернокнижник)</h3>
-                        <small>Мало HP. Копит энергию быстро.</small>
                         <div class="upgrade-block">
                             Ур. HP: <b id="lvl-apostol-hp">0</b> | Ур. АТК: <b id="lvl-apostol-atk">0</b><br>
                             <button onclick="buyUpgrade('apostol', 'hp')" id="btn-apostol-hp">Качать HP</button>
@@ -187,13 +182,10 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- MEE -->
                 <div class="rpg-char-card">
-                    <img src="https://via.placeholder.com/80?text=Mee" class="char-avatar" alt="Mee">
+                    <img src="https://via.placeholder.com/80?text=Mee" class="char-avatar">
                     <div class="char-info">
                         <h3>Мээ (Друид)</h3>
-                        <small>Сбалансирован. Скилл лечит.</small>
                         <div class="upgrade-block">
                             Ур. HP: <b id="lvl-mee-hp">0</b> | Ур. АТК: <b id="lvl-mee-atk">0</b><br>
                             <button onclick="buyUpgrade('mee', 'hp')" id="btn-mee-hp">Качать HP</button>
@@ -204,14 +196,11 @@
                 </div>
             </div>
 
-            <!-- ЭКРАН БОЯ -->
             <div id="rpg-battle-screen" class="hidden">
                 <div id="rpg-turn-indicator" class="turn-indicator turn-player">ВАШ ХОД</div>
                 <h3 id="rpg-floor" style="margin: 0 0 10px 0; color: #000080;">ЭТАЖ 1</h3>
                 
-                <!-- АРЕНА -->
                 <div class="battlefield">
-                    <!-- Игрок (Слева) -->
                     <div class="combatant">
                         <div class="combatant-stats">
                             <b id="rpg-player-name">Игрок</b> (Ур. <span id="rpg-player-lvl">0</span>)<br>
@@ -222,8 +211,6 @@
                         </div>
                         <img id="rpg-player-img" src="https://via.placeholder.com/100?text=CHAR" class="char-sprite" alt="Player">
                     </div>
-                    
-                    <!-- Враг (Справа) -->
                     <div class="combatant">
                         <div class="combatant-stats" style="text-align: right;">
                             <b id="rpg-enemy-name">Враг</b><br>
@@ -234,13 +221,13 @@
                     </div>
                 </div>
                 
-                <div class="rpg-log" id="rpg-log">Бой начался! Жми атаковать.</div>
+                <div class="rpg-log" id="rpg-log">Бой начался!</div>
                 
                 <div class="rpg-actions">
                     <button class="btn-atk" onclick="rpgAttack()">Обычный удар (+25 эн.)</button>
-                    <button class="btn-def" onclick="rpgDefend()">Защита (-50% урона, +15 эн.)</button>
+                    <button class="btn-def" onclick="rpgDefend()">Защита (+15 эн.)</button>
                     <button id="rpg-skill-btn" class="btn-skill" onclick="rpgSkill()" disabled>Способность (100 эн.)</button>
-                    <button class="btn-item" onclick="openItemMenu()">🎒 Использовать предмет</button>
+                    <button class="btn-item" onclick="openItemMenu()">🎒 Инвентарь</button>
                 </div>
             </div>
         </div>
@@ -254,9 +241,11 @@
             <div id="case-result" style="color: red; margin-top: 20px; display:flex; flex-direction: column; align-items:center;"></div>
         </div>
 
+        <!-- НОВЫЙ КОМПАКТНЫЙ ИНВЕНТАРЬ -->
         <div id="tab-inventory" class="panel hidden">
-            <h2>Твой склад с хуйнёй</h2>
-            <div id="inventory-list"></div>
+            <h2>Твой склад</h2>
+            <p style="font-size: 12px; margin-top: -10px;">Сортировка по редкости. Одинаковые предметы стакаются.</p>
+            <div id="inventory-list" class="inv-grid"></div>
         </div>
 
         <div id="tab-market" class="panel hidden">
@@ -287,7 +276,7 @@
                 привет представляем вашему вниманию новомую игру pepen40 games . У вас наверняка возник вопрос что это за хуйня как в это играть? смотрите нужно нажимать на пидорасов поочередно в соответствии с тем с какой последовательностью каждый из них пищит. Ну там пропищал apostol 2 раза потом амжан желтый 3 раза . Значит надо нажать на apostol 3 раза и потом амжан желтый 3 раза. Также тут представлены кейсы как в ксго . Покупаете вам выпадает всякая хуйня которая в соответствии со своей редкостью выводит вас в топ в Leaderboard на определенный уровень. За хуйню вам маленько дадут баллов за apostol - дохуя. Вы также можете продавать эти хуйни которые выбили. Да да нахуй не ослышались продавать. На торговой площадке. И зарабатывать за это бабки нахуй
             </div>
             <br><br><br>
-            <div class="version-text">версия игры beta 1.5 (Visual RPG Update)</div>
+            <div class="version-text">версия игры beta 1.6 (Stackable Inventory Update)</div>
         </div>
 
     </div>
@@ -296,8 +285,7 @@
     <div id="rpg-item-modal" class="hidden">
         <div class="item-modal-content">
             <h3>Использовать предмет</h3>
-            <p style="font-size: 12px; text-align: center;">Предмет сгорит навсегда. Выбирай мудро.</p>
-            <div id="rpg-item-list" style="max-height: 300px; overflow-y: auto;"></div>
+            <div id="rpg-item-list" class="inv-grid" style="max-height: 300px; overflow-y: auto;"></div>
             <button onclick="closeItemMenu()" style="width: 100%; margin-top: 15px; background: #ffcccb;">Отмена</button>
         </div>
     </div>
@@ -306,7 +294,7 @@
         <div class="modal-content">
             <h3 id="prof-name">Игрок</h3>
             <p id="prof-stats"></p>
-            <div id="prof-inventory" style="max-height: 200px; overflow-y: auto;"></div>
+            <div id="prof-inventory" class="inv-grid" style="max-height: 300px; overflow-y: auto;"></div>
             <button onclick="closeProfile()" style="width: 100%; margin-top: 15px; background: #ffcccb;">Закрыть</button>
         </div>
     </div>
@@ -324,13 +312,29 @@
         let currentItemPoints = 0;
         let currentInventory = []; 
 
-        // ==== СИСТЕМА ПРОКАЧКИ (Раздельная) ====
-        // Формат: { ashab: { hp: 0, atk: 0 }, apostol: { hp: 0, atk: 0 }, mee: { hp: 0, atk: 0 } }
         let allUpgrades = JSON.parse(localStorage.getItem('rpg_all_upgrades') || '{"ashab":{"hp":0,"atk":0},"apostol":{"hp":0,"atk":0},"mee":{"hp":0,"atk":0}}');
 
+        // Веса для сортировки (от самого охуенного к мусору)
+        const rarityWeight = { 'Легендарное': 5, 'Сверхредкое': 4, 'Эпическое': 3, 'Редкое': 2, 'Обычное': 1, 'Мусор': 0 };
+
         function getImgTag(imgName) {
-            if (!imgName) return '<span style="font-size: 30px; margin-right: 10px;">📎</span>';
-            return `<img src="${imgName}" class="item-img" onerror="this.outerHTML='<span style=\\'font-size: 30px; margin-right: 10px;\\'>📎</span>'">`;
+            if (!imgName) return '<span style="font-size: 20px;">📎</span>';
+            return `<img src="${imgName}" class="inv-card-img" onerror="this.outerHTML='<span style=\\'font-size: 20px;\\'>📎</span>'">`;
+        }
+
+        // ФУНКЦИЯ СТАКИНГА И СОРТИРОВКИ
+        function getProcessedInventory() {
+            let grouped = {};
+            currentInventory.forEach(item => {
+                if (!grouped[item.name]) {
+                    grouped[item.name] = { ...item, qty: 0 };
+                }
+                grouped[item.name].qty++;
+            });
+            
+            return Object.values(grouped).sort((a, b) => {
+                return (rarityWeight[b.rarity] || 0) - (rarityWeight[a.rarity] || 0);
+            });
         }
 
         async function register() {
@@ -374,16 +378,13 @@
             document.getElementById('ui-coins').textContent = currentCoins;
             document.getElementById('ui-item-points').textContent = currentItemPoints;
             
-            // Обновляем кнопки прокачки для каждого класса
             const classes = ['ashab', 'apostol', 'mee'];
             classes.forEach(c => {
                 let u = allUpgrades[c];
                 document.getElementById(`lvl-${c}-hp`).innerText = u.hp;
                 document.getElementById(`lvl-${c}-atk`).innerText = u.atk;
-                
                 let hpCost = 100 + (u.hp * 50);
                 let atkCost = 150 + (u.atk * 50);
-                
                 document.getElementById(`btn-${c}-hp`).innerText = `Качать HP (${hpCost}м)`;
                 document.getElementById(`btn-${c}-atk`).innerText = `Качать АТК (${atkCost}м)`;
             });
@@ -397,7 +398,6 @@
             if (tab === 'leaderboard') renderLeaderboard();
         }
 
-        // ==== ПРОКАЧКА ====
         function buyUpgrade(charType, statType) {
             let u = allUpgrades[charType];
             let cost = statType === 'hp' ? (100 + (u.hp * 50)) : (150 + (u.atk * 50));
@@ -408,7 +408,6 @@
                 localStorage.setItem('rpg_all_upgrades', JSON.stringify(allUpgrades));
                 alert(`${charType.toUpperCase()} ${statType.toUpperCase()} УСПЕШНО ПРОКАЧАНО!`);
                 
-                // Если этот персонаж сейчас в бою, обновляем его статы на лету
                 if (rpgChar && currentCharType === charType) {
                     if (statType === 'hp') { rpgChar.maxHp += 20; rpgChar.hp += 20; }
                     if (statType === 'atk') { rpgChar.atk += 5; }
@@ -419,7 +418,7 @@
         }
 
         // ==========================================
-        // ЛОГИКА РПГ МЯСОРУБКИ (ВИЗУАЛ)
+        // ЛОГИКА РПГ
         // ==========================================
         let rpgChar = null;
         let rpgEnemy = null;
@@ -436,7 +435,7 @@
 
             if (type === 'ashab') {
                 baseHp = 150; baseAtk = 20; mpGain = 20; name = "Ashab Tamaev"; charClass = "Берсерк";
-                imgUrl = "https://via.placeholder.com/100?text=Ashab"; // ЗАМЕНИ НА СВОЮ КАРТИНКУ
+                imgUrl = "https://via.placeholder.com/100?text=Ashab"; 
             } else if (type === 'apostol') {
                 baseHp = 80; baseAtk = 30; mpGain = 35; name = "Apostol"; charClass = "Чернокнижник";
                 imgUrl = "https://via.placeholder.com/100?text=Apostol";
@@ -460,7 +459,7 @@
             document.getElementById('rpg-battle-screen').classList.remove('hidden');
             document.getElementById('rpg-log').innerHTML = `Ты выбрал ${rpgChar.name}.<br>Начало мясорубки!<br>`;
             document.getElementById('rpg-player-img').src = rpgChar.img;
-            document.getElementById('rpg-player-lvl').innerText = u.hp + u.atk; // Общий лвл как сумма прокачек
+            document.getElementById('rpg-player-lvl').innerText = u.hp + u.atk;
             
             if (type === 'ashab') document.getElementById('rpg-skill-btn').innerText = "Сокрушающий удар (100)";
             if (type === 'apostol') document.getElementById('rpg-skill-btn').innerText = "Тёмный ритуал (100)";
@@ -551,7 +550,6 @@
             }
         }
 
-        // Визуальная анимация удара
         function animateAttack(isPlayer) {
             let pImg = document.getElementById('rpg-player-img');
             let eImg = document.getElementById('rpg-enemy-img');
@@ -691,34 +689,37 @@
             }, 2000);
         }
 
-        // ==== ИСПОЛЬЗОВАНИЕ ПРЕДМЕТОВ ====
+        // ==== ИСПОЛЬЗОВАНИЕ ПРЕДМЕТОВ (КОМПАКТНО) ====
         function openItemMenu() {
             if(!isPlayerTurn) return;
             const list = document.getElementById('rpg-item-list');
             list.innerHTML = '';
             
-            if (currentInventory.length === 0) {
-                list.innerHTML = '<p>У тебя пусто.</p>';
+            let processedInv = getProcessedInventory();
+
+            if (processedInv.length === 0) {
+                list.innerHTML = '<p style="grid-column: 1/-1; text-align:center;">У тебя пусто.</p>';
             } else {
-                currentInventory.forEach((item, index) => {
+                processedInv.forEach((item) => {
                     let effectText = "";
                     if (item.rarity === 'Обычное') effectText = "Лечит 20 HP";
-                    if (item.rarity === 'Редкое') effectText = "+10 к Атаке (до конца боя)";
+                    if (item.rarity === 'Редкое') effectText = "+10 к Атаке";
                     if (item.rarity === 'Сверхредкое') effectText = "40 урона врагу";
-                    if (item.rarity === 'Эпическое') effectText = "Восстанавливает 100 энергии";
-                    if (item.rarity === 'Легендарное') effectText = "100 урона врагу (ИМБА)";
+                    if (item.rarity === 'Эпическое') effectText = "Дает 100 энергии";
+                    if (item.rarity === 'Легендарное') effectText = "100 урона врагу";
 
                     const div = document.createElement('div');
-                    div.className = 'inv-item';
-                    div.innerHTML = `
-                        <div style="display:flex; align-items:center;">
-                            ${getImgTag(item.img)}
-                            <div>
-                                <span class="rarity-${item.rarity}">${item.name}</span><br>
-                                <small>${effectText}</small>
-                            </div>
+                    div.className = 'inv-card';
+                    // Добавляем бейдж количества
+                    if (item.qty > 1) div.innerHTML += `<div class="qty-badge">x${item.qty}</div>`;
+                    
+                    div.innerHTML += `
+                        ${getImgTag(item.img)}
+                        <div class="inv-card-name"><span class="rarity-${item.rarity}">${item.name}</span></div>
+                        <div style="font-size:10px; margin-bottom:5px;">${effectText}</div>
+                        <div class="inv-card-buttons">
+                            <button onclick="useItemInBattle('${item.name}')" style="background-color: #90ee90;">Юз</button>
                         </div>
-                        <div><button onclick="useItemInBattle(${index})" style="background-color: #90ee90; font-size: 14px;">Использовать</button></div>
                     `;
                     list.appendChild(div);
                 });
@@ -730,9 +731,12 @@
             document.getElementById('rpg-item-modal').classList.add('hidden');
         }
 
-        function useItemInBattle(index) {
-            const item = currentInventory[index];
-            if (!item) return;
+        function useItemInBattle(itemName) {
+            // Ищем первый попавшийся предмет с таким именем в реальном инвентаре
+            const itemIndex = currentInventory.findIndex(i => i.name === itemName);
+            if (itemIndex === -1) return;
+            
+            const item = currentInventory[itemIndex];
 
             if (item.rarity === 'Обычное') {
                 rpgChar.hp = Math.min(rpgChar.maxHp, rpgChar.hp + 20);
@@ -756,7 +760,8 @@
             updateRpgUI();
             closeItemMenu();
 
-            currentInventory.splice(index, 1);
+            // Удаляем только 1 штуку из инвентаря
+            currentInventory.splice(itemIndex, 1);
             currentItemPoints = currentInventory.reduce((sum, i) => sum + (i.points || 0), 0);
             updateUI();
 
@@ -765,9 +770,8 @@
             }
         }
 
-
         // ==========================================
-        // ОСТАЛЬНАЯ ЛОГИКА (КЕЙСЫ, СЕРВЕР)
+        // ИНВЕНТАРЬ И КЕЙСЫ
         // ==========================================
         async function openCase(price) {
             const resBox = document.getElementById('case-result');
@@ -807,53 +811,58 @@
             const { data: myListings } = await supabaseClient.from('marketplace').select('*').eq('seller', currentUser);
             
             list.innerHTML = '';
-            if (currentInventory.length === 0 && (!myListings || myListings.length === 0)) { 
-                list.innerHTML = '<p>Пусто.</p>'; 
+            let processedInv = getProcessedInventory();
+
+            if (processedInv.length === 0 && (!myListings || myListings.length === 0)) { 
+                list.innerHTML = '<p style="grid-column: 1/-1; text-align:center;">Пусто.</p>'; 
                 return; 
             }
 
-            currentInventory.forEach((item, index) => {
+            // Рисуем карточки
+            processedInv.forEach((item) => {
                 const div = document.createElement('div');
-                div.className = 'inv-item';
-                div.innerHTML = `
-                    <div style="display:flex; align-items:center;">
-                        ${getImgTag(item.img)}
-                        <div>
-                            <span class="rarity-${item.rarity}">${item.name}</span> <small>(+${item.points} очков)</small>
-                        </div>
+                div.className = 'inv-card';
+                if (item.qty > 1) div.innerHTML += `<div class="qty-badge">x${item.qty}</div>`;
+                
+                div.innerHTML += `
+                    ${getImgTag(item.img)}
+                    <div class="inv-card-name"><span class="rarity-${item.rarity}">${item.name}</span></div>
+                    <div class="inv-card-buttons">
+                        <button onclick="sellItem('${item.name}')" style="background-color: #90ee90;">Продать</button>
                     </div>
-                    <div><button onclick="sellItem(${index})" style="background-color: #90ee90; font-size: 14px;">Выставить</button></div>
                 `;
                 list.appendChild(div);
             });
 
+            // Выставляем на рынок (показываем как отдельные карточки, так как это лоты)
             if (myListings) {
                 myListings.forEach(item => {
                     const div = document.createElement('div');
-                    div.className = 'inv-item';
+                    div.className = 'inv-card';
                     div.style.backgroundColor = '#ffdddd';
                     div.innerHTML = `
-                        <div style="display:flex; align-items:center;">
-                            ${getImgTag(item.img)}
-                            <div>
-                                <span class="rarity-${item.rarity}">${item.item_name}</span> <small>(+${item.points} очков)</small><br>
-                                <span style="color:red; font-weight:bold; font-size:12px;">(На продаже за ${item.price})</span>
-                            </div>
+                        ${getImgTag(item.img)}
+                        <div class="inv-card-name"><span class="rarity-${item.rarity}">${item.item_name}</span></div>
+                        <div style="font-size:10px; color:red; margin-bottom:5px;">На продаже: ${item.price}</div>
+                        <div class="inv-card-buttons">
+                            <button onclick="removeListing(${item.id})" style="background-color: #ffcccb;">Снять</button>
                         </div>
-                        <div><button onclick="removeListing(${item.id})" style="background-color: #ffcccb; font-size: 14px;">Снять</button></div>
                     `;
                     list.appendChild(div);
                 });
             }
         }
 
-        async function sellItem(index) {
-            const item = currentInventory[index];
-            const price = prompt(`За сколько монет продать "${item.name}"?`, 50);
+        async function sellItem(itemName) {
+            // Находим реальный предмет по имени
+            const realItem = currentInventory.find(i => i.name === itemName);
+            if (!realItem) return;
+
+            const price = prompt(`За сколько монет продать "${realItem.name}"?`, 50);
             if (!price || isNaN(price) || price <= 0) return;
 
             const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
-                body: { action: 'sell_item', username: currentUser, data: { item: item, price: parseInt(price) } }
+                body: { action: 'sell_item', username: currentUser, data: { item: realItem, price: parseInt(price) } }
             });
 
             if (error) alert("Ошибка сети.");
@@ -991,17 +1000,24 @@
 
             let inv = data.inventory || [];
             
-            if (inv.length === 0 && (!marketItems || marketItems.length === 0)) {
-                invEl.innerHTML = "<p>Инвентарь пуст.</p>";
+            // Обрабатываем инвентарь для отображения
+            let grouped = {};
+            inv.forEach(item => {
+                if (!grouped[item.name]) grouped[item.name] = { ...item, qty: 0 };
+                grouped[item.name].qty++;
+            });
+            let processedInv = Object.values(grouped).sort((a, b) => (rarityWeight[b.rarity] || 0) - (rarityWeight[a.rarity] || 0));
+
+            if (processedInv.length === 0 && (!marketItems || marketItems.length === 0)) {
+                invEl.innerHTML = "<p style='grid-column: 1/-1;'>Инвентарь пуст.</p>";
             } else {
-                inv.forEach(item => {
+                processedInv.forEach(item => {
                     const div = document.createElement('div');
-                    div.className = 'inv-item';
-                    div.innerHTML = `
-                        <div style="display:flex; align-items:center;">
-                            ${getImgTag(item.img)}
-                            <span class="rarity-${item.rarity}">${item.name}</span> <small>(+${item.points})</small>
-                        </div>
+                    div.className = 'inv-card';
+                    if (item.qty > 1) div.innerHTML += `<div class="qty-badge">x${item.qty}</div>`;
+                    div.innerHTML += `
+                        ${getImgTag(item.img)}
+                        <div class="inv-card-name"><span class="rarity-${item.rarity}">${item.name}</span></div>
                     `;
                     invEl.appendChild(div);
                 });
@@ -1009,14 +1025,12 @@
                 if (marketItems) {
                     marketItems.forEach(item => {
                         const div = document.createElement('div');
-                        div.className = 'inv-item';
+                        div.className = 'inv-card';
                         div.style.backgroundColor = '#ffdddd';
                         div.innerHTML = `
-                            <div style="display:flex; align-items:center;">
-                                ${getImgTag(item.img)}
-                                <span class="rarity-${item.rarity}">${item.item_name}</span> <small>(+${item.points})</small>
-                                <span style="color:red; margin-left:5px; font-size:12px;">(На продаже)</span>
-                            </div>
+                            ${getImgTag(item.img)}
+                            <div class="inv-card-name"><span class="rarity-${item.rarity}">${item.item_name}</span></div>
+                            <div style="font-size:10px; color:red;">На продаже</div>
                         `;
                         invEl.appendChild(div);
                     });
