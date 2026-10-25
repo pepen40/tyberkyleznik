@@ -29,7 +29,6 @@
         .nav-bar { margin-bottom: 20px; background-color: #000080; padding: 10px; border: 3px outset #ffffff; }
         .nav-bar button { margin: 5px; background-color: #c0c0c0; font-size: 16px; }
         
-        /* СТИЛИ ДЛЯ ИНВЕНТАРЯ (Сетка) */
         .inv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; margin-top: 10px; }
         .inv-card { position: relative; background: #fff; border: 3px solid #000; padding: 10px 5px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; align-items: center; min-height: 130px; }
         .inv-card-img { width: 50px; height: 50px; object-fit: cover; margin-bottom: 5px; }
@@ -78,13 +77,13 @@
         }
         .combatant { width: 45%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; position: relative; }
         
-        .combatant-stats { position: absolute; top: 0; width: 100%; background: rgba(0,0,0,0.7); padding: 5px; border: 1px solid #fff; color: #fff; font-size: 12px; text-align: left; }
+        .combatant-stats { position: absolute; top: 0; width: 100%; background: rgba(0,0,0,0.7); padding: 5px; border: 1px solid #fff; color: #fff; font-size: 12px; text-align: left; z-index: 10;}
         .bar-container { width: 100%; height: 10px; background: #555; border: 1px solid #000; margin-top: 3px; position: relative; }
         .bar-fill { height: 100%; transition: width 0.3s; }
         .hp-fill { background: #f00; }
         .mp-fill { background: #8a2be2; }
         
-        .char-sprite { max-width: 100px; max-height: 120px; object-fit: contain; transition: transform 0.1s, filter 0.2s; }
+        .char-sprite { max-width: 100px; max-height: 120px; object-fit: contain; transition: transform 0.1s, filter 0.2s; z-index: 5;}
         .attack-anim-player { transform: translateX(20px); }
         .attack-anim-enemy { transform: translateX(-20px); }
 
@@ -275,7 +274,7 @@
                 привет представляем вашему вниманию новомую игру pepen40 games . У вас наверняка возник вопрос что это за хуйня как в это играть? смотрите нужно нажимать на пидорасов поочередно в соответствии с тем с какой последовательностью каждый из них пищит. Ну там пропищал apostol 2 раза потом амжан желтый 3 раза . Значит надо нажать на apostol 3 раза и потом амжан желтый 3 раза. Также тут представлены кейсы как в ксго . Покупаете вам выпадает всякая хуйня которая в соответствии со своей редкостью выводит вас в топ в Leaderboard на определенный уровень. За хуйню вам маленько дадут баллов за apostol - дохуя. Вы также можете продавать эти хуйни которые выбили. Да да нахуй не ослышались продавать. На торговой площадке. И зарабатывать за это бабки нахуй
             </div>
             <br><br><br>
-            <div class="version-text">версия игры beta 1.8 (Fling Items Update)</div>
+            <div class="version-text">версия игры beta 1.9 (Item Throw Update)</div>
         </div>
 
     </div>
@@ -520,6 +519,64 @@
             else { eImg.classList.add('attack-anim-enemy'); setTimeout(() => eImg.classList.remove('attack-anim-enemy'), 200); }
         }
 
+        // НОВАЯ АНИМАЦИЯ: КАРТИНКА ПРЕДМЕТА
+        function animateItemUse(item, isDamage) {
+            const battlefield = document.querySelector('.battlefield');
+            const el = document.createElement('img');
+            
+            // Если картинки нет, ставим заглушку
+            el.src = item.img || 'https://via.placeholder.com/50?text=ITEM'; 
+            el.style.position = 'absolute';
+            el.style.width = '50px';
+            el.style.height = '50px';
+            el.style.zIndex = '50';
+            el.style.transition = 'all 0.4s ease-in-out';
+            el.style.borderRadius = '50%'; // немного скруглим, чтобы красиво летело
+
+            if (isDamage) {
+                // ЛЕТИТ В ЕБАЛО ВРАГУ
+                el.style.left = '20%';
+                el.style.top = '50%';
+                battlefield.appendChild(el);
+                
+                // Даем браузеру отрисовать стартовую позицию
+                void el.offsetWidth; 
+                
+                // Летим вправо-вверх (в ебало)
+                el.style.left = '75%';
+                el.style.top = '35%';
+                el.style.transform = 'scale(1.5) rotate(180deg)';
+                
+                setTimeout(() => {
+                    el.remove();
+                    // Эффект попадания
+                    let eImg = document.getElementById('rpg-enemy-img');
+                    eImg.style.filter = 'brightness(2) drop-shadow(0 0 15px red)';
+                    eImg.style.transform = 'translateX(15px) rotate(5deg)'; 
+                    setTimeout(() => {
+                        eImg.style.filter = 'none';
+                        eImg.style.transform = 'none';
+                    }, 200);
+                }, 400);
+
+            } else {
+                // ПРИМЕНЯЕТСЯ НА СЕБЯ (СКОЛЬЗИТ ВНИЗ И ИСЧЕЗАЕТ)
+                el.style.left = '25%';
+                el.style.top = '30%';
+                battlefield.appendChild(el);
+                
+                void el.offsetWidth;
+                
+                el.style.top = '60%'; // скользит вниз до середины
+                el.style.opacity = '0'; // растворяется
+                el.style.transform = 'scale(0.8)';
+                
+                setTimeout(() => {
+                    el.remove();
+                }, 400);
+            }
+        }
+
         function rpgAttack() {
             if (!isPlayerTurn || rpgChar.hp <= 0 || rpgEnemy.hp <= 0) return;
             isPlayerTurn = false; setTurnIndicator(false); checkButtons(); animateAttack(true);
@@ -562,7 +619,6 @@
             if (rpgChar.hp <= 0) {
                 addLog(`Ты сдох на ${rpgFloor} этаже...`); isPlayerTurn = false; checkButtons();
                 
-                // ОБНОВЛЯЕМ РЕКОРД ПРИ СМЕРТИ
                 if (rpgFloor > rpgMaxFloors[currentCharType]) {
                     rpgMaxFloors[currentCharType] = rpgFloor;
                     localStorage.setItem('rpg_max_floors', JSON.stringify(rpgMaxFloors));
@@ -576,7 +632,6 @@
             let reward = 40 + (rpgFloor * 15); currentCoins += reward; updateUI();
             addLog(`Победа! +${reward} монет.`);
             
-            // ОБНОВЛЯЕМ РЕКОРД ПРИ ПОБЕДЕ
             if (rpgFloor > rpgMaxFloors[currentCharType]) {
                 rpgMaxFloors[currentCharType] = rpgFloor;
                 localStorage.setItem('rpg_max_floors', JSON.stringify(rpgMaxFloors));
@@ -584,38 +639,6 @@
 
             rpgFloor++; rpgEnergy = Math.min(rpgMaxEnergy, rpgEnergy + 30);
             setTimeout(() => { addLog(`=== ЭТАЖ ${rpgFloor} ===`); spawnEnemy(); }, 2000);
-        }
-
-        // АНИМАЦИЯ ШВЫРЯНИЯ ПРЕДМЕТА
-        function throwItemAnimation() {
-            const battlefield = document.querySelector('.battlefield');
-            const projectile = document.createElement('div');
-            projectile.innerText = '💥';
-            projectile.style.position = 'absolute';
-            projectile.style.fontSize = '40px';
-            projectile.style.left = '20%';
-            projectile.style.top = '40%';
-            projectile.style.transition = 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
-            projectile.style.zIndex = '100';
-            
-            battlefield.appendChild(projectile);
-            
-            void projectile.offsetWidth; 
-            
-            projectile.style.left = '75%';
-            projectile.style.top = '30%';
-            projectile.style.transform = 'scale(1.5) rotate(180deg)';
-            
-            setTimeout(() => {
-                projectile.remove();
-                const enemyImg = document.querySelector('#rpg-enemy-img');
-                enemyImg.style.filter = 'brightness(2) drop-shadow(0 0 15px red)';
-                enemyImg.style.transform = 'translateX(10px)'; // легкий отскок
-                setTimeout(() => {
-                    enemyImg.style.filter = 'none';
-                    enemyImg.style.transform = 'none';
-                }, 200);
-            }, 300);
         }
 
         function openItemMenu() {
@@ -661,11 +684,11 @@
             setTurnIndicator(false);
             checkButtons();
             
+            // Урон летит во врага, баффы на себя
             let isDamaging = (item.rarity === 'Сверхредкое' || item.rarity === 'Легендарное');
             
-            if (isDamaging) {
-                throwItemAnimation();
-            }
+            // Запускаем визуал
+            animateItemUse(item, isDamaging);
             
             const applyEffect = () => {
                 if (item.rarity === 'Обычное') { rpgChar.hp = Math.min(rpgChar.maxHp, rpgChar.hp + 20); addLog(`Выпил ${item.name}. +20 HP.`); }
@@ -679,13 +702,15 @@
                 if (rpgEnemy.hp <= 0) {
                     winRpg();
                 } else {
-                    setTimeout(enemyTurn, 800); // Враг бьет в ответ, так как ход потрачен
+                    setTimeout(enemyTurn, 800); // Враг бьет в ответ
                 }
             };
             
             if (isDamaging) {
-                setTimeout(applyEffect, 300); 
+                // Если летит врагу, ждем 400мс (пока долетит), потом урон
+                setTimeout(applyEffect, 400); 
             } else {
+                // Если на себя, применяем сразу
                 applyEffect();
             }
             
