@@ -86,6 +86,15 @@
         .mp-fill { background: #8a2be2; }
         
         .char-sprite { max-width: 100px; max-height: 120px; object-fit: contain; transition: transform 0.1s, filter 0.2s; z-index: 5;}
+        
+        /* ЧЕТКАЯ ОКАНТОВКА (4 тени без размытия) */
+        #rpg-player-img { 
+            filter: drop-shadow(2px 0 0 #00ff00) drop-shadow(-2px 0 0 #00ff00) drop-shadow(0 2px 0 #00ff00) drop-shadow(0 -2px 0 #00ff00); 
+        }
+        #rpg-enemy-img { 
+            filter: drop-shadow(2px 0 0 #ff0000) drop-shadow(-2px 0 0 #ff0000) drop-shadow(0 2px 0 #ff0000) drop-shadow(0 -2px 0 #ff0000); 
+        }
+
         .attack-anim-player { transform: translateX(20px); }
         .attack-anim-enemy { transform: translateX(-20px); }
 
@@ -106,6 +115,9 @@
     </style>
 </head>
 <body>
+
+    <!-- АУДИО ДЛЯ БОЯ -->
+    <audio id="battle-music" src="ambient.mp4" loop></audio>
 
     <div id="auth-screen" class="panel">
         <h1>добро пожаловать</h1>
@@ -278,7 +290,7 @@
                 привет представляем вашему вниманию новомую игру pepen40 games . У вас наверняка возник вопрос что это за хуйня как в это играть? смотрите нужно нажимать на пидорасов поочередно в соответствии с тем с какой последовательностью каждый из них пищит. Ну там пропищал apostol 2 раза потом амжан желтый 3 раза . Значит надо нажать на apostol 3 раза и потом амжан желтый 3 раза. Также тут представлены кейсы как в ксго . Покупаете вам выпадает всякая хуйня которая в соответствии со своей редкостью выводит вас в топ в Leaderboard на определенный уровень. За хуйню вам маленько дадут баллов за apostol - дохуя. Вы также можете продавать эти хуйни которые выбили. Да да нахуй не ослышались продавать. На торговой площадке. И зарабатывать за это бабки нахуй
             </div>
             <br><br><br>
-            <div class="version-text">версия игры beta 2.4 (Stats Update)</div>
+            <div class="version-text">версия игры beta 2.6 (Music & Border Update)</div>
         </div>
 
     </div>
@@ -360,7 +372,6 @@
             const { data: existing } = await supabaseClient.from('players').select('username').eq('username', u);
             if (existing && existing.length > 0) { msg.textContent = "Ник занят."; return; }
             
-            // При регистрации last_online и created_at ставятся автоматически базой
             const { error } = await supabaseClient.from('players').insert([{ 
                 username: u, password: p, max_score: 0, coins: 200, inventory: [], item_points: 0,
                 rpg_upgrades: {"ashab":{"hp":0,"atk":0},"apostol":{"hp":0,"atk":0},"mee":{"hp":0,"atk":0}},
@@ -386,7 +397,6 @@
                 currentUpgrades = data.rpg_upgrades || {"ashab":{"hp":0,"atk":0},"apostol":{"hp":0,"atk":0},"mee":{"hp":0,"atk":0}};
                 currentMaxFloors = data.rpg_max_floors || {"ashab":0,"apostol":0,"mee":0};
                 
-                // ОБНОВЛЯЕМ ВРЕМЯ ОНЛАЙНА ПРИ ВХОДЕ
                 await supabaseClient.from('players').update({ last_online: new Date().toISOString() }).eq('username', u);
 
                 document.getElementById('auth-screen').classList.add('hidden');
@@ -430,6 +440,14 @@
         function switchTab(tab) {
             ['game', 'rpg', 'cases', 'inventory', 'market', 'leaderboard', 'howto'].forEach(t => document.getElementById('tab-' + t).classList.add('hidden'));
             document.getElementById('tab-' + tab).classList.remove('hidden');
+            
+            // ОСТАНАВЛИВАЕМ МУЗЫКУ ЕСЛИ УХОДИМ С РПГ
+            const bgMusic = document.getElementById('battle-music');
+            if (tab !== 'rpg') {
+                bgMusic.pause();
+                bgMusic.currentTime = 0;
+            }
+
             if (tab === 'inventory') renderInventory();
             if (tab === 'market') renderMarket();
             if (tab === 'leaderboard') renderLeaderboard();
@@ -505,6 +523,12 @@
             if (type === 'apostol') document.getElementById('rpg-skill-btn').innerText = "Тёмный ритуал (100)";
             if (type === 'mee') document.getElementById('rpg-skill-btn').innerText = "Исцеление (100)";
             
+            // ВКЛЮЧАЕМ МУЗЫКУ
+            const bgMusic = document.getElementById('battle-music');
+            bgMusic.currentTime = 0;
+            bgMusic.volume = 0.5; // Чтоб не ебануло по ушам
+            bgMusic.play().catch(e => console.log("Audio play blocked", e));
+
             changeBackground(); 
             spawnEnemy();
         }
@@ -600,9 +624,13 @@
                 setTimeout(() => {
                     el.remove();
                     let eImg = document.getElementById('rpg-enemy-img');
-                    eImg.style.filter = 'brightness(2) drop-shadow(0 0 15px red)';
+                    // Сохраняем красную окантовку при вспышке
+                    eImg.style.filter = 'brightness(2) drop-shadow(2px 0 0 #ff0000) drop-shadow(-2px 0 0 #ff0000) drop-shadow(0 2px 0 #ff0000) drop-shadow(0 -2px 0 #ff0000)';
                     eImg.style.transform = 'translateX(15px) rotate(5deg)'; 
-                    setTimeout(() => { eImg.style.filter = 'none'; eImg.style.transform = 'none'; }, 300);
+                    setTimeout(() => { 
+                        eImg.style.filter = 'drop-shadow(2px 0 0 #ff0000) drop-shadow(-2px 0 0 #ff0000) drop-shadow(0 2px 0 #ff0000) drop-shadow(0 -2px 0 #ff0000)'; 
+                        eImg.style.transform = 'none'; 
+                    }, 300);
                 }, 800);
             } else {
                 el.style.left = '25%';
@@ -670,6 +698,11 @@
             if (rpgChar.hp <= 0) {
                 addLog(`Ты сдох на ${rpgFloorMain}.${rpgFloorSub} этаже...`); isPlayerTurn = false; checkButtons();
                 
+                // ОСТАНАВЛИВАЕМ МУЗЫКУ ПРИ СМЕРТИ
+                const bgMusic = document.getElementById('battle-music');
+                bgMusic.pause();
+                bgMusic.currentTime = 0;
+
                 updateMaxFloorOnServer();
 
                 setTimeout(() => { document.getElementById('rpg-char-select').classList.remove('hidden'); document.getElementById('rpg-battle-screen').classList.add('hidden'); renderCharStats(); updateUI(); }, 3000);
@@ -895,18 +928,15 @@
             const { data, error } = await supabaseClient.from('players').select('*').eq('username', username).single();
             if (error || !data) { statsEl.textContent = "Ошибка."; return; }
 
-            // Проверка онлайна через Realtime
             const state = onlineChannel ? onlineChannel.presenceState() : {};
             const isOnline = state[username] !== undefined;
             let onlineStatusHtml = isOnline 
                 ? '<span style="color: #00ff00; font-weight: bold;">● ОНЛАЙН</span>' 
                 : '<span style="color: #ff0000; font-weight: bold;">● ОФФЛАЙН</span>';
 
-            // Форматирование дат
             let createdStr = data.created_at ? new Date(data.created_at).toLocaleString('ru-RU') : 'Неизвестно';
             let lastOnlineStr = data.last_online ? new Date(data.last_online).toLocaleString('ru-RU') : 'Неизвестно';
 
-            // Данные РПГ
             let maxF = data.rpg_max_floors || {};
             let ups = data.rpg_upgrades || {};
 
