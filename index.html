@@ -274,7 +274,7 @@
                 привет представляем вашему вниманию новомую игру pepen40 games . У вас наверняка возник вопрос что это за хуйня как в это играть? смотрите нужно нажимать на пидорасов поочередно в соответствии с тем с какой последовательностью каждый из них пищит. Ну там пропищал apostol 2 раза потом амжан желтый 3 раза . Значит надо нажать на apostol 3 раза и потом амжан желтый 3 раза. Также тут представлены кейсы как в ксго . Покупаете вам выпадает всякая хуйня которая в соответствии со своей редкостью выводит вас в топ в Leaderboard на определенный уровень. За хуйню вам маленько дадут баллов за apostol - дохуя. Вы также можете продавать эти хуйни которые выбили. Да да нахуй не ослышались продавать. На торговой площадке. И зарабатывать за это бабки нахуй
             </div>
             <br><br><br>
-            <div class="version-text">версия игры beta 1.9 (Item Throw Update)</div>
+            <div class="version-text">версия игры beta 1.9.1 (Smooth Anim Update)</div>
         </div>
 
     </div>
@@ -519,33 +519,32 @@
             else { eImg.classList.add('attack-anim-enemy'); setTimeout(() => eImg.classList.remove('attack-anim-enemy'), 200); }
         }
 
-        // НОВАЯ АНИМАЦИЯ: КАРТИНКА ПРЕДМЕТА
+        // НОВАЯ АНИМАЦИЯ: КАРТИНКА ПРЕДМЕТА (МЕДЛЕННЕЕ И КВАДРАТНАЯ)
         function animateItemUse(item, isDamage) {
             const battlefield = document.querySelector('.battlefield');
             const el = document.createElement('img');
             
-            // Если картинки нет, ставим заглушку
             el.src = item.img || 'https://via.placeholder.com/50?text=ITEM'; 
             el.style.position = 'absolute';
-            el.style.width = '50px';
-            el.style.height = '50px';
+            el.style.width = '60px'; // Чуть больше, чтобы видно было
+            el.style.height = '60px';
             el.style.zIndex = '50';
-            el.style.transition = 'all 0.4s ease-in-out';
-            el.style.borderRadius = '50%'; // немного скруглим, чтобы красиво летело
-
+            el.style.transition = 'all 0.8s ease-in-out'; // ЗАМЕДЛИЛИ ДО 0.8 СЕК
+            // el.style.borderRadius = '50%'; // УБРАЛИ КРУГЛОСТЬ
+            
             if (isDamage) {
                 // ЛЕТИТ В ЕБАЛО ВРАГУ
                 el.style.left = '20%';
-                el.style.top = '50%';
+                el.style.top = '40%';
+                el.style.transform = 'rotate(-20deg)'; // Легкий наклон при броске
                 battlefield.appendChild(el);
                 
-                // Даем браузеру отрисовать стартовую позицию
                 void el.offsetWidth; 
                 
                 // Летим вправо-вверх (в ебало)
                 el.style.left = '75%';
-                el.style.top = '35%';
-                el.style.transform = 'scale(1.5) rotate(180deg)';
+                el.style.top = '30%';
+                el.style.transform = 'scale(1.2) rotate(360deg)'; // Крутится в полете
                 
                 setTimeout(() => {
                     el.remove();
@@ -556,24 +555,25 @@
                     setTimeout(() => {
                         eImg.style.filter = 'none';
                         eImg.style.transform = 'none';
-                    }, 200);
-                }, 400);
+                    }, 300);
+                }, 800); // Ждем, пока долетит
 
             } else {
                 // ПРИМЕНЯЕТСЯ НА СЕБЯ (СКОЛЬЗИТ ВНИЗ И ИСЧЕЗАЕТ)
                 el.style.left = '25%';
                 el.style.top = '30%';
+                el.style.transform = 'rotate(0deg)';
                 battlefield.appendChild(el);
                 
                 void el.offsetWidth;
                 
                 el.style.top = '60%'; // скользит вниз до середины
                 el.style.opacity = '0'; // растворяется
-                el.style.transform = 'scale(0.8)';
+                el.style.transform = 'scale(0.8) rotate(15deg)';
                 
                 setTimeout(() => {
                     el.remove();
-                }, 400);
+                }, 800);
             }
         }
 
@@ -651,11 +651,14 @@
             } else {
                 processedInv.forEach((item) => {
                     let effectText = "";
+                    let btnText = "Использовать"; // По умолчанию
+
                     if (item.rarity === 'Обычное') effectText = "Лечит 20 HP";
                     if (item.rarity === 'Редкое') effectText = "+10 к Атаке";
-                    if (item.rarity === 'Сверхредкое') effectText = "40 урона врагу";
+                    if (item.rarity === 'Сверхредкое') { effectText = "40 урона врагу"; btnText = "Ебнуть"; } // Меняем текст
                     if (item.rarity === 'Эпическое') effectText = "Дает 100 энергии";
-                    if (item.rarity === 'Легендарное') effectText = "100 урона врагу";
+                    if (item.rarity === 'Легендарное') { effectText = "100 урона врагу"; btnText = "Ебнуть"; } // Меняем текст
+
                     const div = document.createElement('div');
                     div.className = 'inv-card';
                     if (item.qty > 1) div.innerHTML += `<div class="qty-badge">x${item.qty}</div>`;
@@ -663,7 +666,7 @@
                         ${getImgTag(item.img)}
                         <div class="inv-card-name"><span class="rarity-${item.rarity}">${item.name}</span></div>
                         <div style="font-size:10px; margin-bottom:5px;">${effectText}</div>
-                        <div class="inv-card-buttons"><button onclick="useItemInBattle('${item.name}')" style="background-color: #90ee90;">Кинуть</button></div>
+                        <div class="inv-card-buttons"><button onclick="useItemInBattle('${item.name}')" style="background-color: #90ee90;">${btnText}</button></div>
                     `;
                     list.appendChild(div);
                 });
@@ -687,7 +690,7 @@
             // Урон летит во врага, баффы на себя
             let isDamaging = (item.rarity === 'Сверхредкое' || item.rarity === 'Легендарное');
             
-            // Запускаем визуал
+            // Запускаем визуал (он длится 800мс)
             animateItemUse(item, isDamaging);
             
             const applyEffect = () => {
@@ -706,13 +709,8 @@
                 }
             };
             
-            if (isDamaging) {
-                // Если летит врагу, ждем 400мс (пока долетит), потом урон
-                setTimeout(applyEffect, 400); 
-            } else {
-                // Если на себя, применяем сразу
-                applyEffect();
-            }
+            // Ждем, пока анимация закончится (800мс), потом применяем эффект
+            setTimeout(applyEffect, 800);
             
             closeItemMenu();
             
