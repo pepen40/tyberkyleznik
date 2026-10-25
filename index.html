@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>САЙТ ПЕПЕН КЛУБА - ОНЛАЙН ЛИДЕРБОРД</title>
+    <title>мой поющий apostol</title>
     <!-- Подключаем библиотеку Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -112,7 +112,7 @@
 
     <!-- ЭКРАН АВТОРИЗАЦИИ -->
     <div id="auth-screen" class="panel">
-        <h1>Вход в клуб</h1>
+        <h1>добро пожаловать</h1>
         <input type="text" id="username" placeholder="Твой ник">
         <input type="password" id="password" placeholder="Пароль">
         <br>
@@ -123,13 +123,13 @@
 
     <!-- ЭКРАН ИГРЫ -->
     <div id="game-screen" class="hidden">
-        <h1>Пидорасы поют</h1>
+        <h1>мини игра "пидоры и тугарин змей" </h1>
         <div style="font-size: 20px; font-weight: bold; margin-bottom: 10px;">
             Игрок: <span id="ui-username" style="color: blue;"></span> | 
             Рекорд: <span id="ui-highscore" style="color: green;"></span>
         </div>
         
-        <div id="status">НАЖМИ ЧТОБЫ НАЧАТЬ</div>
+        <div id="status">привет ножми</div>
         
         <table>
             <tr>
@@ -148,7 +148,7 @@
 
     <!-- ЭКРАН ЛИДЕРБОРДА -->
     <div id="leaderboard-screen" class="panel hidden">
-        <h1>Зал славы</h1>
+        <h1>зал славы. лушчие игроки в нарды</h1>
         <table id="leaderboard-table">
             <thead>
                 <tr><th>Место</th><th>Игрок</th><th>Очки</th></tr>
@@ -192,7 +192,7 @@
 
             if (existing && existing.length > 0) {
                 msg.style.color = "red";
-                msg.textContent = "Этот ник уже занят. Попробуйте другой или войдите.";
+                msg.textContent = "поцан, этот ник уже занят.";
                 return;
             }
 
