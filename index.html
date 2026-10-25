@@ -72,7 +72,7 @@
         
         .battlefield {
             position: relative; height: 300px; background-color: #2c3e50; 
-            background-image: url('bg1.png'); /* Дефолтный фон */
+            background-image: url('bg1.png'); 
             background-size: cover; background-position: center;
             border: 4px inset #fff; margin-bottom: 15px; display: flex; justify-content: space-between; padding: 10px; overflow: hidden;
             transition: background-image 0.5s ease-in-out;
@@ -138,6 +138,7 @@
 
         <div id="tab-game" class="panel">
             <h2>мини игра "пидоры и тугарин змей"</h2>
+            <p style="font-size: 14px; margin-top: -10px; color: darkred; font-weight: bold;">За каждый угаданный раунд дают 40 монет!</p>
             <div id="status">привет ножми</div>
             <table>
                 <tr>
@@ -158,7 +159,6 @@
             <div id="rpg-char-select">
                 <p>Выбери бойца:</p>
                 <div class="rpg-char-card">
-                    <!-- Поменял на твой джипег -->
                     <img src="IMG_3545.jpeg" class="char-avatar">
                     <div class="char-info">
                         <h3>Ashab Tamaev (Берсерк)</h3>
@@ -172,7 +172,6 @@
                     </div>
                 </div>
                 <div class="rpg-char-card">
-                    <!-- Поменял на твой джипег -->
                     <img src="IMG_3544.jpeg" class="char-avatar">
                     <div class="char-info">
                         <h3>Apostol (Чернокнижник)</h3>
@@ -186,7 +185,6 @@
                     </div>
                 </div>
                 <div class="rpg-char-card">
-                    <!-- Поменял на твой джипег -->
                     <img src="IMG_3546.jpeg" class="char-avatar">
                     <div class="char-info">
                         <h3>Мээ (Друид)</h3>
@@ -241,7 +239,7 @@
             <h2>Кейс с хуйнёй</h2>
             <div class="shop-item">
                 <div><b>Стандартный кейс</b><br><small>Шанс выбить Apostol: 3%</small></div>
-                <div><button onclick="openCase(100)">Открыть (100 монет)</button></div>
+                <div><button onclick="openCase(250)">Открыть (250 монет)</button></div>
             </div>
             <div id="case-result" style="color: red; margin-top: 20px; display:flex; flex-direction: column; align-items:center;"></div>
         </div>
@@ -280,7 +278,7 @@
                 привет представляем вашему вниманию новомую игру pepen40 games . У вас наверняка возник вопрос что это за хуйня как в это играть? смотрите нужно нажимать на пидорасов поочередно в соответствии с тем с какой последовательностью каждый из них пищит. Ну там пропищал apostol 2 раза потом амжан желтый 3 раза . Значит надо нажать на apostol 3 раза и потом амжан желтый 3 раза. Также тут представлены кейсы как в ксго . Покупаете вам выпадает всякая хуйня которая в соответствии со своей редкостью выводит вас в топ в Leaderboard на определенный уровень. За хуйню вам маленько дадут баллов за apostol - дохуя. Вы также можете продавать эти хуйни которые выбили. Да да нахуй не ослышались продавать. На торговой площадке. И зарабатывать за это бабки нахуй
             </div>
             <br><br><br>
-            <div class="version-text">версия игры beta 2.2 (Visuals Update)</div>
+            <div class="version-text">версия игры beta 2.4 (Stats Update)</div>
         </div>
 
     </div>
@@ -298,8 +296,8 @@
     <div id="profile-modal" class="hidden">
         <div class="modal-content">
             <h3 id="prof-name">Игрок</h3>
-            <p id="prof-stats"></p>
-            <div id="prof-inventory" class="inv-grid" style="max-height: 300px; overflow-y: auto;"></div>
+            <div id="prof-stats" style="font-size: 14px; margin-bottom: 15px; background: #fff; padding: 10px; border: 2px inset #999;"></div>
+            <div id="prof-inventory" class="inv-grid" style="max-height: 250px; overflow-y: auto;"></div>
             <button onclick="closeProfile()" style="width: 100%; margin-top: 15px; background: #ffcccb;">Закрыть</button>
         </div>
     </div>
@@ -311,10 +309,7 @@
         
         const EDGE_FUNCTION_NAME = 'award-coins'; 
 
-        // МАССИВ ФОНОВ ДЛЯ АРЕНЫ (Замени на .jpg, если картинки в jpg)
-        const battleBackgrounds = [
-            'bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png', 'bg6.png'
-        ];
+        const battleBackgrounds = ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png', 'bg6.png'];
 
         let currentUser = null;
         let currentHighScore = 0;
@@ -326,7 +321,6 @@
 
         const rarityWeight = { 'Легендарное': 5, 'Сверхредкое': 4, 'Эпическое': 3, 'Редкое': 2, 'Обычное': 1, 'Мусор': 0 };
 
-        // ИНИЦИАЛИЗАЦИЯ ОНЛАЙН-СЧЕТЧИКА
         let onlineChannel = null;
         function initOnlineCounter() {
             onlineChannel = supabaseClient.channel('online-users', {
@@ -336,9 +330,7 @@
             onlineChannel.on('presence', { event: 'sync' }, () => {
                 const state = onlineChannel.presenceState();
                 let count = 0;
-                for (const key in state) {
-                    count += state[key].length;
-                }
+                for (const key in state) { count += state[key].length; }
                 document.getElementById('ui-online').innerText = count;
             }).subscribe(async (status) => {
                 if (status !== 'SUBSCRIBED') return;
@@ -368,6 +360,7 @@
             const { data: existing } = await supabaseClient.from('players').select('username').eq('username', u);
             if (existing && existing.length > 0) { msg.textContent = "Ник занят."; return; }
             
+            // При регистрации last_online и created_at ставятся автоматически базой
             const { error } = await supabaseClient.from('players').insert([{ 
                 username: u, password: p, max_score: 0, coins: 200, inventory: [], item_points: 0,
                 rpg_upgrades: {"ashab":{"hp":0,"atk":0},"apostol":{"hp":0,"atk":0},"mee":{"hp":0,"atk":0}},
@@ -393,6 +386,9 @@
                 currentUpgrades = data.rpg_upgrades || {"ashab":{"hp":0,"atk":0},"apostol":{"hp":0,"atk":0},"mee":{"hp":0,"atk":0}};
                 currentMaxFloors = data.rpg_max_floors || {"ashab":0,"apostol":0,"mee":0};
                 
+                // ОБНОВЛЯЕМ ВРЕМЯ ОНЛАЙНА ПРИ ВХОДЕ
+                await supabaseClient.from('players').update({ last_online: new Date().toISOString() }).eq('username', u);
+
                 document.getElementById('auth-screen').classList.add('hidden');
                 document.getElementById('main-screen').classList.remove('hidden');
                 
@@ -425,7 +421,6 @@
         function renderCharStats() {
             ['ashab', 'apostol', 'mee'].forEach(c => {
                 let maxF = currentMaxFloors[c] || 0;
-                // Форматируем 1.1 для красоты
                 let displayF = maxF > 0 ? maxF.toFixed(1) : '0.0';
                 let el = document.getElementById(`max-floor-${c}`);
                 if (el) el.innerText = `Рекорд: ${displayF} этаж`;
@@ -463,8 +458,8 @@
         // РПГ ЛОГИКА
         let rpgChar = null;
         let rpgEnemy = null;
-        let rpgFloorMain = 1; // Основной этаж (1, 2, 3...)
-        let rpgFloorSub = 1;  // Подэтаж (1, 2, 3, 4, 5)
+        let rpgFloorMain = 1; 
+        let rpgFloorSub = 1;  
         let rpgEnergy = 0;
         let rpgMaxEnergy = 100;
         let isPlayerTurn = true;
@@ -473,34 +468,20 @@
         let currentBgIndex = -1;
 
         function changeBackground() {
-            // Выбираем рандомный фон, который не совпадает с текущим
             let newIndex;
-            do {
-                newIndex = Math.floor(Math.random() * battleBackgrounds.length);
-            } while (newIndex === currentBgIndex && battleBackgrounds.length > 1);
-            
+            do { newIndex = Math.floor(Math.random() * battleBackgrounds.length); } 
+            while (newIndex === currentBgIndex && battleBackgrounds.length > 1);
             currentBgIndex = newIndex;
-            const bgUrl = battleBackgrounds[currentBgIndex];
-            document.getElementById('battlefield-bg').style.backgroundImage = `url('${bgUrl}')`;
+            document.getElementById('battlefield-bg').style.backgroundImage = `url('${battleBackgrounds[currentBgIndex]}')`;
         }
 
         function selectChar(type) {
             currentCharType = type;
             let baseHp = 0, baseAtk = 0, mpGain = 0, name = "", charClass = "", imgUrl = "";
 
-            // ТУТ ТВОИ КАРТИНКИ ДЛЯ ПЕРСОНАЖЕЙ
-            if (type === 'ashab') { 
-                baseHp = 150; baseAtk = 20; mpGain = 20; name = "Ashab Tamaev"; charClass = "Берсерк"; 
-                imgUrl = "IMG_3545.jpeg"; // верхний правый
-            }
-            else if (type === 'apostol') { 
-                baseHp = 80; baseAtk = 30; mpGain = 35; name = "Apostol"; charClass = "Чернокнижник"; 
-                imgUrl = "IMG_3544.jpeg"; // левый верхний
-            }
-            else if (type === 'mee') { 
-                baseHp = 110; baseAtk = 18; mpGain = 25; name = "Мээ"; charClass = "Друид"; 
-                imgUrl = "IMG_3546.jpeg"; // нижний левый
-            }
+            if (type === 'ashab') { baseHp = 150; baseAtk = 20; mpGain = 20; name = "Ashab Tamaev"; charClass = "Берсерк"; imgUrl = "IMG_3545.jpeg"; }
+            else if (type === 'apostol') { baseHp = 80; baseAtk = 30; mpGain = 35; name = "Apostol"; charClass = "Чернокнижник"; imgUrl = "IMG_3544.jpeg"; }
+            else if (type === 'mee') { baseHp = 110; baseAtk = 18; mpGain = 25; name = "Мээ"; charClass = "Друид"; imgUrl = "IMG_3546.jpeg"; }
             
             let u = currentUpgrades[type];
             rpgChar = { 
@@ -524,16 +505,14 @@
             if (type === 'apostol') document.getElementById('rpg-skill-btn').innerText = "Тёмный ритуал (100)";
             if (type === 'mee') document.getElementById('rpg-skill-btn').innerText = "Исцеление (100)";
             
-            changeBackground(); // Меняем фон при старте
+            changeBackground(); 
             spawnEnemy();
         }
 
         function spawnEnemy() {
-            // Статы врага зависят только от ОСНОВНОГО этажа, чтобы не было слишком сложно
             let baseHp = 60 + (rpgFloorMain * 25);
             let baseAtk = 10 + (rpgFloorMain * 4);
             
-            // ТУТ НОВЫЕ ВРАГИ
             const enemyTypes = [
                 { name: "Пидор", hpMult: 1.2, atkMult: 1, img: "enemy_pidor.png" },
                 { name: "Голый чювак", hpMult: 1, atkMult: 1.3, img: "enemy_chuvak.png" },
@@ -667,7 +646,6 @@
         }
 
         async function updateMaxFloorOnServer() {
-            // Отправляем как float (например 1.3)
             let currentFloorFloat = parseFloat(`${rpgFloorMain}.${rpgFloorSub}`);
             
             const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
@@ -698,18 +676,28 @@
             } else { isPlayerTurn = true; setTurnIndicator(true); checkButtons(); }
         }
 
-        function winRpg() {
-            let reward = 40 + (rpgFloorMain * 15); currentCoins += reward; updateUI();
-            addLog(`Победа! +${reward} монет.`);
+        async function winRpg() {
+            let reward = 15 + (rpgFloorMain * 10); 
+            
+            const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
+                body: { action: 'rpg_win', username: currentUser, data: { floorMain: rpgFloorMain } }
+            });
+            
+            if (!error && data.success) {
+                currentCoins = data.newCoins;
+                updateUI();
+                addLog(`Победа! +${data.earned} монет.`);
+            } else {
+                addLog(`Ошибка сохранения награды.`);
+            }
             
             updateMaxFloorOnServer();
 
-            // ЛОГИКА ПЕРЕХОДА ЭТАЖЕЙ
             rpgFloorSub++;
             if (rpgFloorSub > 5) {
                 rpgFloorSub = 1;
                 rpgFloorMain++;
-                changeBackground(); // Меняем фон при смене ОСНОВНОГО этажа
+                changeBackground();
             }
 
             rpgEnergy = Math.min(rpgMaxEnergy, rpgEnergy + 30);
@@ -895,17 +883,56 @@
 
         async function viewProfile(username) {
             const modal = document.getElementById('profile-modal');
-            const nameEl = document.getElementById('prof-name'); const statsEl = document.getElementById('prof-stats'); const invEl = document.getElementById('prof-inventory');
-            nameEl.textContent = "Профиль: " + username; statsEl.textContent = "Загрузка..."; invEl.innerHTML = ''; modal.classList.remove('hidden');
+            const nameEl = document.getElementById('prof-name'); 
+            const statsEl = document.getElementById('prof-stats'); 
+            const invEl = document.getElementById('prof-inventory');
+            
+            nameEl.textContent = "Профиль: " + username; 
+            statsEl.innerHTML = "Загрузка..."; 
+            invEl.innerHTML = ''; 
+            modal.classList.remove('hidden');
+
             const { data, error } = await supabaseClient.from('players').select('*').eq('username', username).single();
             if (error || !data) { statsEl.textContent = "Ошибка."; return; }
+
+            // Проверка онлайна через Realtime
+            const state = onlineChannel ? onlineChannel.presenceState() : {};
+            const isOnline = state[username] !== undefined;
+            let onlineStatusHtml = isOnline 
+                ? '<span style="color: #00ff00; font-weight: bold;">● ОНЛАЙН</span>' 
+                : '<span style="color: #ff0000; font-weight: bold;">● ОФФЛАЙН</span>';
+
+            // Форматирование дат
+            let createdStr = data.created_at ? new Date(data.created_at).toLocaleString('ru-RU') : 'Неизвестно';
+            let lastOnlineStr = data.last_online ? new Date(data.last_online).toLocaleString('ru-RU') : 'Неизвестно';
+
+            // Данные РПГ
+            let maxF = data.rpg_max_floors || {};
+            let ups = data.rpg_upgrades || {};
+
+            statsEl.innerHTML = `
+                Статус: ${onlineStatusHtml}<br>
+                Зареган: ${createdStr}<br>
+                Был в сети: ${lastOnlineStr}
+                <hr style="margin: 5px 0;">
+                <b>Общий счет: ${(data.max_score || 0) + (data.item_points || 0)}</b> 
+                (Игра: ${data.max_score || 0} | Вещи: ${data.item_points || 0})
+                <hr style="margin: 5px 0;">
+                <b>Статы РПГ:</b><br>
+                <span style="color: #d32f2f;">Ashab:</span> Этаж ${(maxF.ashab || 0).toFixed(1)} | HP ур.${ups.ashab?.hp || 0} | ATK ур.${ups.ashab?.atk || 0}<br>
+                <span style="color: #d32f2f;">Apostol:</span> Этаж ${(maxF.apostol || 0).toFixed(1)} | HP ур.${ups.apostol?.hp || 0} | ATK ур.${ups.apostol?.atk || 0}<br>
+                <span style="color: #d32f2f;">Мээ:</span> Этаж ${(maxF.mee || 0).toFixed(1)} | HP ур.${ups.mee?.hp || 0} | ATK ур.${ups.mee?.atk || 0}
+            `;
+
             const { data: marketItems } = await supabaseClient.from('marketplace').select('*').eq('seller', username);
-            statsEl.innerHTML = `Рекорд игры: <b>${data.max_score || 0}</b><br>Очки предметов: <b style="color:purple;">${data.item_points || 0}</b><br><hr><b>Общий счет: ${(data.max_score || 0) + (data.item_points || 0)}</b>`;
+            
             let inv = data.inventory || [];
             let grouped = {}; inv.forEach(item => { if (!grouped[item.name]) grouped[item.name] = { ...item, qty: 0 }; grouped[item.name].qty++; });
             let processedInv = Object.values(grouped).sort((a, b) => (rarityWeight[b.rarity] || 0) - (rarityWeight[a.rarity] || 0));
-            if (processedInv.length === 0 && (!marketItems || marketItems.length === 0)) { invEl.innerHTML = "<p style='grid-column: 1/-1;'>Инвентарь пуст.</p>"; }
-            else {
+            
+            if (processedInv.length === 0 && (!marketItems || marketItems.length === 0)) { 
+                invEl.innerHTML = "<p style='grid-column: 1/-1;'>Инвентарь пуст.</p>"; 
+            } else {
                 processedInv.forEach(item => {
                     const div = document.createElement('div'); div.className = 'inv-card';
                     if (item.qty > 1) div.innerHTML += `<div class="qty-badge">x${item.qty}</div>`;
@@ -983,7 +1010,7 @@
                 else {
                     currentCoins = data.newCoins; if (currentScore > currentHighScore) currentHighScore = currentScore; updateUI();
                     if (data.earned > 0) { statusText.textContent += ` (Заработано: ${data.earned} монет)`; }
-                    else { statusText.textContent += ` (Ничего не заработал, раунд был первый)`; }
+                    else { statusText.textContent += ` (Ничего не заработал)`; }
                 }
                 const osc = audioCtx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 1);
                 osc.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 1); restartBtn.classList.remove('hidden'); return;
