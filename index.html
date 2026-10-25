@@ -113,8 +113,13 @@
         #pvp-lobby-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 150; }
         .pvp-room-item { background: #fff; border: 2px solid #000; padding: 10px; margin: 5px 0; display: flex; justify-content: space-between; align-items: center; text-align: left; }
 
-        /* НОВЫЕ СТИЛИ ДЛЯ ИНФО И СОДЕРЖИМОГО */
-        .info-btn { border-radius: 50%; width: 22px; height: 22px; padding: 0; font-size: 14px; background: #87CEEB; color: #000; border: 2px outset #fff; display: inline-flex; justify-content: center; align-items: center; vertical-align: middle; margin-left: 5px; margin-top: 0; cursor: pointer; }
+        /* СТИЛИ ДЛЯ КНОПКИ ПОДРОБНЕЕ И СОДЕРЖИМОГО */
+        .info-btn { 
+            background: #87CEEB; color: #000; border: 2px outset #fff; 
+            padding: 2px 5px; font-size: 12px; cursor: pointer; 
+            width: 100%; border-radius: 5px; margin-top: 2px; 
+            font-family: "Courier New", Courier, monospace; font-weight: bold;
+        }
         .info-btn:active { border: 2px inset #fff; }
         .case-item-row { background: #fff; border: 2px solid #000; padding: 10px; margin-bottom: 5px; display: flex; align-items: center; justify-content: space-between; text-align: left; }
         .case-item-left { display: flex; align-items: center; gap: 10px; }
@@ -133,7 +138,7 @@
         <button onclick="register()">Зарегаться</button>
         <button onclick="login()">Войти</button>
         <p id="auth-msg"></p>
-        <div class="version-text" style="margin-top: 15px;">версия игры beta 3.6</div>
+        <div class="version-text" style="margin-top: 15px;">версия игры beta 3.8</div>
     </div>
 
     <div id="main-screen" class="hidden">
@@ -339,7 +344,7 @@
                 привет представляем вашему вниманию новомую игру pepen40 games . У вас наверняка возник вопрос что это за хуйня как в это играть? смотрите нужно нажимать на пидорасов поочередно в соответствии с тем с какой последовательностью каждый из них пищит. Ну там пропищал apostol 2 раза потом амжан желтый 3 раза . Значит надо нажать на apostol 3 раза и потом амжан желтый 3 раза. Также тут представлены кейсы как в ксго . Покупаете вам выпадает всякая хуйня которая в соответствии со своей редкостью выводит вас в топ в Leaderboard на определенный уровень. За хуйню вам маленько дадут баллов за apostol - дохуя. Вы также можете продавать эти хуйни которые выбили. Да да нахуй не ослышались продавать. На торговой площадке. И зарабатывать за это бабки нахуй
             </div>
             <br><br><br>
-            <div class="version-text">версия игры beta 3.6</div>
+            <div class="version-text">версия игры beta 3.8</div>
         </div>
     </div>
 
@@ -415,14 +420,16 @@
         const EDGE_FUNCTION_NAME = 'award-coins'; 
         const battleBackgrounds = ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png', 'bg6.png'];
 
-        // БАЗА ЗНАНИЙ О ПРЕДМЕТАХ
+        // ==========================================
+        // БАЗА ЗНАНИЙ О ПРЕДМЕТАХ (ТВОИ ТЕКСТЫ)
+        // ==========================================
         const itemDatabase = {
-            "хуйня": { desc: "Обычная хуйня, валяется под ногами. В РПГ восстанавливает 20 HP. В хозяйстве пригодится.", chance: "40%" },
-            "картофель": { desc: "Просто картофель. В РПГ дает +10 к Атаке до конца боя. Съел и ебашь.", chance: "25%" },
-            "голова барана": { desc: "Сверхредкая хрень. В РПГ наносит 40 урона врагу. Кидай прямо в ебало.", chance: "15%" },
-            "коала": { desc: "Милая, но бесполезная в реальной жизни. В РПГ восстанавливает 100 энергии.", chance: "10%" },
-            "apostol": { desc: "Легендарный предмет. Наносит 100 урона (ваншот). Имба, ебашит всех.", chance: "3%" },
-            "Вам не повезло": { desc: "Пустышка. Ничего не дает. Просто сгоревшие 250 монет.", chance: "6%" }
+            "хуйня": { desc: "На самом деле это не хуйня а аппарат жизнеобеспечения. подключи ее в разьем и тебе начислится 20 хп", chance: "40%" },
+            "картофель": { desc: "когда то давно влад пошел мыть картошку но так как леха занял все ведра головами рыб ,окурками, говном, щинячьими цоботами, цокольной хуйней, пастой, дрыном, рырями и прочим хламом ему пришлось мыть ее в ванне , но случилось так что он о ней забыл она проросла и синтезировала в себе ебанутый допинг который придает сил. Используй и получишь +10 к Аттаке!", chance: "25%" },
+            "голова барана": { desc: "ее удалось спиздить у дяди мухмеда . если ебануть такую в кого нибудь то оно снесет 40 хп!", chance: "15%" },
+            "коала": { desc: "коала. восстановит энергию на 100%.", chance: "10%" },
+            "apostol": { desc: "apostol. apostol! apostol!!!", chance: "3%" },
+            "Вам не повезло": { desc: "вам крупно повезло вам нихуя не выпало! шанс на такой дроп 6%", chance: "6%" }
         };
 
         let currentUser = null;
@@ -590,7 +597,6 @@
         function openItemInfo(itemName) {
             const db = itemDatabase[itemName] || { desc: "Описание отсутствует.", chance: "???" };
             
-            // Ищем предмет в базе, чтобы взять его редкость и картинку (если он есть в инвентаре)
             let rarity = "Мусор";
             let img = "";
             let foundItem = currentInventory.find(i => i.name === itemName);
@@ -599,7 +605,6 @@
                 rarity = foundItem.rarity;
                 img = foundItem.img;
             } else {
-                // Если предмета нет в инвентаре (например, смотрим содержимое кейса)
                 const lootTable = {
                     "хуйня": { r: "Обычное", i: "img_huynya.png" },
                     "картофель": { r: "Редкое", i: "img_kartofel.png" },
@@ -631,7 +636,6 @@
             const list = document.getElementById('case-contents-list');
             list.innerHTML = '';
             
-            // Формируем список из базы данных
             const items = [
                 { name: "хуйня", rarity: "Обычное", img: "img_huynya.png" },
                 { name: "картофель", rarity: "Редкое", img: "img_kartofel.png" },
@@ -653,7 +657,7 @@
                             <div class="case-item-desc">Шанс: ${db.chance}</div>
                         </div>
                     </div>
-                    <button class="info-btn" onclick="openItemInfo('${item.name}')">i</button>
+                    <button class="info-btn" style="width: 100px;" onclick="openItemInfo('${item.name}')">Подробнее</button>
                 `;
                 list.appendChild(div);
             });
@@ -885,7 +889,7 @@
                         <div style="font-size:10px; margin-bottom:5px;">${effectText}</div>
                         <div class="inv-card-buttons">
                             <button onclick="pvpUseItem('${item.name}', '${effectType}', ${val})" style="background-color: #90ee90;">${btnText}</button>
-                            <button class="info-btn" style="width:100%; border-radius:5px; margin-top:2px;" onclick="openItemInfo('${item.name}')">i</button>
+                            <button class="info-btn" onclick="openItemInfo('${item.name}')">Подробнее</button>
                         </div>
                     `;
                     list.appendChild(div);
@@ -1098,19 +1102,19 @@
                     currentCoins = data.newCoins; currentInventory = data.newInventory; currentItemPoints = data.newItemPoints; updateUI();
                     if (data.droppedItem && data.droppedItem.name !== "Вам не повезло") {
                         resBox.innerHTML = `
-                            <div style="background:#fff; border:2px solid #000; padding:15px; display:flex; align-items:center; gap:10px;">
+                            <div style="background:#fff; border:2px solid #000; padding:15px; display:flex; flex-direction:column; align-items:center; gap:10px;">
                                 ${getImgTag(data.droppedItem.img)}
-                                <div style="text-align:left;">
+                                <div style="text-align:center;">
                                     <div style="font-size:20px;" class="rarity-${data.droppedItem.rarity}">${data.droppedItem.name}</div>
                                     <small>+${data.droppedItem.points} очков</small>
                                 </div>
-                                <button class="info-btn" onclick="openItemInfo('${data.droppedItem.name}')">i</button>
+                                <button class="info-btn" style="width: 150px;" onclick="openItemInfo('${data.droppedItem.name}')">Подробнее</button>
                             </div>`;
                     } else {
                         resBox.innerHTML = `
-                            <div style="text-align:center;">
+                            <div style="text-align:center; display:flex; flex-direction:column; align-items:center; gap:10px;">
                                 <div>${data.message}</div>
-                                <button class="info-btn" onclick="openItemInfo('Вам не повезло')">i</button>
+                                <button class="info-btn" style="width: 150px;" onclick="openItemInfo('Вам не повезло')">Подробнее</button>
                             </div>`;
                     }
                 }
@@ -1130,7 +1134,7 @@
                     <div class="inv-card-name"><span class="rarity-${item.rarity}">${item.name}</span></div>
                     <div class="inv-card-buttons">
                         <button onclick="sellItem('${item.name}')" style="background-color: #90ee90;">Продать</button>
-                        <button class="info-btn" style="width:100%; border-radius:5px; margin-top:2px;" onclick="openItemInfo('${item.name}')">i</button>
+                        <button class="info-btn" onclick="openItemInfo('${item.name}')">Подробнее</button>
                     </div>
                 `;
                 list.appendChild(div);
@@ -1144,7 +1148,7 @@
                         <div style="font-size:10px; color:red; margin-bottom:5px;">На продаже: ${item.price}</div>
                         <div class="inv-card-buttons">
                             <button onclick="removeListing(${item.id})" style="background-color: #ffcccb;">Снять</button>
-                            <button class="info-btn" style="width:100%; border-radius:5px; margin-top:2px;" onclick="openItemInfo('${item.item_name}')">i</button>
+                            <button class="info-btn" onclick="openItemInfo('${item.item_name}')">Подробнее</button>
                         </div>
                     `;
                     list.appendChild(div);
@@ -1190,9 +1194,9 @@
                             <small>Продавец: ${item.seller}</small>
                         </div>
                     </div>
-                    <div style="display:flex; gap:5px;">
+                    <div style="display:flex; flex-direction:column; gap:5px; width:100px;">
                         ${actionBtn}
-                        <button class="info-btn" onclick="openItemInfo('${item.item_name}')">i</button>
+                        <button class="info-btn" onclick="openItemInfo('${item.item_name}')">Подробнее</button>
                     </div>
                 `;
                 list.appendChild(div);
@@ -1261,7 +1265,7 @@
                         ${getImgTag(item.img)}
                         <div class="inv-card-name"><span class="rarity-${item.rarity}">${item.name}</span></div>
                         <div class="inv-card-buttons">
-                            <button class="info-btn" style="width:100%; border-radius:5px;" onclick="openItemInfo('${item.name}')">i</button>
+                            <button class="info-btn" onclick="openItemInfo('${item.name}')">Подробнее</button>
                         </div>
                     `;
                     invEl.appendChild(div);
@@ -1274,7 +1278,7 @@
                             <div class="inv-card-name"><span class="rarity-${item.rarity}">${item.item_name}</span></div>
                             <div style="font-size:10px; color:red; margin-bottom:5px;">На продаже</div>
                             <div class="inv-card-buttons">
-                                <button class="info-btn" style="width:100%; border-radius:5px;" onclick="openItemInfo('${item.item_name}')">i</button>
+                                <button class="info-btn" onclick="openItemInfo('${item.item_name}')">Подробнее</button>
                             </div>
                         `;
                         invEl.appendChild(div);
@@ -1307,7 +1311,7 @@
                         <div style="font-size:10px; margin-bottom:5px;">${effectText}</div>
                         <div class="inv-card-buttons">
                             <button onclick="useItemInBattle('${item.name}')" style="background-color: #90ee90;">${btnText}</button>
-                            <button class="info-btn" style="width:100%; border-radius:5px; margin-top:2px;" onclick="openItemInfo('${item.name}')">i</button>
+                            <button class="info-btn" onclick="openItemInfo('${item.name}')">Подробнее</button>
                         </div>
                     `;
                     list.appendChild(div);
