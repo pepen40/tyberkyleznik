@@ -322,7 +322,7 @@
                 привет представляем вашему вниманию новомую игру pepen40 games . У вас наверняка возник вопрос что это за хуйня как в это играть? смотрите нужно нажимать на пидорасов поочередно в соответствии с тем с какой последовательностью каждый из них пищит. Ну там пропищал apostol 2 раза потом амжан желтый 3 раза . Значит надо нажать на apostol 3 раза и потом амжан желтый 3 раза. Также тут представлены кейсы как в ксго . Покупаете вам выпадает всякая хуйня которая в соответствии со своей редкостью выводит вас в топ в Leaderboard на определенный уровень. За хуйню вам маленько дадут баллов за apostol - дохуя. Вы также можете продавать эти хуйни которые выбили. Да да нахуй не ослышались продавать. На торговой площадке. И зарабатывать за это бабки нахуй
             </div>
             <br><br><br>
-            <div class="version-text">версия игры beta 3.1 (PVP LOBBY FIX)</div>
+            <div class="version-text">версия игры beta 3.2 (Server Fix Update)</div>
         </div>
     </div>
 
@@ -414,20 +414,14 @@
                 pvpRooms = {};
                 for (const id in state) {
                     state[id].forEach(presence => {
-                        if (presence.room) {
-                            pvpRooms[presence.room.roomId] = presence.room;
-                        }
+                        if (presence.room) { pvpRooms[presence.room.roomId] = presence.room; }
                     });
                 }
-                if(!document.getElementById('pvp-lobby-modal').classList.contains('hidden')){
-                    renderPvpRooms();
-                }
+                if(!document.getElementById('pvp-lobby-modal').classList.contains('hidden')){ renderPvpRooms(); }
             });
             
             lobbyChannel.subscribe(async (status) => {
-                if (status === 'SUBSCRIBED') {
-                    await lobbyChannel.track({ online: true });
-                }
+                if (status === 'SUBSCRIBED') { await lobbyChannel.track({ online: true }); }
             });
         }
 
@@ -527,12 +521,14 @@
         }
 
         async function buyUpgrade(charType, statType) {
-            const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
-                body: { action: 'buy_upgrade', username: currentUser, data: { charType, statType } }
-            });
-            if (!error && !data.error) {
+            try {
+                const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
+                    body: { action: 'buy_upgrade', username: currentUser, data: { charType, statType } }
+                });
+                if (error) { alert("Ошибка сети: " + error.message); return; }
+                if (data.error) { alert(data.error); return; }
                 currentCoins = data.newCoins; currentUpgrades = data.newUpgrades; updateUI();
-            } else { alert(error ? "Ошибка сети" : data.error); }
+            } catch(e) { alert("Фатальная ошибка: " + e.message); }
         }
 
         // ==========================================
@@ -547,16 +543,12 @@
             renderPvpRooms();
         }
 
-        function closePvpLobby() {
-            document.getElementById('pvp-lobby-modal').classList.add('hidden');
-        }
+        function closePvpLobby() { document.getElementById('pvp-lobby-modal').classList.add('hidden'); }
 
         function renderPvpRooms() {
             const list = document.getElementById('pvp-room-list');
             const rooms = Object.values(pvpRooms).filter(r => r.hostName !== currentUser);
-            
             if (rooms.length === 0) { list.innerHTML = '<p style="text-align:center;">Пока нет комнат. Создай свою!</p>'; return; }
-            
             list.innerHTML = '';
             rooms.forEach(room => {
                 const div = document.createElement('div');
@@ -601,15 +593,8 @@
                 roomChannel.send({ type: 'broadcast', event: 'start_game', payload: { charName: charName, hp, atk, username: currentUser } });
             });
 
-            roomChannel.on('broadcast', { event: 'enemy_attack' }, (payload) => {
-                handlePvpEnemyAttack(payload.payload.dmg);
-            });
-            
-            roomChannel.on('broadcast', { event: 'leave' }, () => {
-                if (pvpGameState.myHp > 0) alert("Соперник покинул комнату.");
-                leavePvpRoom(false);
-            });
-
+            roomChannel.on('broadcast', { event: 'enemy_attack' }, (payload) => { handlePvpEnemyAttack(payload.payload.dmg); });
+            roomChannel.on('broadcast', { event: 'leave' }, () => { if (pvpGameState.myHp > 0) alert("Соперник покинул комнату."); leavePvpRoom(false); });
             roomChannel.subscribe();
 
             switchTab('rpg');
@@ -659,15 +644,10 @@
                 startPvpBattle(host.charName, host.hp, host.atk, host.username);
                 setPvpTurn(false);
             });
-
-            roomChannel.on('broadcast', { event: 'enemy_attack' }, (payload) => {
-                handlePvpEnemyAttack(payload.payload.dmg);
-            });
+            roomChannel.on('broadcast', { event: 'enemy_attack' }, (payload) => { handlePvpEnemyAttack(payload.payload.dmg); });
 
             roomChannel.subscribe((status) => {
-                if (status === 'SUBSCRIBED') {
-                    roomChannel.send({ type: 'broadcast', event: 'join_request', payload: { username: currentUser, charName, hp, atk } });
-                }
+                if (status === 'SUBSCRIBED') { roomChannel.send({ type: 'broadcast', event: 'join_request', payload: { username: currentUser, charName, hp, atk } }); }
             });
         }
 
@@ -678,97 +658,46 @@
             let hp = baseHp + (currentUpgrades[charType].hp * 20);
             let atk = baseAtk + (currentUpgrades[charType].atk * 5);
 
-            pvpGameState = {
-                myHp: hp, myMaxHp: hp, myAtk: atk,
-                enemyHp: enemyHp, enemyMaxHp: enemyHp, enemyName: enemyName,
-                isMyTurn: isPvpHost 
-            };
+            pvpGameState = { myHp: hp, myMaxHp: hp, myAtk: atk, enemyHp: enemyHp, enemyMaxHp: enemyHp, enemyName: enemyName, isMyTurn: isPvpHost };
 
             document.getElementById('pvp-enemy-name').innerText = enemyName;
             document.getElementById('pvp-enemy-img').src = "https://via.placeholder.com/100?text=ENEMY"; 
-
-            updatePvpUI();
-            logPvp(`Бой начался против ${enemyName}!`);
-            
+            updatePvpUI(); logPvp(`Бой начался против ${enemyName}!`);
             document.getElementById('pvp-atk-btn').style.display = 'block';
             document.getElementById('pvp-leave-btn').style.display = 'none';
             
-            if (isPvpHost) {
-                setPvpTurn(true);
-                document.getElementById('pvp-atk-btn').disabled = false;
-            } else {
-                setPvpTurn(false);
-                document.getElementById('pvp-atk-btn').disabled = true;
-            }
+            if (isPvpHost) { setPvpTurn(true); document.getElementById('pvp-atk-btn').disabled = false; } 
+            else { setPvpTurn(false); document.getElementById('pvp-atk-btn').disabled = true; }
         }
 
         function handlePvpEnemyAttack(dmg) {
             if (pvpGameState.myHp <= 0) return; 
-            pvpGameState.myHp -= dmg;
-            updatePvpUI();
-            logPvp(`Враг бьет на ${dmg} урона!`);
-            if (pvpGameState.myHp <= 0) {
-                endPvpBattle(false);
-            } else {
-                pvpGameState.isMyTurn = true;
-                setPvpTurn(true);
-                document.getElementById('pvp-atk-btn').disabled = false;
-            }
+            pvpGameState.myHp -= dmg; updatePvpUI(); logPvp(`Враг бьет на ${dmg} урона!`);
+            if (pvpGameState.myHp <= 0) { endPvpBattle(false); } 
+            else { pvpGameState.isMyTurn = true; setPvpTurn(true); document.getElementById('pvp-atk-btn').disabled = false; }
         }
 
         function pvpAttack() {
             if (!pvpGameState.isMyTurn || pvpGameState.enemyHp <= 0) return;
-            
-            pvpGameState.isMyTurn = false;
-            document.getElementById('pvp-atk-btn').disabled = true;
-            setPvpTurn(false);
-
+            pvpGameState.isMyTurn = false; document.getElementById('pvp-atk-btn').disabled = true; setPvpTurn(false);
             let dmg = Math.floor(Math.random() * 10) + pvpGameState.myAtk;
-            pvpGameState.enemyHp -= dmg;
-            
-            updatePvpUI();
-            logPvp(`Ты бьешь на ${dmg} урона!`);
-
+            pvpGameState.enemyHp -= dmg; updatePvpUI(); logPvp(`Ты бьешь на ${dmg} урона!`);
             if(roomChannel) roomChannel.send({ type: 'broadcast', event: 'enemy_attack', payload: { dmg } });
-
-            if (pvpGameState.enemyHp <= 0) {
-                endPvpBattle(true);
-            }
+            if (pvpGameState.enemyHp <= 0) { endPvpBattle(true); }
         }
 
         async function endPvpBattle(isWin) {
             document.getElementById('pvp-atk-btn').disabled = true;
-            const bgMusic = document.getElementById('battle-music');
-            bgMusic.pause();
-
-            if (isWin) {
-                logPvp("ТЫ ПОБЕДИЛ! +15 PTS");
-                currentPvpPts += 15;
-                await supabaseClient.from('players').update({ pvp_pts: currentPvpPts }).eq('username', currentUser);
-            } else {
-                logPvp("ТЫ ПРОИГРАЛ! -15 PTS");
-                currentPvpPts = Math.max(0, currentPvpPts - 15);
-                await supabaseClient.from('players').update({ pvp_pts: currentPvpPts }).eq('username', currentUser);
-            }
+            document.getElementById('battle-music').pause();
+            if (isWin) { logPvp("ТЫ ПОБЕДИЛ! +15 PTS"); currentPvpPts += 15; await supabaseClient.from('players').update({ pvp_pts: currentPvpPts }).eq('username', currentUser); } 
+            else { logPvp("ТЫ ПРОИГРАЛ! -15 PTS"); currentPvpPts = Math.max(0, currentPvpPts - 15); await supabaseClient.from('players').update({ pvp_pts: currentPvpPts }).eq('username', currentUser); }
             updateUI();
-            
-            setTimeout(() => {
-                leavePvpRoom(false); 
-                alert(isWin ? "Победа! +15 PTS" : "Поражение! -15 PTS");
-            }, 3000);
+            setTimeout(() => { leavePvpRoom(false); alert(isWin ? "Победа! +15 PTS" : "Поражение! -15 PTS"); }, 3000);
         }
 
         async function leavePvpRoom(sendSignal = true) {
-            if (roomChannel) {
-                if (sendSignal) roomChannel.send({ type: 'broadcast', event: 'leave' });
-                supabaseClient.removeChannel(roomChannel);
-                roomChannel = null;
-            }
-            
-            if (isPvpHost && lobbyChannel) {
-                await lobbyChannel.track({ online: true });
-            }
-            
+            if (roomChannel) { if (sendSignal) roomChannel.send({ type: 'broadcast', event: 'leave' }); supabaseClient.removeChannel(roomChannel); roomChannel = null; }
+            if (isPvpHost && lobbyChannel) { await lobbyChannel.track({ online: true }); }
             document.getElementById('pvp-battle-screen').classList.add('hidden');
             document.getElementById('rpg-char-select').classList.remove('hidden');
             document.getElementById('pvp-atk-btn').disabled = true;
@@ -780,22 +709,17 @@
         function updatePvpUI() {
             document.getElementById('pvp-player-hp-text').innerText = `${Math.max(0, pvpGameState.myHp)}/${pvpGameState.myMaxHp}`;
             document.getElementById('pvp-player-hp-bar').style.width = (Math.max(0, pvpGameState.myHp) / pvpGameState.myMaxHp) * 100 + '%';
-            
             document.getElementById('pvp-enemy-hp-text').innerText = `${Math.max(0, pvpGameState.enemyHp)}/${pvpGameState.enemyMaxHp}`;
             document.getElementById('pvp-enemy-hp-bar').style.width = (Math.max(0, pvpGameState.enemyHp) / pvpGameState.enemyMaxHp) * 100 + '%';
         }
 
         function setPvpTurn(isPlayer) {
             const ind = document.getElementById('pvp-turn-indicator');
-            if (isPlayer) { ind.innerText = "ВАШ ХОД"; ind.className = "turn-indicator turn-player"; }
+            if (isPlayer) { ind.innerText = "ВАШ ХОД"; ind.className = "turn-indicator turn-player"; } 
             else { ind.innerText = "ХОД ВРАГА"; ind.className = "turn-indicator turn-enemy"; }
         }
 
-        function logPvp(msg) {
-            const log = document.getElementById('pvp-log');
-            log.innerHTML += `<br>> ${msg}`;
-            log.scrollTop = log.scrollHeight;
-        }
+        function logPvp(msg) { const log = document.getElementById('pvp-log'); log.innerHTML += `<br>> ${msg}`; log.scrollTop = log.scrollHeight; }
 
         // ==========================================
         // ОФФЛАЙН РПГ (ОСТАЛЬНОЕ)
@@ -825,9 +749,7 @@
             document.getElementById('rpg-player-img').src = rpgChar.img;
             
             const bgMusic = document.getElementById('battle-music');
-            bgMusic.currentTime = 0; bgMusic.volume = 0.5;
-            bgMusic.play().catch(e => console.log("Audio blocked"));
-
+            bgMusic.currentTime = 0; bgMusic.volume = 0.5; bgMusic.play().catch(e => console.log("Audio blocked"));
             changeBackground(); spawnEnemy();
         }
 
@@ -848,10 +770,7 @@
         }
 
         function addLog(msg) { const logBox = document.getElementById('rpg-log'); logBox.innerHTML += `<br>> ${msg}`; logBox.scrollTop = logBox.scrollHeight; }
-        function setTurnIndicator(isPlayer) {
-            const ind = document.getElementById('rpg-turn-indicator');
-            if (isPlayer) { ind.innerText = "ВАШ ХОД"; ind.className = "turn-indicator turn-player"; } else { ind.innerText = "ХОД ВРАГА"; ind.className = "turn-indicator turn-enemy"; }
-        }
+        function setTurnIndicator(isPlayer) { const ind = document.getElementById('rpg-turn-indicator'); if (isPlayer) { ind.innerText = "ВАШ ХОД"; ind.className = "turn-indicator turn-player"; } else { ind.innerText = "ХОД ВРАГА"; ind.className = "turn-indicator turn-enemy"; } }
         function updateRpgUI() {
             document.getElementById('rpg-player-name').innerText = rpgChar.name;
             document.getElementById('rpg-player-hp-text').innerText = `${Math.max(0, rpgChar.hp)}/${rpgChar.maxHp}`;
@@ -904,10 +823,13 @@
             rpgChar.hp -= dmg; updateRpgUI();
             if (rpgChar.hp <= 0) { addLog(`Ты сдох...`); isPlayerTurn = false; checkButtons(); document.getElementById('battle-music').pause(); setTimeout(() => { document.getElementById('rpg-char-select').classList.remove('hidden'); document.getElementById('rpg-battle-screen').classList.add('hidden'); renderCharStats(); updateUI(); }, 3000); } else { isPlayerTurn = true; setTurnIndicator(true); checkButtons(); }
         }
+        
         async function winRpg() {
             let reward = 15 + (rpgFloorMain * 10);
-            const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'rpg_win', username: currentUser, data: { floorMain: rpgFloorMain } } });
-            if (!error && data.success) { currentCoins = data.newCoins; updateUI(); addLog(`Победа! +${data.earned} монет.`); }
+            try {
+                const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'rpg_win', username: currentUser, data: { floorMain: rpgFloorMain } } });
+                if (!error && data.success) { currentCoins = data.newCoins; updateUI(); addLog(`Победа! +${data.earned} монет.`); }
+            } catch(e) { console.error(e); }
             rpgFloorSub++; if (rpgFloorSub > 5) { rpgFloorSub = 1; rpgFloorMain++; changeBackground(); }
             rpgEnergy = Math.min(rpgMaxEnergy, rpgEnergy + 30);
             setTimeout(() => { addLog(`=== ЭТАЖ ${rpgFloorMain}.${rpgFloorSub} ===`); spawnEnemy(); }, 2000);
@@ -916,33 +838,32 @@
         // ОСТАЛЬНЫЕ ФУНКЦИИ
         async function openCase(price) {
             const resBox = document.getElementById('case-result'); resBox.innerHTML = "Крутим...";
-            const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'open_case', username: currentUser, data: { price } } });
-            if (error) resBox.textContent = "Ошибка."; else if (data.error) resBox.textContent = data.error;
-            else {
-                currentCoins = data.newCoins; currentInventory = data.newInventory; currentItemPoints = data.newItemPoints; updateUI();
-                if (data.droppedItem && data.droppedItem.name !== "Вам не повезло") {
-                    resBox.innerHTML = `<div style="background:#fff; border:2px solid #000; padding:15px; display:flex; align-items:center;">${getImgTag(data.droppedItem.img)}<div><div style="font-size:20px;" class="rarity-${data.droppedItem.rarity}">${data.droppedItem.name}</div><small>+${data.droppedItem.points} очков</small></div></div>`;
-                } else resBox.textContent = data.message;
-            }
+            try {
+                const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'open_case', username: currentUser, data: { price } } });
+                if (error) resBox.textContent = "Ошибка сети: " + error.message; 
+                else if (data.error) resBox.textContent = "Ошибка: " + data.error;
+                else {
+                    currentCoins = data.newCoins; currentInventory = data.newInventory; currentItemPoints = data.newItemPoints; updateUI();
+                    if (data.droppedItem && data.droppedItem.name !== "Вам не повезло") {
+                        resBox.innerHTML = `<div style="background:#fff; border:2px solid #000; padding:15px; display:flex; align-items:center;">${getImgTag(data.droppedItem.img)}<div><div style="font-size:20px;" class="rarity-${data.droppedItem.rarity}">${data.droppedItem.name}</div><small>+${data.droppedItem.points} очков</small></div></div>`;
+                    } else resBox.textContent = data.message;
+                }
+            } catch(e) { resBox.textContent = "Фатальная ошибка: " + e.message; }
         }
         async function renderInventory() {
-            const list = document.getElementById('inventory-list');
-            list.innerHTML = 'Загрузка...';
+            const list = document.getElementById('inventory-list'); list.innerHTML = 'Загрузка...';
             const { data: myListings } = await supabaseClient.from('marketplace').select('*').eq('seller', currentUser);
-            list.innerHTML = '';
-            let processedInv = getProcessedInventory();
+            list.innerHTML = ''; let processedInv = getProcessedInventory();
             if (processedInv.length === 0 && (!myListings || myListings.length === 0)) { list.innerHTML = '<p style="grid-column: 1/-1; text-align:center;">Пусто.</p>'; return; }
             processedInv.forEach((item) => {
-                const div = document.createElement('div');
-                div.className = 'inv-card';
+                const div = document.createElement('div'); div.className = 'inv-card';
                 if (item.qty > 1) div.innerHTML += `<div class="qty-badge">x${item.qty}</div>`;
                 div.innerHTML += `${getImgTag(item.img)}<div class="inv-card-name"><span class="rarity-${item.rarity}">${item.name}</span></div><div class="inv-card-buttons"><button onclick="sellItem('${item.name}')" style="background-color: #90ee90;">Продать</button></div>`;
                 list.appendChild(div);
             });
             if (myListings) {
                 myListings.forEach(item => {
-                    const div = document.createElement('div');
-                    div.className = 'inv-card'; div.style.backgroundColor = '#ffdddd';
+                    const div = document.createElement('div'); div.className = 'inv-card'; div.style.backgroundColor = '#ffdddd';
                     div.innerHTML = `${getImgTag(item.img)}<div class="inv-card-name"><span class="rarity-${item.rarity}">${item.item_name}</span></div><div style="font-size:10px; color:red; margin-bottom:5px;">На продаже: ${item.price}</div><div class="inv-card-buttons"><button onclick="removeListing(${item.id})" style="background-color: #ffcccb;">Снять</button></div>`;
                     list.appendChild(div);
                 });
@@ -950,22 +871,25 @@
         }
         async function sellItem(itemName) {
             const realItem = currentInventory.find(i => i.name === itemName);
-            if (!realItem) return;
+            if (!realItem) { alert("Предмет не найден!"); return; }
             const price = prompt(`За сколько монет продать "${realItem.name}"?`, 50);
             if (!price || isNaN(price) || price <= 0) return;
-            const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'sell_item', username: currentUser, data: { item: realItem, price: parseInt(price) } } });
-            if (error) alert("Ошибка сети."); else if (data.error) alert(data.error);
-            else { currentInventory = data.newInventory; currentItemPoints = data.newItemPoints; updateUI(); renderInventory(); alert("Выставлено на рынок!"); }
+            try {
+                const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'sell_item', username: currentUser, data: { item: realItem, price: parseInt(price) } } });
+                if (error) alert("Ошибка сети: " + error.message); else if (data.error) alert(data.error);
+                else { currentInventory = data.newInventory; currentItemPoints = data.newItemPoints; updateUI(); renderInventory(); alert("Выставлено на рынок!"); }
+            } catch(e) { alert("Фатальная ошибка: " + e.message); }
         }
         async function removeListing(listing_id) {
             if (!confirm("Снять лот с продажи?")) return;
-            const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'remove_listing', username: currentUser, data: { listing_id: listing_id } } });
-            if (error) alert("Ошибка сети."); else if (data.error) alert(data.error);
-            else { currentInventory = data.newInventory; currentItemPoints = data.newItemPoints; updateUI(); renderInventory(); alert("Лот снят с продажи."); }
+            try {
+                const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'remove_listing', username: currentUser, data: { listing_id: listing_id } } });
+                if (error) alert("Ошибка сети: " + error.message); else if (data.error) alert(data.error);
+                else { currentInventory = data.newInventory; currentItemPoints = data.newItemPoints; updateUI(); renderInventory(); alert("Лот снят с продажи."); }
+            } catch(e) { alert("Фатальная ошибка: " + e.message); }
         }
         async function renderMarket() {
-            const list = document.getElementById('market-list');
-            list.innerHTML = 'Загрузка...';
+            const list = document.getElementById('market-list'); list.innerHTML = 'Загрузка...';
             const { data, error } = await supabaseClient.from('marketplace').select('*').order('id', { ascending: false });
             if (error) { list.innerHTML = 'Ошибка'; return; }
             list.innerHTML = '';
@@ -979,13 +903,14 @@
         }
         async function buyItem(listing_id) {
             if (!confirm("Купить предмет?")) return;
-            const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'buy_item', username: currentUser, data: { listing_id: listing_id } } });
-            if (error) alert("Ошибка сети."); else if (data.error) alert(data.error);
-            else { currentCoins = data.newCoins; currentInventory = data.newInventory; currentItemPoints = data.newItemPoints; updateUI(); renderMarket(); alert("Успешно куплено!"); }
+            try {
+                const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'buy_item', username: currentUser, data: { listing_id: listing_id } } });
+                if (error) alert("Ошибка сети: " + error.message); else if (data.error) alert(data.error);
+                else { currentCoins = data.newCoins; currentInventory = data.newInventory; currentItemPoints = data.newItemPoints; updateUI(); renderMarket(); alert("Успешно куплено!"); }
+            } catch(e) { alert("Фатальная ошибка: " + e.message); }
         }
         async function renderLeaderboard() {
-            const tbody = document.getElementById('leaderboard-body');
-            tbody.innerHTML = '<tr><td colspan="6">Загрузка...</td></tr>';
+            const tbody = document.getElementById('leaderboard-body'); tbody.innerHTML = '<tr><td colspan="6">Загрузка...</td></tr>';
             const { data, error } = await supabaseClient.from('players').select('username, max_score, item_points, pvp_pts');
             if (!error) {
                 let sorted = data.map(u => ({ ...u, total: (u.max_score||0)+(u.item_points||0) })).sort((a, b) => b.total - a.total).slice(0, 10);
@@ -1000,14 +925,8 @@
         }
         async function viewProfile(username) {
             const modal = document.getElementById('profile-modal');
-            const nameEl = document.getElementById('prof-name'); 
-            const statsEl = document.getElementById('prof-stats'); 
-            const invEl = document.getElementById('prof-inventory');
-            
-            nameEl.textContent = "Профиль: " + username; 
-            statsEl.innerHTML = "Загрузка..."; 
-            invEl.innerHTML = ''; 
-            modal.classList.remove('hidden');
+            const nameEl = document.getElementById('prof-name'); const statsEl = document.getElementById('prof-stats'); const invEl = document.getElementById('prof-inventory');
+            nameEl.textContent = "Профиль: " + username; statsEl.innerHTML = "Загрузка..."; invEl.innerHTML = ''; modal.classList.remove('hidden');
 
             const { data, error } = await supabaseClient.from('players').select('*').eq('username', username).single();
             if (error || !data) { statsEl.textContent = "Ошибка."; return; }
@@ -1015,20 +934,13 @@
             const state = onlineChannel ? onlineChannel.presenceState() : {};
             const isOnline = state[username] !== undefined;
             let onlineStatusHtml = isOnline ? '<span style="color: #00ff00; font-weight: bold;">● ОНЛАЙН</span>' : '<span style="color: #ff0000; font-weight: bold;">● ОФФЛАЙН</span>';
-
             let createdStr = data.created_at ? new Date(data.created_at).toLocaleString('ru-RU') : 'Неизвестно';
             let lastOnlineStr = data.last_online ? new Date(data.last_online).toLocaleString('ru-RU') : 'Неизвестно';
-
-            let maxF = data.rpg_max_floors || {};
-            let ups = data.rpg_upgrades || {};
+            let maxF = data.rpg_max_floors || {}; let ups = data.rpg_upgrades || {};
 
             statsEl.innerHTML = `
-                Статус: ${onlineStatusHtml}<br>
-                Зареган: ${createdStr}<br>
-                Был в сети: ${lastOnlineStr}
-                <hr style="margin: 5px 0;">
-                <b>PTS: <span style="color:orange;">${data.pvp_pts || 0}</span></b> | Общий счет: ${(data.max_score || 0) + (data.item_points || 0)} 
-                <hr style="margin: 5px 0;">
+                Статус: ${onlineStatusHtml}<br>Зареган: ${createdStr}<br>Был в сети: ${lastOnlineStr}<hr style="margin: 5px 0;">
+                <b>PTS: <span style="color:orange;">${data.pvp_pts || 0}</span></b> | Общий счет: ${(data.max_score || 0) + (data.item_points || 0)}<hr style="margin: 5px 0;">
                 <b>Статы РПГ:</b><br>
                 <span style="color: #d32f2f;">Ashab:</span> Этаж ${(maxF.ashab || 0).toFixed(1)} | HP ур.${ups.ashab?.hp || 0} | ATK ур.${ups.ashab?.atk || 0}<br>
                 <span style="color: #d32f2f;">Apostol:</span> Этаж ${(maxF.apostol || 0).toFixed(1)} | HP ур.${ups.apostol?.hp || 0} | ATK ур.${ups.apostol?.atk || 0}<br>
@@ -1036,14 +948,12 @@
             `;
 
             const { data: marketItems } = await supabaseClient.from('marketplace').select('*').eq('seller', username);
-            
             let inv = data.inventory || [];
             let grouped = {}; inv.forEach(item => { if (!grouped[item.name]) grouped[item.name] = { ...item, qty: 0 }; grouped[item.name].qty++; });
             let processedInv = Object.values(grouped).sort((a, b) => (rarityWeight[b.rarity] || 0) - (rarityWeight[a.rarity] || 0));
             
-            if (processedInv.length === 0 && (!marketItems || marketItems.length === 0)) { 
-                invEl.innerHTML = "<p style='grid-column: 1/-1;'>Инвентарь пуст.</p>"; 
-            } else {
+            if (processedInv.length === 0 && (!marketItems || marketItems.length === 0)) { invEl.innerHTML = "<p style='grid-column: 1/-1;'>Инвентарь пуст.</p>"; }
+            else {
                 processedInv.forEach(item => {
                     const div = document.createElement('div'); div.className = 'inv-card';
                     if (item.qty > 1) div.innerHTML += `<div class="qty-badge">x${item.qty}</div>`;
@@ -1063,23 +973,19 @@
 
         function openItemMenu() {
             if(!isPlayerTurn) return;
-            const list = document.getElementById('rpg-item-list');
-            list.innerHTML = '';
+            const list = document.getElementById('rpg-item-list'); list.innerHTML = '';
             let processedInv = getProcessedInventory();
-            if (processedInv.length === 0) {
-                list.innerHTML = '<p style="grid-column: 1/-1; text-align:center;">У тебя пусто.</p>';
-            } else {
+            if (processedInv.length === 0) { list.innerHTML = '<p style="grid-column: 1/-1; text-align:center;">У тебя пусто.</p>'; } 
+            else {
                 processedInv.forEach((item) => {
-                    let effectText = "";
-                    let btnText = "Использовать"; 
+                    let effectText = ""; let btnText = "Использовать"; 
                     if (item.rarity === 'Обычное') effectText = "Лечит 20 HP";
                     if (item.rarity === 'Редкое') effectText = "+10 к Атаке";
                     if (item.rarity === 'Сверхредкое') { effectText = "40 урона врагу"; btnText = "Ебнуть"; } 
                     if (item.rarity === 'Эпическое') effectText = "Дает 100 энергии";
                     if (item.rarity === 'Легендарное') { effectText = "100 урона врагу"; btnText = "Ебнуть"; } 
 
-                    const div = document.createElement('div');
-                    div.className = 'inv-card';
+                    const div = document.createElement('div'); div.className = 'inv-card';
                     if (item.qty > 1) div.innerHTML += `<div class="qty-badge">x${item.qty}</div>`;
                     div.innerHTML += `
                         ${getImgTag(item.img)}
@@ -1093,6 +999,7 @@
             document.getElementById('rpg-item-modal').classList.remove('hidden');
         }
         function closeItemMenu() { document.getElementById('rpg-item-modal').classList.add('hidden'); }
+        
         async function useItemInBattle(itemName) {
             if (!isPlayerTurn) return;
             const itemIndex = currentInventory.findIndex(i => i.name === itemName);
@@ -1100,13 +1007,11 @@
             const item = currentInventory[itemIndex];
             
             isPlayerTurn = false; setTurnIndicator(false); checkButtons();
-            let isDamaging = (item.rarity === 'Сверхредкое' || item.rarity === 'Легендарное');
-            
-            const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
-                body: { action: 'consume_item', username: currentUser, data: { item_id: item.id } }
-            });
-            if (!error && data.success) { currentInventory = data.newInventory; currentItemPoints = data.newItemPoints; updateUI(); } 
-            else { addLog("Ошибка при использовании."); isPlayerTurn = true; checkButtons(); return; }
+            try {
+                const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'consume_item', username: currentUser, data: { item_id: item.id } } });
+                if (!error && data.success) { currentInventory = data.newInventory; currentItemPoints = data.newItemPoints; updateUI(); } 
+                else { addLog("Ошибка при использовании."); isPlayerTurn = true; checkButtons(); return; }
+            } catch(e) { addLog("Фатальная ошибка сервера."); isPlayerTurn = true; checkButtons(); return; }
 
             const applyEffect = () => {
                 if (item.rarity === 'Обычное') { rpgChar.hp = Math.min(rpgChar.maxHp, rpgChar.hp + 20); addLog(`Выпил ${item.name}. +20 HP.`); }
@@ -1114,8 +1019,7 @@
                 else if (item.rarity === 'Сверхредкое') { rpgEnemy.hp -= 40; addLog(`Швырнул ${item.name}. 40 урона!`); }
                 else if (item.rarity === 'Эпическое') { rpgEnergy = 100; addLog(`Использовал ${item.name}. Энергия 100!`); }
                 else if (item.rarity === 'Легендарное') { rpgEnemy.hp -= 100; addLog(`ПРИЗВАН APOSTOL! 100 УРОНА!`); }
-                updateRpgUI();
-                if (rpgEnemy.hp <= 0) winRpg(); else setTimeout(enemyTurn, 800); 
+                updateRpgUI(); if (rpgEnemy.hp <= 0) winRpg(); else setTimeout(enemyTurn, 800); 
             };
             setTimeout(applyEffect, 800);
             closeItemMenu();
@@ -1144,9 +1048,7 @@
             gameStarted = true; gameSequence = []; level = 1; maxPads = 1;
             restartBtn.classList.add('hidden'); updateActivePads(); nextRound();
         }
-        function updateActivePads() {
-            pads.forEach(p => { const id = parseInt(p.dataset.id); if (id <= maxPads) p.classList.remove('disabled'); else p.classList.add('disabled'); });
-        }
+        function updateActivePads() { pads.forEach(p => { const id = parseInt(p.dataset.id); if (id <= maxPads) p.classList.remove('disabled'); else p.classList.add('disabled'); }); }
         function nextRound() {
             playerSequence = []; statusText.textContent = "ЗАПОМИНАЙТЕ...";
             if (level > 1 && level % 2 === 0 && maxPads < 4) { maxPads++; updateActivePads(); }
@@ -1168,14 +1070,16 @@
             if (playerSequence[currentStep] !== gameSequence[currentStep]) {
                 canClick = false; gameStarted = false; statusText.textContent = "ОШИБКА!"; statusText.style.color = "#FF0000";
                 let currentScore = level - 1;
-                const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'score', username: currentUser, data: { score: currentScore } } });
-                if (error) { statusText.textContent += ` (Ошибка сети)`; }
-                else if (data.error) { statusText.textContent += ` (${data.error})`; }
-                else {
-                    currentCoins = data.newCoins; if (currentScore > currentHighScore) currentHighScore = currentScore; updateUI();
-                    if (data.earned > 0) { statusText.textContent += ` (+${data.earned} монет)`; }
-                    else { statusText.textContent += ` (Ничего)`; }
-                }
+                try {
+                    const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'score', username: currentUser, data: { score: currentScore } } });
+                    if (error) { statusText.textContent += ` (Ошибка сети)`; }
+                    else if (data.error) { statusText.textContent += ` (${data.error})`; }
+                    else {
+                        currentCoins = data.newCoins; if (currentScore > currentHighScore) currentHighScore = currentScore; updateUI();
+                        if (data.earned > 0) { statusText.textContent += ` (+${data.earned} монет)`; }
+                        else { statusText.textContent += ` (Ничего)`; }
+                    }
+                } catch(e) { statusText.textContent += ` (Сбой)`; }
                 const osc = audioCtx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 1);
                 osc.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 1); restartBtn.classList.remove('hidden'); return;
             }
