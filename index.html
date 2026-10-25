@@ -175,7 +175,7 @@
             if (error || !data) { msg.textContent = "Неверный ник или пароль."; }
             else {
                 currentUser = data.username;
-                currentHighScore = data.max_score;
+                currentHighScore = data.max_score || 0;
                 currentCoins = data.coins || 0;
                 currentInventory = data.inventory || [];
                 currentItemPoints = data.item_points || 0;
@@ -209,8 +209,11 @@
                 body: { action: 'open_case', username: currentUser, data: { price: price } }
             });
             
-            if (error || data.error) {
-                document.getElementById('case-result').textContent = "Ошибка: " + (error ? error.message : data.error);
+            // ТЕПЕРЬ ОН БУДЕТ ПОКАЗЫВАТЬ ТЕКСТ ОШИБКИ ИЗ БАЗЫ
+            if (error) {
+                document.getElementById('case-result').textContent = "Ошибка сети. Попробуй позже.";
+            } else if (data.error) {
+                document.getElementById('case-result').textContent = data.error;
             } else {
                 currentCoins = data.newCoins;
                 currentInventory = data.newInventory;
@@ -244,8 +247,10 @@
                 body: { action: 'sell_item', username: currentUser, data: { item: item, price: parseInt(price) } }
             });
 
-            if (error || data.error) {
-                alert("Ошибка: " + (error ? error.message : data.error));
+            if (error) {
+                alert("Ошибка сети.");
+            } else if (data.error) {
+                alert(data.error);
             } else {
                 currentInventory = data.newInventory;
                 currentItemPoints = data.newItemPoints;
@@ -293,8 +298,10 @@
                 body: { action: 'buy_item', username: currentUser, data: { listing_id: listing_id } }
             });
 
-            if (error || data.error) {
-                alert("Ошибка: " + (error ? error.message : data.error));
+            if (error) {
+                alert("Ошибка сети.");
+            } else if (data.error) {
+                alert(data.error);
             } else {
                 currentCoins = data.newCoins;
                 currentInventory = data.newInventory;
@@ -447,7 +454,11 @@
                     body: { action: 'score', username: currentUser, data: { score: currentScore } }
                 });
 
-                if (!error && data.success) {
+                if (error) {
+                    statusText.textContent += ` (Ошибка сети)`;
+                } else if (data.error) {
+                    statusText.textContent += ` (${data.error})`;
+                } else {
                     currentCoins = data.newCoins;
                     if (currentScore > currentHighScore) currentHighScore = currentScore;
                     updateUI();
@@ -456,8 +467,6 @@
                     } else {
                         statusText.textContent += ` (Ничего не заработал, раунд был первый)`;
                     }
-                } else {
-                    statusText.textContent = "ОШИБКА СЕРВЕРА: " + (error ? error.message : data.error);
                 }
 
                 const osc = audioCtx.createOscillator(); osc.type = 'sawtooth';
