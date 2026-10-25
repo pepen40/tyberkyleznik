@@ -36,8 +36,20 @@
         .inv-card-name { font-size: 12px; font-weight: bold; line-height: 1.2; margin-bottom: 5px; }
         .inv-card-buttons button { font-size: 12px; padding: 2px 5px; margin-top: 5px; width: 100%; }
         
-        /* Бейдж количества (x5) */
-        .qty-badge { position: absolute; top: -10px; right: -10px; background: #ff0000; color: #fff; border: 2px solid #000; border-radius: 50%; width: 25px; height: 25px; display: flex; justify-content: center; align-items: center; font-size: 14px; font-weight: bold; z-index: 10;}
+        /* НОВЫЙ БЕЙДЖ КОЛИЧЕСТВА (Вместо красного круга) */
+        .qty-badge { 
+            position: absolute; 
+            top: 5px; 
+            right: 5px; 
+            background: rgba(0, 0, 0, 0.8); 
+            color: #fff; 
+            padding: 2px 6px; 
+            border-radius: 4px; 
+            border: 1px solid #fff;
+            font-size: 12px; 
+            font-weight: bold; 
+            z-index: 10;
+        }
 
         .shop-item { background-color: #fff; border: 2px solid #000; padding: 10px; margin: 10px 0; display: flex; justify-content: space-between; align-items: center; text-align: left;}
 
@@ -64,7 +76,7 @@
         .howto-text { text-align: left; font-size: 18px; line-height: 1.5; background: #fff; border: 2px inset #fff; padding: 15px; margin-top: 10px;}
         .version-text { text-align: center; font-weight: bold; margin-top: 30px; font-size: 16px; color: #000080; }
 
-        /* Стили для РПГ 3.0 (Визуал) */
+        /* Стили для РПГ */
         .rpg-char-card { background: #fff; border: 3px solid #000; padding: 10px; margin: 10px 0; display: flex; gap: 15px; text-align: left; }
         .char-avatar { width: 80px; height: 80px; object-fit: cover; border: 2px solid #000; background: #ddd; }
         .char-info { flex-grow: 1; }
@@ -72,7 +84,6 @@
         .upgrade-block { margin-top: 10px; background: #e0e0e0; padding: 5px; border: 1px solid #999; font-size: 12px; }
         .upgrade-block button { padding: 2px 5px; font-size: 12px; margin: 2px; }
         
-        /* Поле боя */
         .battlefield {
             position: relative; height: 300px; background-color: #2c3e50; 
             background-image: url('https://via.placeholder.com/600x300/2c3e50/ffffff?text=BATTLEFIELD'); 
@@ -241,10 +252,10 @@
             <div id="case-result" style="color: red; margin-top: 20px; display:flex; flex-direction: column; align-items:center;"></div>
         </div>
 
-        <!-- НОВЫЙ КОМПАКТНЫЙ ИНВЕНТАРЬ -->
+        <!-- ОБНОВЛЕННЫЙ ИНВЕНТАРЬ -->
         <div id="tab-inventory" class="panel hidden">
-            <h2>Твой склад</h2>
-            <p style="font-size: 12px; margin-top: -10px;">Сортировка по редкости. Одинаковые предметы стакаются.</p>
+            <h2>склад с хуйней</h2>
+            <p style="font-size: 14px; margin-top: -10px;">предметы расположены от ДОРОГИХ до полной ХУЕТЫ.</p>
             <div id="inventory-list" class="inv-grid"></div>
         </div>
 
@@ -276,7 +287,7 @@
                 привет представляем вашему вниманию новомую игру pepen40 games . У вас наверняка возник вопрос что это за хуйня как в это играть? смотрите нужно нажимать на пидорасов поочередно в соответствии с тем с какой последовательностью каждый из них пищит. Ну там пропищал apostol 2 раза потом амжан желтый 3 раза . Значит надо нажать на apostol 3 раза и потом амжан желтый 3 раза. Также тут представлены кейсы как в ксго . Покупаете вам выпадает всякая хуйня которая в соответствии со своей редкостью выводит вас в топ в Leaderboard на определенный уровень. За хуйню вам маленько дадут баллов за apostol - дохуя. Вы также можете продавать эти хуйни которые выбили. Да да нахуй не ослышались продавать. На торговой площадке. И зарабатывать за это бабки нахуй
             </div>
             <br><br><br>
-            <div class="version-text">версия игры beta 1.6 (Stackable Inventory Update)</div>
+            <div class="version-text">версия игры beta 1.7 (Beauty Inventory Update)</div>
         </div>
 
     </div>
@@ -314,7 +325,6 @@
 
         let allUpgrades = JSON.parse(localStorage.getItem('rpg_all_upgrades') || '{"ashab":{"hp":0,"atk":0},"apostol":{"hp":0,"atk":0},"mee":{"hp":0,"atk":0}}');
 
-        // Веса для сортировки (от самого охуенного к мусору)
         const rarityWeight = { 'Легендарное': 5, 'Сверхредкое': 4, 'Эпическое': 3, 'Редкое': 2, 'Обычное': 1, 'Мусор': 0 };
 
         function getImgTag(imgName) {
@@ -322,19 +332,14 @@
             return `<img src="${imgName}" class="inv-card-img" onerror="this.outerHTML='<span style=\\'font-size: 20px;\\'>📎</span>'">`;
         }
 
-        // ФУНКЦИЯ СТАКИНГА И СОРТИРОВКИ
         function getProcessedInventory() {
             let grouped = {};
             currentInventory.forEach(item => {
-                if (!grouped[item.name]) {
-                    grouped[item.name] = { ...item, qty: 0 };
-                }
+                if (!grouped[item.name]) grouped[item.name] = { ...item, qty: 0 };
                 grouped[item.name].qty++;
             });
             
-            return Object.values(grouped).sort((a, b) => {
-                return (rarityWeight[b.rarity] || 0) - (rarityWeight[a.rarity] || 0);
-            });
+            return Object.values(grouped).sort((a, b) => (rarityWeight[b.rarity] || 0) - (rarityWeight[a.rarity] || 0));
         }
 
         async function register() {
@@ -417,9 +422,7 @@
             } else alert("Мало монет, бомж!");
         }
 
-        // ==========================================
-        // ЛОГИКА РПГ
-        // ==========================================
+        // РПГ ЛОГИКА
         let rpgChar = null;
         let rpgEnemy = null;
         let rpgFloor = 1;
@@ -433,16 +436,9 @@
             currentCharType = type;
             let baseHp = 0, baseAtk = 0, mpGain = 0, name = "", charClass = "", imgUrl = "";
 
-            if (type === 'ashab') {
-                baseHp = 150; baseAtk = 20; mpGain = 20; name = "Ashab Tamaev"; charClass = "Берсерк";
-                imgUrl = "https://via.placeholder.com/100?text=Ashab"; 
-            } else if (type === 'apostol') {
-                baseHp = 80; baseAtk = 30; mpGain = 35; name = "Apostol"; charClass = "Чернокнижник";
-                imgUrl = "https://via.placeholder.com/100?text=Apostol";
-            } else if (type === 'mee') {
-                baseHp = 110; baseAtk = 18; mpGain = 25; name = "Мээ"; charClass = "Друид";
-                imgUrl = "https://via.placeholder.com/100?text=Mee";
-            }
+            if (type === 'ashab') { baseHp = 150; baseAtk = 20; mpGain = 20; name = "Ashab Tamaev"; charClass = "Берсерк"; imgUrl = "https://via.placeholder.com/100?text=Ashab"; }
+            else if (type === 'apostol') { baseHp = 80; baseAtk = 30; mpGain = 35; name = "Apostol"; charClass = "Чернокнижник"; imgUrl = "https://via.placeholder.com/100?text=Apostol"; }
+            else if (type === 'mee') { baseHp = 110; baseAtk = 18; mpGain = 25; name = "Мээ"; charClass = "Друид"; imgUrl = "https://via.placeholder.com/100?text=Mee"; }
             
             let u = allUpgrades[type];
             rpgChar = { 
@@ -452,8 +448,7 @@
                 img: imgUrl 
             };
             
-            rpgFloor = 1;
-            rpgEnergy = 0;
+            rpgFloor = 1; rpgEnergy = 0;
             
             document.getElementById('rpg-char-select').classList.add('hidden');
             document.getElementById('rpg-battle-screen').classList.remove('hidden');
@@ -471,31 +466,20 @@
         function spawnEnemy() {
             let baseHp = 60 + (rpgFloor * 25);
             let baseAtk = 10 + (rpgFloor * 4);
-            
             const enemyTypes = [
                 { name: "Тугарин Змей", hpMult: 1.2, atkMult: 1, img: "https://via.placeholder.com/100/ff0000/ffffff?text=Zmey" },
                 { name: "Конюх", hpMult: 1, atkMult: 1.3, img: "https://via.placeholder.com/100/00ff00/ffffff?text=Konyuh" },
                 { name: "Бомж", hpMult: 0.8, atkMult: 1, img: "https://via.placeholder.com/100/0000ff/ffffff?text=Bomj" },
                 { name: "Пидор с рынка", hpMult: 1.5, atkMult: 0.8, img: "https://via.placeholder.com/100/ff00ff/ffffff?text=Pidor" }
             ];
-            
             let eType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
             let eHp = Math.floor(baseHp * eType.hpMult);
-            
-            rpgEnemy = { 
-                name: `${eType.name} (Ур. ${rpgFloor})`, 
-                hp: eHp, maxHp: eHp, atk: Math.floor(baseAtk * eType.atkMult),
-                img: eType.img
-            };
+            rpgEnemy = { name: `${eType.name} (Ур. ${rpgFloor})`, hp: eHp, maxHp: eHp, atk: Math.floor(baseAtk * eType.atkMult), img: eType.img };
             
             document.getElementById('rpg-floor').innerText = `ЭТАЖ ${rpgFloor}`;
             document.getElementById('rpg-enemy-img').src = rpgEnemy.img;
-            updateRpgUI();
-            addLog(`На арене появился ${rpgEnemy.name}!`);
-            isPlayerTurn = true;
-            enemyIsCharging = false;
-            setTurnIndicator(true);
-            checkButtons();
+            updateRpgUI(); addLog(`На арене появился ${rpgEnemy.name}!`);
+            isPlayerTurn = true; enemyIsCharging = false; setTurnIndicator(true); checkButtons();
         }
 
         function addLog(msg) {
@@ -506,197 +490,93 @@
 
         function setTurnIndicator(isPlayer) {
             const ind = document.getElementById('rpg-turn-indicator');
-            if (isPlayer) {
-                ind.innerText = "ВАШ ХОД";
-                ind.className = "turn-indicator turn-player";
-            } else {
-                ind.innerText = "ХОД ВРАГА";
-                ind.className = "turn-indicator turn-enemy";
-            }
+            if (isPlayer) { ind.innerText = "ВАШ ХОД"; ind.className = "turn-indicator turn-player"; }
+            else { ind.innerText = "ХОД ВРАГА"; ind.className = "turn-indicator turn-enemy"; }
         }
 
         function updateRpgUI() {
             document.getElementById('rpg-player-name').innerText = rpgChar.name;
             document.getElementById('rpg-player-hp-text').innerText = `${Math.max(0, rpgChar.hp)}/${rpgChar.maxHp}`;
-            let pPct = (Math.max(0, rpgChar.hp) / rpgChar.maxHp) * 100;
-            document.getElementById('rpg-player-hp-bar').style.width = pPct + '%';
-
+            document.getElementById('rpg-player-hp-bar').style.width = (Math.max(0, rpgChar.hp) / rpgChar.maxHp) * 100 + '%';
             document.getElementById('rpg-player-mp-text').innerText = `${rpgEnergy}/${rpgMaxEnergy}`;
-            let mPct = (rpgEnergy / rpgMaxEnergy) * 100;
-            document.getElementById('rpg-player-mp-bar').style.width = mPct + '%';
-
+            document.getElementById('rpg-player-mp-bar').style.width = (rpgEnergy / rpgMaxEnergy) * 100 + '%';
             document.getElementById('rpg-enemy-name').innerText = rpgEnemy.name;
             document.getElementById('rpg-enemy-hp-text').innerText = `${Math.max(0, rpgEnemy.hp)}/${rpgEnemy.maxHp}`;
-            let ePct = (Math.max(0, rpgEnemy.hp) / rpgEnemy.maxHp) * 100;
-            document.getElementById('rpg-enemy-hp-bar').style.width = ePct + '%';
+            document.getElementById('rpg-enemy-hp-bar').style.width = (Math.max(0, rpgEnemy.hp) / rpgEnemy.maxHp) * 100 + '%';
         }
 
         function checkButtons() {
-            const btnAtk = document.querySelector('.btn-atk');
-            const btnDef = document.querySelector('.btn-def');
-            const btnSkill = document.getElementById('rpg-skill-btn');
-            const btnItem = document.querySelector('.btn-item');
-            
+            const btns = [document.querySelector('.btn-atk'), document.querySelector('.btn-def'), document.getElementById('rpg-skill-btn'), document.querySelector('.btn-item')];
             if (isPlayerTurn) {
-                btnAtk.disabled = false;
-                btnDef.disabled = false;
-                btnSkill.disabled = rpgEnergy < 100;
-                btnItem.disabled = false;
+                btns[0].disabled = false; btns[1].disabled = false; btns[2].disabled = rpgEnergy < 100; btns[3].disabled = false;
             } else {
-                btnAtk.disabled = true;
-                btnDef.disabled = true;
-                btnSkill.disabled = true;
-                btnItem.disabled = true;
+                btns.forEach(b => b.disabled = true);
             }
         }
 
         function animateAttack(isPlayer) {
             let pImg = document.getElementById('rpg-player-img');
             let eImg = document.getElementById('rpg-enemy-img');
-            if (isPlayer) {
-                pImg.classList.add('attack-anim-player');
-                setTimeout(() => pImg.classList.remove('attack-anim-player'), 200);
-            } else {
-                eImg.classList.add('attack-anim-enemy');
-                setTimeout(() => eImg.classList.remove('attack-anim-enemy'), 200);
-            }
+            if (isPlayer) { pImg.classList.add('attack-anim-player'); setTimeout(() => pImg.classList.remove('attack-anim-player'), 200); }
+            else { eImg.classList.add('attack-anim-enemy'); setTimeout(() => eImg.classList.remove('attack-anim-enemy'), 200); }
         }
 
         function rpgAttack() {
             if (!isPlayerTurn || rpgChar.hp <= 0 || rpgEnemy.hp <= 0) return;
-            isPlayerTurn = false;
-            setTurnIndicator(false);
-            checkButtons();
-            animateAttack(true);
-            
+            isPlayerTurn = false; setTurnIndicator(false); checkButtons(); animateAttack(true);
             let dmg = Math.floor(Math.random() * 10) + rpgChar.atk;
-            rpgEnemy.hp -= dmg;
-            rpgEnergy = Math.min(rpgMaxEnergy, rpgEnergy + rpgChar.mpGain);
-            
-            addLog(`${rpgChar.name} бьет на ${dmg} урона. (+${rpgChar.mpGain} эн.)`);
-            updateRpgUI();
-
-            if (rpgEnemy.hp <= 0) {
-                winRpg();
-            } else {
-                setTimeout(enemyTurn, 800);
-            }
+            rpgEnemy.hp -= dmg; rpgEnergy = Math.min(rpgMaxEnergy, rpgEnergy + rpgChar.mpGain);
+            addLog(`${rpgChar.name} бьет на ${dmg} урона. (+${rpgChar.mpGain} эн.)`); updateRpgUI();
+            if (rpgEnemy.hp <= 0) winRpg(); else setTimeout(enemyTurn, 800);
         }
 
         function rpgDefend() {
             if (!isPlayerTurn || rpgChar.hp <= 0 || rpgEnemy.hp <= 0) return;
-            isPlayerTurn = false;
-            setTurnIndicator(false);
-            checkButtons();
-            
+            isPlayerTurn = false; setTurnIndicator(false); checkButtons();
             let defGain = Math.floor(rpgChar.mpGain * 0.6);
             rpgEnergy = Math.min(rpgMaxEnergy, rpgEnergy + defGain);
-            addLog(`${rpgChar.name} встает в защиту. (+${defGain} эн.)`);
-            updateRpgUI();
-            
+            addLog(`${rpgChar.name} в защите. (+${defGain} эн.)`); updateRpgUI();
             setTimeout(() => enemyTurn(true), 800);
         }
 
         function rpgSkill() {
             if (!isPlayerTurn || rpgEnergy < 100 || rpgChar.hp <= 0 || rpgEnemy.hp <= 0) return;
-            isPlayerTurn = false;
-            rpgEnergy = 0;
-            setTurnIndicator(false);
-            checkButtons();
-            animateAttack(true);
-
-            if (rpgChar.class === "Берсерк") {
-                let dmg = 60 + (allUpgrades[currentCharType].atk * 10); 
-                rpgEnemy.hp -= dmg;
-                addLog(`Сокрушающий удар на ${dmg} урона!`);
-            } else if (rpgChar.class === "Чернокнижник") {
-                let dmg = Math.floor(Math.random() * 30) + 70 + (allUpgrades[currentCharType].atk * 10);
-                rpgEnemy.hp -= dmg;
-                addLog(`Тёмный ритуал. Урон: ${dmg}!`);
-            } else if (rpgChar.class === "Друид") {
-                let heal = 70 + (allUpgrades[currentCharType].hp * 10);
-                rpgChar.hp = Math.min(rpgChar.maxHp, rpgChar.hp + heal);
-                addLog(`Исцеление на ${heal} HP!`);
-            }
-
+            isPlayerTurn = false; rpgEnergy = 0; setTurnIndicator(false); checkButtons(); animateAttack(true);
+            if (rpgChar.class === "Берсерк") { let dmg = 60 + (allUpgrades[currentCharType].atk * 10); rpgEnemy.hp -= dmg; addLog(`Сокрушающий удар на ${dmg}!`); }
+            else if (rpgChar.class === "Чернокнижник") { let dmg = Math.floor(Math.random() * 30) + 70 + (allUpgrades[currentCharType].atk * 10); rpgEnemy.hp -= dmg; addLog(`Тёмный ритуал. Урон: ${dmg}!`); }
+            else if (rpgChar.class === "Друид") { let heal = 70 + (allUpgrades[currentCharType].hp * 10); rpgChar.hp = Math.min(rpgChar.maxHp, rpgChar.hp + heal); addLog(`Исцеление на ${heal} HP!`); }
             updateRpgUI();
-
-            if (rpgEnemy.hp <= 0) {
-                winRpg();
-            } else {
-                setTimeout(enemyTurn, 800);
-            }
+            if (rpgEnemy.hp <= 0) winRpg(); else setTimeout(enemyTurn, 800);
         }
 
         function enemyTurn(isPlayerDefending = false) {
-            setTurnIndicator(false);
-            animateAttack(false);
-            
+            setTurnIndicator(false); animateAttack(false);
             let dmg = Math.floor(Math.random() * 10) + rpgEnemy.atk;
-            
             if (!isPlayerDefending && Math.random() < 0.3 && !enemyIsCharging) {
-                enemyIsCharging = true;
-                addLog(`${rpgEnemy.name} копит силы...`);
-                isPlayerTurn = true;
-                setTurnIndicator(true);
-                checkButtons();
-                return;
+                enemyIsCharging = true; addLog(`${rpgEnemy.name} копит силы...`);
+                isPlayerTurn = true; setTurnIndicator(true); checkButtons(); return;
             }
-
-            if (enemyIsCharging) {
-                dmg *= 2;
-                enemyIsCharging = false;
-                addLog(`ЕБАТЬ! ${rpgEnemy.name} бьет со всей дури!`);
-            }
-
-            if (isPlayerDefending) {
-                dmg = Math.floor(dmg / 2);
-                addLog(`${rpgEnemy.name} атакует, но защита спасла. Урон: ${dmg}.`);
-            } else {
-                addLog(`${rpgEnemy.name} атакует на ${dmg} урона!`);
-            }
-            
-            rpgChar.hp -= dmg;
-            updateRpgUI();
-
+            if (enemyIsCharging) { dmg *= 2; enemyIsCharging = false; addLog(`ЕБАТЬ! ${rpgEnemy.name} бьет со всей дури!`); }
+            if (isPlayerDefending) { dmg = Math.floor(dmg / 2); addLog(`${rpgEnemy.name} атакует, защита спасла. Урон: ${dmg}.`); }
+            else { addLog(`${rpgEnemy.name} атакует на ${dmg} урона!`); }
+            rpgChar.hp -= dmg; updateRpgUI();
             if (rpgChar.hp <= 0) {
-                addLog(`Ты сдох на ${rpgFloor} этаже...`);
-                isPlayerTurn = false;
-                checkButtons();
-                setTimeout(() => {
-                    document.getElementById('rpg-char-select').classList.remove('hidden');
-                    document.getElementById('rpg-battle-screen').classList.add('hidden');
-                    updateUI();
-                }, 3000);
-            } else {
-                isPlayerTurn = true;
-                setTurnIndicator(true);
-                checkButtons();
-            }
+                addLog(`Ты сдох на ${rpgFloor} этаже...`); isPlayerTurn = false; checkButtons();
+                setTimeout(() => { document.getElementById('rpg-char-select').classList.remove('hidden'); document.getElementById('rpg-battle-screen').classList.add('hidden'); updateUI(); }, 3000);
+            } else { isPlayerTurn = true; setTurnIndicator(true); checkButtons(); }
         }
 
         function winRpg() {
-            let reward = 40 + (rpgFloor * 15); 
-            currentCoins += reward; 
-            updateUI();
-            addLog(`Победа! +${reward} монет.`);
-            rpgFloor++;
-            rpgEnergy = Math.min(rpgMaxEnergy, rpgEnergy + 30);
-            
-            setTimeout(() => {
-                addLog(`=== ЭТАЖ ${rpgFloor} ===`);
-                spawnEnemy();
-            }, 2000);
+            let reward = 40 + (rpgFloor * 15); currentCoins += reward; updateUI();
+            addLog(`Победа! +${reward} монет.`); rpgFloor++; rpgEnergy = Math.min(rpgMaxEnergy, rpgEnergy + 30);
+            setTimeout(() => { addLog(`=== ЭТАЖ ${rpgFloor} ===`); spawnEnemy(); }, 2000);
         }
 
-        // ==== ИСПОЛЬЗОВАНИЕ ПРЕДМЕТОВ (КОМПАКТНО) ====
         function openItemMenu() {
             if(!isPlayerTurn) return;
             const list = document.getElementById('rpg-item-list');
             list.innerHTML = '';
-            
             let processedInv = getProcessedInventory();
-
             if (processedInv.length === 0) {
                 list.innerHTML = '<p style="grid-column: 1/-1; text-align:center;">У тебя пусто.</p>';
             } else {
@@ -707,19 +587,14 @@
                     if (item.rarity === 'Сверхредкое') effectText = "40 урона врагу";
                     if (item.rarity === 'Эпическое') effectText = "Дает 100 энергии";
                     if (item.rarity === 'Легендарное') effectText = "100 урона врагу";
-
                     const div = document.createElement('div');
                     div.className = 'inv-card';
-                    // Добавляем бейдж количества
                     if (item.qty > 1) div.innerHTML += `<div class="qty-badge">x${item.qty}</div>`;
-                    
                     div.innerHTML += `
                         ${getImgTag(item.img)}
                         <div class="inv-card-name"><span class="rarity-${item.rarity}">${item.name}</span></div>
                         <div style="font-size:10px; margin-bottom:5px;">${effectText}</div>
-                        <div class="inv-card-buttons">
-                            <button onclick="useItemInBattle('${item.name}')" style="background-color: #90ee90;">Юз</button>
-                        </div>
+                        <div class="inv-card-buttons"><button onclick="useItemInBattle('${item.name}')" style="background-color: #90ee90;">Юз</button></div>
                     `;
                     list.appendChild(div);
                 });
@@ -727,224 +602,99 @@
             document.getElementById('rpg-item-modal').classList.remove('hidden');
         }
 
-        function closeItemMenu() {
-            document.getElementById('rpg-item-modal').classList.add('hidden');
-        }
+        function closeItemMenu() { document.getElementById('rpg-item-modal').classList.add('hidden'); }
 
         function useItemInBattle(itemName) {
-            // Ищем первый попавшийся предмет с таким именем в реальном инвентаре
             const itemIndex = currentInventory.findIndex(i => i.name === itemName);
             if (itemIndex === -1) return;
-            
             const item = currentInventory[itemIndex];
-
-            if (item.rarity === 'Обычное') {
-                rpgChar.hp = Math.min(rpgChar.maxHp, rpgChar.hp + 20);
-                addLog(`Выпил ${item.name}. +20 HP.`);
-            } else if (item.rarity === 'Редкое') {
-                rpgChar.atk += 10;
-                addLog(`Съел ${item.name}. Атака +10!`);
-            } else if (item.rarity === 'Сверхредкое') {
-                rpgEnemy.hp -= 40;
-                animateAttack(true);
-                addLog(`Швырнул ${item.name}. 40 урона!`);
-            } else if (item.rarity === 'Эпическое') {
-                rpgEnergy = 100;
-                addLog(`Использовал ${item.name}. Энергия 100!`);
-            } else if (item.rarity === 'Легендарное') {
-                rpgEnemy.hp -= 100;
-                animateAttack(true);
-                addLog(`ПРИЗВАН APOSTOL! 100 УРОНА!`);
-            }
-
-            updateRpgUI();
-            closeItemMenu();
-
-            // Удаляем только 1 штуку из инвентаря
+            if (item.rarity === 'Обычное') { rpgChar.hp = Math.min(rpgChar.maxHp, rpgChar.hp + 20); addLog(`Выпил ${item.name}. +20 HP.`); }
+            else if (item.rarity === 'Редкое') { rpgChar.atk += 10; addLog(`Съел ${item.name}. Атака +10!`); }
+            else if (item.rarity === 'Сверхредкое') { rpgEnemy.hp -= 40; animateAttack(true); addLog(`Швырнул ${item.name}. 40 урона!`); }
+            else if (item.rarity === 'Эпическое') { rpgEnergy = 100; addLog(`Использовал ${item.name}. Энергия 100!`); }
+            else if (item.rarity === 'Легендарное') { rpgEnemy.hp -= 100; animateAttack(true); addLog(`ПРИЗВАН APOSTOL! 100 УРОНА!`); }
+            updateRpgUI(); closeItemMenu();
             currentInventory.splice(itemIndex, 1);
             currentItemPoints = currentInventory.reduce((sum, i) => sum + (i.points || 0), 0);
             updateUI();
-
-            if (rpgEnemy.hp <= 0) {
-                winRpg();
-            }
+            if (rpgEnemy.hp <= 0) winRpg();
         }
 
-        // ==========================================
-        // ИНВЕНТАРЬ И КЕЙСЫ
-        // ==========================================
         async function openCase(price) {
             const resBox = document.getElementById('case-result');
             resBox.innerHTML = "Крутим барабан...";
-            const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
-                body: { action: 'open_case', username: currentUser, data: { price: price } }
-            });
-            
-            if (error) { resBox.textContent = "Ошибка сети."; } 
-            else if (data.error) { resBox.textContent = data.error; } 
+            const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'open_case', username: currentUser, data: { price: price } } });
+            if (error) resBox.textContent = "Ошибка сети.";
+            else if (data.error) resBox.textContent = data.error;
             else {
-                currentCoins = data.newCoins;
-                currentInventory = data.newInventory;
-                currentItemPoints = data.newItemPoints;
-                updateUI();
-                
+                currentCoins = data.newCoins; currentInventory = data.newInventory; currentItemPoints = data.newItemPoints; updateUI();
                 if (data.droppedItem && data.droppedItem.name !== "Вам не повезло") {
-                    resBox.innerHTML = `
-                        <div style="background:#fff; border:2px solid #000; padding:15px; display:flex; align-items:center;">
-                            ${getImgTag(data.droppedItem.img)}
-                            <div>
-                                <div style="font-size:20px;" class="rarity-${data.droppedItem.rarity}">${data.droppedItem.name}</div>
-                                <small>+${data.droppedItem.points} очков</small>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    resBox.textContent = data.message;
-                }
+                    resBox.innerHTML = `<div style="background:#fff; border:2px solid #000; padding:15px; display:flex; align-items:center;">${getImgTag(data.droppedItem.img)}<div><div style="font-size:20px;" class="rarity-${data.droppedItem.rarity}">${data.droppedItem.name}</div><small>+${data.droppedItem.points} очков</small></div></div>`;
+                } else resBox.textContent = data.message;
             }
         }
 
         async function renderInventory() {
             const list = document.getElementById('inventory-list');
             list.innerHTML = 'Загрузка...';
-            
             const { data: myListings } = await supabaseClient.from('marketplace').select('*').eq('seller', currentUser);
-            
             list.innerHTML = '';
             let processedInv = getProcessedInventory();
-
-            if (processedInv.length === 0 && (!myListings || myListings.length === 0)) { 
-                list.innerHTML = '<p style="grid-column: 1/-1; text-align:center;">Пусто.</p>'; 
-                return; 
-            }
-
-            // Рисуем карточки
+            if (processedInv.length === 0 && (!myListings || myListings.length === 0)) { list.innerHTML = '<p style="grid-column: 1/-1; text-align:center;">Пусто.</p>'; return; }
             processedInv.forEach((item) => {
                 const div = document.createElement('div');
                 div.className = 'inv-card';
                 if (item.qty > 1) div.innerHTML += `<div class="qty-badge">x${item.qty}</div>`;
-                
-                div.innerHTML += `
-                    ${getImgTag(item.img)}
-                    <div class="inv-card-name"><span class="rarity-${item.rarity}">${item.name}</span></div>
-                    <div class="inv-card-buttons">
-                        <button onclick="sellItem('${item.name}')" style="background-color: #90ee90;">Продать</button>
-                    </div>
-                `;
+                div.innerHTML += `${getImgTag(item.img)}<div class="inv-card-name"><span class="rarity-${item.rarity}">${item.name}</span></div><div class="inv-card-buttons"><button onclick="sellItem('${item.name}')" style="background-color: #90ee90;">Продать</button></div>`;
                 list.appendChild(div);
             });
-
-            // Выставляем на рынок (показываем как отдельные карточки, так как это лоты)
             if (myListings) {
                 myListings.forEach(item => {
                     const div = document.createElement('div');
-                    div.className = 'inv-card';
-                    div.style.backgroundColor = '#ffdddd';
-                    div.innerHTML = `
-                        ${getImgTag(item.img)}
-                        <div class="inv-card-name"><span class="rarity-${item.rarity}">${item.item_name}</span></div>
-                        <div style="font-size:10px; color:red; margin-bottom:5px;">На продаже: ${item.price}</div>
-                        <div class="inv-card-buttons">
-                            <button onclick="removeListing(${item.id})" style="background-color: #ffcccb;">Снять</button>
-                        </div>
-                    `;
+                    div.className = 'inv-card'; div.style.backgroundColor = '#ffdddd';
+                    div.innerHTML = `${getImgTag(item.img)}<div class="inv-card-name"><span class="rarity-${item.rarity}">${item.item_name}</span></div><div style="font-size:10px; color:red; margin-bottom:5px;">На продаже: ${item.price}</div><div class="inv-card-buttons"><button onclick="removeListing(${item.id})" style="background-color: #ffcccb;">Снять</button></div>`;
                     list.appendChild(div);
                 });
             }
         }
 
         async function sellItem(itemName) {
-            // Находим реальный предмет по имени
             const realItem = currentInventory.find(i => i.name === itemName);
             if (!realItem) return;
-
             const price = prompt(`За сколько монет продать "${realItem.name}"?`, 50);
             if (!price || isNaN(price) || price <= 0) return;
-
-            const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
-                body: { action: 'sell_item', username: currentUser, data: { item: realItem, price: parseInt(price) } }
-            });
-
-            if (error) alert("Ошибка сети.");
-            else if (data.error) alert(data.error);
-            else {
-                currentInventory = data.newInventory;
-                currentItemPoints = data.newItemPoints;
-                updateUI();
-                renderInventory();
-                alert("Выставлено на рынок!");
-            }
+            const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'sell_item', username: currentUser, data: { item: realItem, price: parseInt(price) } } });
+            if (error) alert("Ошибка сети."); else if (data.error) alert(data.error);
+            else { currentInventory = data.newInventory; currentItemPoints = data.newItemPoints; updateUI(); renderInventory(); alert("Выставлено на рынок!"); }
         }
 
         async function removeListing(listing_id) {
-            if (!confirm("Снять лот с продажи и вернуть в инвентарь?")) return;
-
-            const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
-                body: { action: 'remove_listing', username: currentUser, data: { listing_id: listing_id } }
-            });
-
-            if (error) alert("Ошибка сети.");
-            else if (data.error) alert(data.error);
-            else {
-                currentInventory = data.newInventory;
-                currentItemPoints = data.newItemPoints;
-                updateUI();
-                renderInventory();
-                alert("Лот снят с продажи.");
-            }
+            if (!confirm("Снять лот с продажи?")) return;
+            const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'remove_listing', username: currentUser, data: { listing_id: listing_id } } });
+            if (error) alert("Ошибка сети."); else if (data.error) alert(data.error);
+            else { currentInventory = data.newInventory; currentItemPoints = data.newItemPoints; updateUI(); renderInventory(); alert("Лот снят с продажи."); }
         }
 
         async function renderMarket() {
             const list = document.getElementById('market-list');
             list.innerHTML = 'Загрузка...';
-            
             const { data, error } = await supabaseClient.from('marketplace').select('*').order('id', { ascending: false });
             if (error) { list.innerHTML = 'Ошибка'; return; }
             list.innerHTML = '';
             if (data.length === 0) { list.innerHTML = '<p>Рынок пуст.</p>'; return; }
-
             data.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'shop-item';
-                
-                let actionBtn = '';
-                if (item.seller === currentUser) {
-                    actionBtn = `<button onclick="removeListing(${item.id})" style="background-color: #ffcccb; font-size: 14px;">Снять</button>`;
-                } else {
-                    actionBtn = `<button onclick="buyItem(${item.id})" style="background-color: #90ee90; font-size: 14px;">Купить (${item.price})</button>`;
-                }
-
-                div.innerHTML = `
-                    <div style="display:flex; align-items:center;">
-                        ${getImgTag(item.img)}
-                        <div>
-                            <b class="rarity-${item.rarity}">${item.item_name}</b> <small>(+${item.points} очков)</small><br>
-                            <small>Продавец: ${item.seller}</small>
-                        </div>
-                    </div>
-                    <div>${actionBtn}</div>
-                `;
+                const div = document.createElement('div'); div.className = 'shop-item';
+                let actionBtn = item.seller === currentUser ? `<button onclick="removeListing(${item.id})" style="background-color: #ffcccb; font-size: 14px;">Снять</button>` : `<button onclick="buyItem(${item.id})" style="background-color: #90ee90; font-size: 14px;">Купить (${item.price})</button>`;
+                div.innerHTML = `<div style="display:flex; align-items:center;">${getImgTag(item.img)}<div><b class="rarity-${item.rarity}">${item.item_name}</b> <small>(+${item.points} очков)</small><br><small>Продавец: ${item.seller}</small></div></div><div>${actionBtn}</div>`;
                 list.appendChild(div);
             });
         }
 
         async function buyItem(listing_id) {
-            if (!confirm("Точно купить этот предмет?")) return;
-
-            const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
-                body: { action: 'buy_item', username: currentUser, data: { listing_id: listing_id } }
-            });
-
-            if (error) alert("Ошибка сети.");
-            else if (data.error) alert(data.error);
-            else {
-                currentCoins = data.newCoins;
-                currentInventory = data.newInventory;
-                currentItemPoints = data.newItemPoints;
-                updateUI();
-                renderMarket();
-                alert("Успешно куплено!");
-            }
+            if (!confirm("Купить предмет?")) return;
+            const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'buy_item', username: currentUser, data: { listing_id: listing_id } } });
+            if (error) alert("Ошибка сети."); else if (data.error) alert(data.error);
+            else { currentCoins = data.newCoins; currentInventory = data.newInventory; currentItemPoints = data.newItemPoints; updateUI(); renderMarket(); alert("Успешно куплено!"); }
         }
 
         async function renderLeaderboard() {
@@ -952,24 +702,14 @@
             tbody.innerHTML = '<tr><td colspan="6">Загрузка...</td></tr>';
             const { data, error } = await supabaseClient.from('players').select('username, max_score, item_points');
             if (error) { tbody.innerHTML = '<tr><td colspan="6">Ошибка загрузки</td></tr>'; return; }
-            
             let sortedData = data.map(user => {
-                let gameScore = user.max_score || 0;
-                let itemScore = user.item_points || 0;
+                let gameScore = user.max_score || 0; let itemScore = user.item_points || 0;
                 return { username: user.username, gameScore: gameScore, itemScore: itemScore, totalScore: gameScore + itemScore };
             }).sort((a, b) => b.totalScore - a.totalScore).slice(0, 10);
-
             tbody.innerHTML = ''; 
             sortedData.forEach((user, index) => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${index + 1}</td>
-                    <td>${user.username}</td>
-                    <td>${user.gameScore}</td>
-                    <td style="color: purple; font-weight: bold;">${user.itemScore}</td>
-                    <td style="font-size: 18px;"><b>${user.totalScore}</b></td>
-                    <td><button onclick="viewProfile('${user.username}')" style="font-size: 12px; padding: 2px 5px; margin:0;">Смотреть</button></td>
-                `;
+                tr.innerHTML = `<td>${index + 1}</td><td>${user.username}</td><td>${user.gameScore}</td><td style="color: purple; font-weight: bold;">${user.itemScore}</td><td style="font-size: 18px;"><b>${user.totalScore}</b></td><td><button onclick="viewProfile('${user.username}')" style="font-size: 12px; padding: 2px 5px; margin:0;">Смотреть</button></td>`;
                 if (user.username === currentUser) tr.style.backgroundColor = '#FFFF00';
                 tbody.appendChild(tr);
             });
@@ -977,81 +717,40 @@
 
         async function viewProfile(username) {
             const modal = document.getElementById('profile-modal');
-            const nameEl = document.getElementById('prof-name');
-            const statsEl = document.getElementById('prof-stats');
-            const invEl = document.getElementById('prof-inventory');
-            
-            nameEl.textContent = "Профиль: " + username;
-            statsEl.textContent = "Загрузка...";
-            invEl.innerHTML = '';
-            modal.classList.remove('hidden');
-
+            const nameEl = document.getElementById('prof-name'); const statsEl = document.getElementById('prof-stats'); const invEl = document.getElementById('prof-inventory');
+            nameEl.textContent = "Профиль: " + username; statsEl.textContent = "Загрузка..."; invEl.innerHTML = ''; modal.classList.remove('hidden');
             const { data, error } = await supabaseClient.from('players').select('*').eq('username', username).single();
             if (error || !data) { statsEl.textContent = "Ошибка."; return; }
-
             const { data: marketItems } = await supabaseClient.from('marketplace').select('*').eq('seller', username);
-
-            statsEl.innerHTML = `
-                Рекорд игры: <b>${data.max_score || 0}</b><br>
-                Очки предметов: <b style="color:purple;">${data.item_points || 0}</b><br>
-                <hr>
-                <b>Общий счет: ${(data.max_score || 0) + (data.item_points || 0)}</b>
-            `;
-
+            statsEl.innerHTML = `Рекорд игры: <b>${data.max_score || 0}</b><br>Очки предметов: <b style="color:purple;">${data.item_points || 0}</b><br><hr><b>Общий счет: ${(data.max_score || 0) + (data.item_points || 0)}</b>`;
             let inv = data.inventory || [];
-            
-            // Обрабатываем инвентарь для отображения
-            let grouped = {};
-            inv.forEach(item => {
-                if (!grouped[item.name]) grouped[item.name] = { ...item, qty: 0 };
-                grouped[item.name].qty++;
-            });
+            let grouped = {}; inv.forEach(item => { if (!grouped[item.name]) grouped[item.name] = { ...item, qty: 0 }; grouped[item.name].qty++; });
             let processedInv = Object.values(grouped).sort((a, b) => (rarityWeight[b.rarity] || 0) - (rarityWeight[a.rarity] || 0));
-
-            if (processedInv.length === 0 && (!marketItems || marketItems.length === 0)) {
-                invEl.innerHTML = "<p style='grid-column: 1/-1;'>Инвентарь пуст.</p>";
-            } else {
+            if (processedInv.length === 0 && (!marketItems || marketItems.length === 0)) { invEl.innerHTML = "<p style='grid-column: 1/-1;'>Инвентарь пуст.</p>"; }
+            else {
                 processedInv.forEach(item => {
-                    const div = document.createElement('div');
-                    div.className = 'inv-card';
+                    const div = document.createElement('div'); div.className = 'inv-card';
                     if (item.qty > 1) div.innerHTML += `<div class="qty-badge">x${item.qty}</div>`;
-                    div.innerHTML += `
-                        ${getImgTag(item.img)}
-                        <div class="inv-card-name"><span class="rarity-${item.rarity}">${item.name}</span></div>
-                    `;
+                    div.innerHTML += `${getImgTag(item.img)}<div class="inv-card-name"><span class="rarity-${item.rarity}">${item.name}</span></div>`;
                     invEl.appendChild(div);
                 });
-
                 if (marketItems) {
                     marketItems.forEach(item => {
-                        const div = document.createElement('div');
-                        div.className = 'inv-card';
-                        div.style.backgroundColor = '#ffdddd';
-                        div.innerHTML = `
-                            ${getImgTag(item.img)}
-                            <div class="inv-card-name"><span class="rarity-${item.rarity}">${item.item_name}</span></div>
-                            <div style="font-size:10px; color:red;">На продаже</div>
-                        `;
+                        const div = document.createElement('div'); div.className = 'inv-card'; div.style.backgroundColor = '#ffdddd';
+                        div.innerHTML = `${getImgTag(item.img)}<div class="inv-card-name"><span class="rarity-${item.rarity}">${item.item_name}</span></div><div style="font-size:10px; color:red;">На продаже</div>`;
                         invEl.appendChild(div);
                     });
                 }
             }
         }
 
-        function closeProfile() {
-            document.getElementById('profile-modal').classList.add('hidden');
-        }
+        function closeProfile() { document.getElementById('profile-modal').classList.add('hidden'); }
 
-        // ==== ИГРА В ПИДОРОВ ====
-        const pads = document.querySelectorAll('.pad');
-        const statusText = document.getElementById('status');
-        const restartBtn = document.getElementById('restart-btn');
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const audioCtx = new AudioContext();
+        // ИГРА В ПИДОРОВ
+        const pads = document.querySelectorAll('.pad'); const statusText = document.getElementById('status'); const restartBtn = document.getElementById('restart-btn');
+        const AudioContext = window.AudioContext || window.webkitAudioContext; const audioCtx = new AudioContext();
         const frequencies = { '1': 200, '2': 300, '3': 400, '4': 500 }; 
-
-        let gameSequence = [], playerSequence = [], level = 1, maxPads = 1;
-        let isPlayingSequence = false, canClick = false, gameStarted = false;
+        let gameSequence = [], playerSequence = [], level = 1, maxPads = 1, isPlayingSequence = false, canClick = false, gameStarted = false;
 
         function playSound(id) {
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -1064,11 +763,8 @@
         }
 
         function resetGame() {
-            gameSequence = []; level = 1; maxPads = 1; gameStarted = false;
-            restartBtn.classList.add('hidden');
-            statusText.textContent = "привет ножми"; statusText.style.color = "#00FF00";
-            pads.forEach(p => p.classList.add('disabled'));
-            updateActivePads();
+            gameSequence = []; level = 1; maxPads = 1; gameStarted = false; restartBtn.classList.add('hidden');
+            statusText.textContent = "привет ножми"; statusText.style.color = "#00FF00"; pads.forEach(p => p.classList.add('disabled')); updateActivePads();
         }
 
         function startGame() {
@@ -1077,18 +773,13 @@
         }
 
         function updateActivePads() {
-            pads.forEach(p => {
-                const id = parseInt(p.dataset.id);
-                if (id <= maxPads) p.classList.remove('disabled'); else p.classList.add('disabled');
-            });
+            pads.forEach(p => { const id = parseInt(p.dataset.id); if (id <= maxPads) p.classList.remove('disabled'); else p.classList.add('disabled'); });
         }
 
         function nextRound() {
             playerSequence = []; statusText.textContent = "ЗАПОМИНАЙТЕ...";
             if (level > 1 && level % 2 === 0 && maxPads < 4) { maxPads++; updateActivePads(); }
-            const randomId = Math.floor(Math.random() * maxPads) + 1;
-            gameSequence.push(randomId.toString());
-            setTimeout(playSequence, 500);
+            const randomId = Math.floor(Math.random() * maxPads) + 1; gameSequence.push(randomId.toString()); setTimeout(playSequence, 500);
         }
 
         function playSequence() {
@@ -1096,56 +787,30 @@
             gameSequence.forEach((id, index) => {
                 setTimeout(() => {
                     playSound(id);
-                    if (index === gameSequence.length - 1) {
-                        setTimeout(() => { isPlayingSequence = false; canClick = true; statusText.textContent = "ВАШ ХОД!"; }, 400);
-                    }
+                    if (index === gameSequence.length - 1) { setTimeout(() => { isPlayingSequence = false; canClick = true; statusText.textContent = "ВАШ ХОД!"; }, 400); }
                 }, index * 600);
             });
         }
 
         async function handlePadClick(e) {
             if (!canClick || isPlayingSequence || !gameStarted) return;
-            const id = e.currentTarget.dataset.id;
-            playSound(id); playerSequence.push(id);
-
+            const id = e.currentTarget.dataset.id; playSound(id); playerSequence.push(id);
             const currentStep = playerSequence.length - 1;
             if (playerSequence[currentStep] !== gameSequence[currentStep]) {
-                canClick = false; gameStarted = false;
-                statusText.textContent = "ОШИБКА!"; statusText.style.color = "#FF0000";
-                
+                canClick = false; gameStarted = false; statusText.textContent = "ОШИБКА!"; statusText.style.color = "#FF0000";
                 let currentScore = level - 1;
-                
-                const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
-                    body: { action: 'score', username: currentUser, data: { score: currentScore } }
-                });
-
-                if (error) {
-                    statusText.textContent += ` (Ошибка сети)`;
-                } else if (data.error) {
-                    statusText.textContent += ` (${data.error})`;
-                } else {
-                    currentCoins = data.newCoins;
-                    if (currentScore > currentHighScore) currentHighScore = currentScore;
-                    updateUI();
-                    if (data.earned > 0) {
-                        statusText.textContent += ` (Заработано: ${data.earned} монет)`;
-                    } else {
-                        statusText.textContent += ` (Ничего не заработал, раунд был первый)`;
-                    }
+                const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'score', username: currentUser, data: { score: currentScore } } });
+                if (error) { statusText.textContent += ` (Ошибка сети)`; }
+                else if (data.error) { statusText.textContent += ` (${data.error})`; }
+                else {
+                    currentCoins = data.newCoins; if (currentScore > currentHighScore) currentHighScore = currentScore; updateUI();
+                    if (data.earned > 0) { statusText.textContent += ` (Заработано: ${data.earned} монет)`; }
+                    else { statusText.textContent += ` (Ничего не заработал, раунд был первый)`; }
                 }
-
-                const osc = audioCtx.createOscillator(); osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(150, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 1);
-                osc.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 1);
-                restartBtn.classList.remove('hidden');
-                return;
+                const osc = audioCtx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 1);
+                osc.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 1); restartBtn.classList.remove('hidden'); return;
             }
-
-            if (playerSequence.length === gameSequence.length) {
-                canClick = false; level++;
-                statusText.textContent = `УРОВЕНЬ ${level} ПРОЙДЕН!`;
-                setTimeout(nextRound, 1500);
-            }
+            if (playerSequence.length === gameSequence.length) { canClick = false; level++; statusText.textContent = `УРОВЕНЬ ${level} ПРОЙДЕН!`; setTimeout(nextRound, 1500); }
         }
 
         pads.forEach(pad => pad.addEventListener('click', handlePadClick));
