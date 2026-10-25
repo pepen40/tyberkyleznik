@@ -50,6 +50,10 @@
         #profile-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 100; }
         .modal-content { background: #c0c0c0; border: 4px outset #fff; padding: 20px; width: 80%; max-width: 400px; text-align: left; }
         .modal-content h3 { margin-top: 0; }
+        
+        /* Стили для текста инструкции */
+        .howto-text { text-align: left; font-size: 18px; line-height: 1.5; background: #fff; border: 2px inset #fff; padding: 15px; margin-top: 10px;}
+        .version-text { text-align: center; font-weight: bold; margin-top: 30px; font-size: 16px; color: #000080; }
     </style>
 </head>
 <body>
@@ -72,12 +76,14 @@
             Рекорд: <span id="ui-highscore" style="color: cyan;"></span>
         </div>
 
+        <!-- ДОБАВИЛ КНОПКУ "КАК ИГРАТЬ" -->
         <div class="nav-bar">
             <button onclick="switchTab('game')">Играть</button>
             <button onclick="switchTab('cases')">Кейсы</button>
             <button onclick="switchTab('inventory')">Инвентарь</button>
             <button onclick="switchTab('market')">Рынок</button>
             <button onclick="switchTab('leaderboard')">Зал славы</button>
+            <button onclick="switchTab('howto')">Как играть</button>
         </div>
 
         <div id="tab-game" class="panel">
@@ -132,6 +138,19 @@
                 <tbody id="leaderboard-body"></tbody>
             </table>
         </div>
+
+        <!-- НОВАЯ ВКЛАДКА: КАК ИГРАТЬ -->
+        <div id="tab-howto" class="panel hidden">
+            <h2>Как играть</h2>
+            <div class="howto-text">
+                привет представляем вашему вниманию новомую игру pepen40 games . У вас наверняка возник вопрос что это за хуйня как в это играть? смотрите нужно нажимать на пидорасов поочередно в соответствии с тем с какой последовательностью каждый из них пищит. Ну там пропищал apostol 2 раза потом амжан желтый 3 раза . Значит надо нажать на apostol 3 раза и потом амжан желтый 3 раза. Также тут представлены кейсы как в ксго . Покупаете вам выпадает всякая хуйня которая в соответствии со своей редкостью выводит вас в топ в Leaderboard на определенный уровень. За хуйню вам маленько дадут баллов за apostol - дохуя. Вы также можете продавать эти хуйни которые выбили. Да да нахуй не ослышались продавать. На торговой площадке. И зарабатывать за это бабки нахуй
+            </div>
+            
+            <!-- 3 отступа и версия -->
+            <br><br><br>
+            <div class="version-text">версия игры beta 1.0</div>
+        </div>
+
     </div>
 
     <div id="profile-modal" class="hidden">
@@ -203,8 +222,9 @@
             document.getElementById('ui-item-points').textContent = currentItemPoints;
         }
 
+        // ОБНОВИЛ ПЕРЕКЛЮЧАТЕЛЬ ВКЛАДОК (добавил howto)
         function switchTab(tab) {
-            ['game', 'cases', 'inventory', 'market', 'leaderboard'].forEach(t => document.getElementById('tab-' + t).classList.add('hidden'));
+            ['game', 'cases', 'inventory', 'market', 'leaderboard', 'howto'].forEach(t => document.getElementById('tab-' + t).classList.add('hidden'));
             document.getElementById('tab-' + tab).classList.remove('hidden');
             if (tab === 'inventory') renderInventory();
             if (tab === 'market') renderMarket();
@@ -242,12 +262,10 @@
             }
         }
 
-        // ОБНОВЛЕННЫЙ ИНВЕНТАРЬ (Показывает и то, что на продаже)
         async function renderInventory() {
             const list = document.getElementById('inventory-list');
             list.innerHTML = 'Загрузка...';
             
-            // Подгружаем лоты с рынка конкретно этого игрока
             const { data: myListings } = await supabaseClient.from('marketplace').select('*').eq('seller', currentUser);
             
             list.innerHTML = '';
@@ -256,7 +274,6 @@
                 return; 
             }
 
-            // Отрисовка обычных вещей в инвентаре
             currentInventory.forEach((item, index) => {
                 const div = document.createElement('div');
                 div.className = 'inv-item';
@@ -272,12 +289,11 @@
                 list.appendChild(div);
             });
 
-            // Отрисовка вещей, которые на продаже
             if (myListings) {
                 myListings.forEach(item => {
                     const div = document.createElement('div');
                     div.className = 'inv-item';
-                    div.style.backgroundColor = '#ffdddd'; // Чуть красноватый фон для продажи
+                    div.style.backgroundColor = '#ffdddd';
                     div.innerHTML = `
                         <div style="display:flex; align-items:center;">
                             ${getImgTag(item.img)}
@@ -308,7 +324,7 @@
                 currentInventory = data.newInventory;
                 currentItemPoints = data.newItemPoints;
                 updateUI();
-                renderInventory(); // Обновляем вкладку
+                renderInventory();
                 alert("Выставлено на рынок!");
             }
         }
@@ -326,7 +342,7 @@
                 currentInventory = data.newInventory;
                 currentItemPoints = data.newItemPoints;
                 updateUI();
-                renderInventory(); // Обновляем вкладку
+                renderInventory();
                 alert("Лот снят с продажи.");
             }
         }
@@ -412,7 +428,6 @@
             });
         }
 
-        // ОБНОВЛЕННЫЙ ПРОФИЛЬ (Тоже показывает вещи на продаже)
         async function viewProfile(username) {
             const modal = document.getElementById('profile-modal');
             const nameEl = document.getElementById('prof-name');
