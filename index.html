@@ -37,7 +37,6 @@
         .rarity-Сверхредкое { color: #ff4500; font-weight: bold; }
         .rarity-Легендарное { color: #D4AF37; font-weight: bold; text-shadow: 1px 1px 0 #000; }
         
-        /* Обновленная таблица лидеров */
         .leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 20px; background-color: #fff; border: 3px inset #ffffff; }
         .leaderboard-table th, .leaderboard-table td { border: 1px solid #000; padding: 5px; font-size: 16px; }
         .leaderboard-table th { background-color: #000080; color: #fff; font-size: 14px;}
@@ -80,6 +79,7 @@
 
         <div id="tab-game" class="panel">
             <h2>мини игра "пидоры и тугарин змей"</h2>
+            <p style="font-size: 14px; margin-top: -10px;">(20 монет за раунд. Первый раунд не в счет)</p>
             <div id="status">привет ножми</div>
             <table>
                 <tr>
@@ -305,26 +305,17 @@
             }
         }
 
-        // ==== ОБНОВЛЕННЫЙ ЛИДЕРБОРД ====
         async function renderLeaderboard() {
             const tbody = document.getElementById('leaderboard-body');
             tbody.innerHTML = '<tr><td colspan="6">Загрузка...</td></tr>';
-            
-            // Берем всех игроков
             const { data, error } = await supabaseClient.from('players').select('username, max_score, item_points');
             if (error) { tbody.innerHTML = '<tr><td colspan="6">Ошибка загрузки</td></tr>'; return; }
             
-            // Считаем общий счет и сортируем
             let sortedData = data.map(user => {
                 let gameScore = user.max_score || 0;
                 let itemScore = user.item_points || 0;
-                return { 
-                    username: user.username, 
-                    gameScore: gameScore, 
-                    itemScore: itemScore, 
-                    totalScore: gameScore + itemScore 
-                };
-            }).sort((a, b) => b.totalScore - a.totalScore).slice(0, 10); // Топ 10
+                return { username: user.username, gameScore: gameScore, itemScore: itemScore, totalScore: gameScore + itemScore };
+            }).sort((a, b) => b.totalScore - a.totalScore).slice(0, 10);
 
             tbody.innerHTML = ''; 
             sortedData.forEach((user, index) => {
@@ -389,7 +380,6 @@
 
         let gameSequence = [], playerSequence = [], level = 1, maxPads = 1;
         let isPlayingSequence = false, canClick = false, gameStarted = false;
-        let totalClicks = 0; 
 
         function playSound(id) {
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -411,7 +401,6 @@
 
         function startGame() {
             gameStarted = true; gameSequence = []; level = 1; maxPads = 1;
-            totalClicks = 0; 
             restartBtn.classList.add('hidden'); updateActivePads(); nextRound();
         }
 
@@ -455,14 +444,20 @@
                 let currentScore = level - 1;
                 
                 const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
-                    body: { action: 'score', username: currentUser, data: { score: currentScore, clicks: totalClicks } }
+                    body: { action: 'score', username: currentUser, data: { score: currentScore } }
                 });
 
                 if (!error && data.success) {
                     currentCoins = data.newCoins;
                     if (currentScore > currentHighScore) currentHighScore = currentScore;
                     updateUI();
-                    statusText.textContent += ` (Заработано: ${totalClicks * 16} монет)`;
+                    if (data.earned > 0) {
+                        statusText.textContent += ` (Заработано: ${data.earned} монет)`;
+                    } else {
+                        statusText.textContent += ` (Ничего не заработал, раунд был первый)`;
+                    }
+                } else {
+                    statusText.textContent = "ОШИБКА СЕРВЕРА: " + (error ? error.message : data.error);
                 }
 
                 const osc = audioCtx.createOscillator(); osc.type = 'sawtooth';
@@ -471,10 +466,6 @@
                 restartBtn.classList.remove('hidden');
                 return;
             }
-
-            totalClicks++; 
-            currentCoins += 16; 
-            updateUI();
 
             if (playerSequence.length === gameSequence.length) {
                 canClick = false; level++;
