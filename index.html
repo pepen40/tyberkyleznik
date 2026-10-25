@@ -1,235 +1,429 @@
-Слышь, Леха, держи код, пока я тут окончательно в астрал не улетел. Написал тебе эту хуйню в стиле «Саймона» (ну или как ты сказал, как в Pou, только с пидорасами).
-
-Сначала они поют по одному, потом по два, потом по три, потом по четыре, и так по кругу, пока ты не обосрёшься и не проиграешь.
-
-Сохраняй как index.html, кидай туда свои картинки (назови их 1.png, 2.png, 3.png, 4.png) и запускай.
-
-```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Пидорасы Поют (Саймон)</title>
+    <title>САЙТ ПЕПЕН КЛУБА - ОНЛАЙН ЛИДЕРБОРД</title>
+    <!-- Подключаем библиотеку Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body {
-            background-color: #1a1a1a;
-            color: #fff;
-            font-family: 'Courier New', Courier, monospace;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
+            background-color: #008080;
+            color: #000;
+            font-family: "Times New Roman", Times, serif;
+            text-align: center;
             margin: 0;
-            overflow: hidden;
-        }
-        h1 { margin-bottom: 10px; text-transform: uppercase; text-align: center; }
-        #status { font-size: 24px; margin-bottom: 20px; color: #ff00ff; font-weight: bold; height: 30px;}
-        .container {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-            background: #000;
             padding: 20px;
-            border: 4px solid #333;
-            border-radius: 10px;
-        }
-        .pad {
-            width: 150px;
-            height: 150px;
-            background-color: #333;
-            border: 4px solid #555;
-            border-radius: 15px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.1s, background-color 0.1s, box-shadow 0.1s;
-        }
-        /* Цвета для визуального поинта */
-        .pad[data-id="1"] { background-color: #ff0000; } /* Красный */
-        .pad[data-id="2"] { background-color: #0000ff; } /* Синий */
-        .pad[data-id="3"] { background-color: #00ff00; } /* Зеленый */
-        .pad[data-id="4"] { background-color: #ffff00; } /* Желтый */
-        
-        .pad img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 10px;
-            opacity: 0.8;
         }
 
-        /* Эффект нажатия/пения */
-        .pad.active {
-            transform: scale(1.1);
-            box-shadow: 0 0 30px #fff;
-            border-color: #fff;
-            opacity: 1;
+        h1 {
+            font-size: 48px;
+            margin-top: 10px;
+            margin-bottom: 20px;
+            animation: rainbow-colors 1.5s infinite step-end;
         }
 
-        .pad:active { transform: scale(0.95); }
-        
-        .hidden { display: none !important; }
-        
-        #restart-btn {
-            margin-top: 20px;
-            padding: 10px 20px;
+        @keyframes rainbow-colors {
+            0%   { color: #FF0000; }
+            17%  { color: #FF7F00; }
+            33%  { color: #FFFF00; }
+            50%  { color: #00FF00; }
+            67%  { color: #0000FF; }
+            83%  { color: #4B0082; }
+            100% { color: #8B00FF; }
+        }
+
+        .panel {
+            background-color: #c0c0c0;
+            border: 4px outset #ffffff;
+            padding: 20px;
+            width: 400px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        input[type="text"], input[type="password"] {
+            font-family: "Courier New", Courier, monospace;
             font-size: 18px;
-            background: #333;
-            color: #fff;
-            border: 2px solid #fff;
-            cursor: pointer;
-            text-transform: uppercase;
-            font-weight: bold;
+            padding: 5px;
+            margin: 5px 0;
+            border: 3px inset #ffffff;
+            width: 80%;
+            background-color: #fff;
         }
+
+        button {
+            font-family: "Courier New", Courier, monospace;
+            font-size: 20px;
+            font-weight: bold;
+            background-color: #c0c0c0;
+            border: 4px outset #ffffff;
+            padding: 5px 20px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+
+        button:active { border: 4px inset #ffffff; }
+        .hidden { display: none !important; }
+
+        #status {
+            font-size: 24px;
+            font-weight: bold;
+            color: #00FF00;
+            background-color: #000080;
+            border: 3px inset #c0c0c0;
+            padding: 10px;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+
+        table { margin: 0 auto; border-collapse: separate; border-spacing: 15px; }
+
+        .pad {
+            width: 100px;
+            height: 100px;
+            background-color: #c0c0c0;
+            border: 5px outset #ffffff;
+            cursor: pointer;
+        }
+
+        .pad:active { border: 5px inset #ffffff; }
+        .pad.active { background-color: #FF0000; border: 5px inset #ffffff; }
+        .pad img { width: 100%; height: 100%; }
+        .pad.disabled { opacity: 0.2; pointer-events: none; }
+
+        #leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: #fff;
+            border: 3px inset #ffffff;
+        }
+        #leaderboard-table th, #leaderboard-table td {
+            border: 1px solid #000;
+            padding: 8px;
+            font-size: 18px;
+        }
+        #leaderboard-table th { background-color: #000080; color: #fff; }
+        
+        #auth-msg { color: red; font-weight: bold; height: 20px; }
     </style>
 </head>
 <body>
 
-    <h1>Пидорасы Поют</h1>
-    <div id="status">Нажми Старт, чтобы начать</div>
-    
-    <div class="container">
-        <!-- data-id нужен для логики -->
-        <div class="pad" data-id="1"><img src="1.png" alt="1"></div>
-        <div class="pad" data-id="2"><img src="2.png" alt="2"></div>
-        <div class="pad" data-id="3"><img src="3.png" alt="3"></div>
-        <div class="pad" data-id="4"><img src="4.png" alt="4"></div>
+    <!-- ЭКРАН АВТОРИЗАЦИИ -->
+    <div id="auth-screen" class="panel">
+        <h1>Вход в клуб</h1>
+        <input type="text" id="username" placeholder="Твой ник">
+        <input type="password" id="password" placeholder="Пароль">
+        <br>
+        <button onclick="register()">Зарегаться</button>
+        <button onclick="login()">Войти</button>
+        <p id="auth-msg"></p>
     </div>
 
-    <button id="restart-btn" class="hidden">Рестарт</button>
+    <!-- ЭКРАН ИГРЫ -->
+    <div id="game-screen" class="hidden">
+        <h1>Пидорасы поют</h1>
+        <div style="font-size: 20px; font-weight: bold; margin-bottom: 10px;">
+            Игрок: <span id="ui-username" style="color: blue;"></span> | 
+            Рекорд: <span id="ui-highscore" style="color: green;"></span>
+        </div>
+        
+        <div id="status">ЖМИ ЧТОБ НАЧАТЬ</div>
+        
+        <table>
+            <tr>
+                <td><div class="pad disabled" data-id="1"><img src="1.png" alt="1"></div></td>
+                <td><div class="pad disabled" data-id="2"><img src="2.png" alt="2"></div></td>
+            </tr>
+            <tr>
+                <td><div class="pad disabled" data-id="3"><img src="3.png" alt="3"></div></td>
+                <td><div class="pad disabled" data-id="4"><img src="4.png" alt="4"></div></td>
+            </tr>
+        </table>
+
+        <button id="restart-btn" class="hidden" style="margin-top: 20px;">Рестарт</button>
+        <button onclick="showLeaderboard()" style="margin-top: 20px; background-color: #FFD700;">Таблица лидеров</button>
+    </div>
+
+    <!-- ЭКРАН ЛИДЕРБОРДА -->
+    <div id="leaderboard-screen" class="panel hidden">
+        <h1>Зал славы</h1>
+        <table id="leaderboard-table">
+            <thead>
+                <tr><th>Место</th><th>Игрок</th><th>Очки</th></tr>
+            </thead>
+            <tbody id="leaderboard-body">
+                <!-- Сюда упадут данные с сервера -->
+            </tbody>
+        </table>
+        <button onclick="backToGame()" style="margin-top: 20px;">Назад в игру</button>
+    </div>
 
     <script>
+        // ==========================================
+        // ВСТАВЬ СЮДА СВОИ ДАННЫЕ ИЗ SUPABASE
+        // ==========================================
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL'; 
+        const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        
+        // Инициализация клиента
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let currentUser = null;
+        let currentHighScore = 0;
+
+        // ===== СИСТЕМА АВТОРИЗАЦИИ =====
+        async function register() {
+            const u = document.getElementById('username').value.trim();
+            const p = document.getElementById('password').value;
+            const msg = document.getElementById('auth-msg');
+
+            if (!u || !p) {
+                msg.textContent = "Ты че, даун? Заполни оба поля!";
+                return;
+            }
+
+            msg.style.color = "yellow";
+            msg.textContent = "Стучимся в базу...";
+
+            // Проверяем, есть ли уже такой юзер
+            const { data: existing } = await supabaseClient
+                .from('players')
+                .select('username')
+                .eq('username', u);
+
+            if (existing && existing.length > 0) {
+                msg.style.color = "red";
+                msg.textContent = "Такой пидор уже есть, вводи пароль!";
+                return;
+            }
+
+            // Создаем нового
+            const { error } = await supabaseClient
+                .from('players')
+                .insert([{ username: u, password: p, max_score: 0 }]);
+
+            if (error) {
+                msg.style.color = "red";
+                msg.textContent = "Ошибка сервера: " + error.message;
+            } else {
+                msg.style.color = "lime";
+                msg.textContent = "Успешно! Теперь жми 'Войти'.";
+            }
+        }
+
+        async function login() {
+            const u = document.getElementById('username').value.trim();
+            const p = document.getElementById('password').value;
+            const msg = document.getElementById('auth-msg');
+
+            if (!u || !p) {
+                msg.textContent = "Заполни поля, еблан!";
+                return;
+            }
+
+            const { data, error } = await supabaseClient
+                .from('players')
+                .select('*')
+                .eq('username', u)
+                .eq('password', p)
+                .single();
+
+            if (error || !data) {
+                msg.style.color = "red";
+                msg.textContent = "Неверный ник или пароль!";
+            } else {
+                currentUser = data.username;
+                currentHighScore = data.max_score;
+                
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('game-screen').classList.remove('hidden');
+                updateUI();
+                resetGame();
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('ui-username').textContent = currentUser;
+            document.getElementById('ui-highscore').textContent = currentHighScore;
+        }
+
+        // ===== ЛИДЕРБОРД =====
+        async function showLeaderboard() {
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('leaderboard-screen').classList.remove('hidden');
+            
+            const tbody = document.getElementById('leaderboard-body');
+            tbody.innerHTML = '<tr><td colspan="3">Загружаем...</td></tr>';
+
+            // Берем топ-10 игроков
+            const { data, error } = await supabaseClient
+                .from('players')
+                .select('username, max_score')
+                .order('max_score', { ascending: false })
+                .limit(10);
+
+            if (error) {
+                tbody.innerHTML = '<tr><td colspan="3">Ошибка ебучая: ' + error.message + '</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = ''; 
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3">Тут пока пусто, как в голове у Лехи</td></tr>';
+                return;
+            }
+
+            data.forEach((user, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${index + 1}</td><td>${user.username}</td><td>${user.max_score}</td>`;
+                if (user.username === currentUser) tr.style.backgroundColor = '#FFFF00';
+                tbody.appendChild(tr);
+            });
+        }
+
+        function backToGame() {
+            document.getElementById('leaderboard-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+        }
+
+        // ===== САМА ИГРА =====
         const pads = document.querySelectorAll('.pad');
         const statusText = document.getElementById('status');
         const restartBtn = document.getElementById('restart-btn');
 
-        // Звуки (используем синтезатор браузера, чтобы не ебаться с аудиофайлами)
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const frequencies = { '1': 329.63, '2': 261.63, '3': 392.00, '4': 523.25 }; // Ноты E4, C4, G4, C5
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+        const frequencies = { '1': 200, '2': 300, '3': 400, '4': 500 }; 
 
         let gameSequence = [];
         let playerSequence = [];
         let level = 1;
-        let maxPads = 1; // Сколько разных пидоров задействовано (от 1 до 4)
+        let maxPads = 1;
         let isPlayingSequence = false;
         let canClick = false;
+        let gameStarted = false;
 
-        // Воспроизведение звука
         function playSound(id) {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            osc.type = 'square'; // Квадратная волна звучит по-пидораски
+            osc.type = 'square'; 
             osc.frequency.setValueAtTime(frequencies[id], audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
-            
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime); 
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
             osc.connect(gain);
             gain.connect(audioCtx.destination);
-            
             osc.start();
             osc.stop(audioCtx.currentTime + 0.3);
 
-            // Визуальный эффект
             const pad = document.querySelector(`.pad[data-id="${id}"]`);
-            pad.classList.add('active');
-            setTimeout(() => pad.classList.remove('active'), 300);
+            if(pad) {
+                pad.classList.add('active');
+                setTimeout(() => pad.classList.remove('active'), 300);
+            }
         }
 
-        // Начать новую игру
+        function resetGame() {
+            gameSequence = [];
+            level = 1;
+            maxPads = 1;
+            gameStarted = false;
+            restartBtn.classList.add('hidden');
+            statusText.textContent = "ЖМИ ЧТОБ НАЧАТЬ";
+            statusText.style.color = "#00FF00";
+            pads.forEach(p => p.classList.add('disabled'));
+        }
+
         function startGame() {
+            gameStarted = true;
             gameSequence = [];
             level = 1;
             maxPads = 1;
             restartBtn.classList.add('hidden');
-            statusText.textContent = "Запоминай...";
-            pads.forEach(p => p.style.opacity = '0.3'); // Сначала все тусклые
-            
-            // Включаем первых пидоров
             updateActivePads();
             nextRound();
         }
 
-        // Обновляем, какие пидоры сейчас активны (от 1 до 4)
         function updateActivePads() {
             pads.forEach(p => {
                 const id = parseInt(p.dataset.id);
                 if (id <= maxPads) {
-                    p.style.opacity = '1';
-                    p.style.pointerEvents = 'auto';
+                    p.classList.remove('disabled');
                 } else {
-                    p.style.opacity = '0.1';
-                    p.style.pointerEvents = 'none';
+                    p.classList.add('disabled');
                 }
             });
         }
 
-        // Добавляем шаг в последовательность
         function nextRound() {
             playerSequence = [];
-            statusText.textContent = "Запоминай...";
+            statusText.textContent = "ЗАПОМИНАЙ, ЕБЛАН...";
             
-            // Увеличиваем сложность
             if (level > 1) {
-                if (level % 3 === 0 && maxPads < 4) {
-                    maxPads++; // Каждые 3 уровня добавляем нового пидора
+                if (level % 2 === 0 && maxPads < 4) {
+                    maxPads++; 
                     updateActivePads();
                 }
             }
-
-            // Добавляем случайный звук из активных
             const randomId = Math.floor(Math.random() * maxPads) + 1;
             gameSequence.push(randomId.toString());
-
-            // Проигрываем всю последовательность
-            setTimeout(() => {
-                playSequence();
-            }, 500);
+            setTimeout(playSequence, 500);
         }
 
-        // Воспроизведение всей последовательности
         function playSequence() {
             isPlayingSequence = true;
             canClick = false;
-            
             gameSequence.forEach((id, index) => {
                 setTimeout(() => {
                     playSound(id);
-                    
-                    // Если это последний звук, разрешаем клики
                     if (index === gameSequence.length - 1) {
                         setTimeout(() => {
                             isPlayingSequence = false;
                             canClick = true;
-                            statusText.textContent = "Твоя очередь, долбоёб!";
+                            statusText.textContent = "ТВОЙ ХОД, ДАВАЙ!";
                         }, 400);
                     }
-                }, index * 600); // Задержка между звуками
+                }, index * 600);
             });
         }
 
-        // Обработка клика игрока
-        function handlePadClick(e) {
-            if (!canClick || isPlayingSequence) return;
+        async function handlePadClick(e) {
+            if (!canClick || isPlayingSequence || !gameStarted) return;
 
             const id = e.currentTarget.dataset.id;
             playSound(id);
             playerSequence.push(id);
 
-            // Проверка
             const currentStep = playerSequence.length - 1;
             if (playerSequence[currentStep] !== gameSequence[currentStep]) {
-                // Проиграл
+                // ПРОИГРЫШ
                 canClick = false;
+                gameStarted = false;
                 statusText.textContent = "ХУЙНЯ! ТЫ ПРОИГРАЛ!";
-                statusText.style.color = "red";
+                statusText.style.color = "#FF0000";
                 
+                let currentScore = level - 1; // Очки = пройденные уровни
+                
+                // Если побил свой рекорд - шлем в базу
+                if (currentScore > currentHighScore) {
+                    currentHighScore = currentScore;
+                    updateUI();
+                    statusText.textContent += " (НОВЫЙ РЕКОРД!)";
+                    
+                    // Обновляем в Supabase
+                    await supabaseClient
+                        .from('players')
+                        .update({ max_score: currentHighScore })
+                        .eq('username', currentUser);
+                }
+
                 // Звук проигрыша
                 const osc = audioCtx.createOscillator();
                 osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
                 osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 1);
                 osc.connect(audioCtx.destination);
                 osc.start();
@@ -239,31 +433,21 @@
                 return;
             }
 
-            // Если дошел до конца последовательности
+            // Если дошел до конца
             if (playerSequence.length === gameSequence.length) {
                 canClick = false;
                 level++;
-                statusText.textContent = `Уровень ${level} пройден!`;
-                statusText.style.color = "#00ff00";
+                statusText.textContent = `УРОВЕНЬ ${level} ПРОЙДЕН!`;
                 setTimeout(nextRound, 1500);
             }
         }
 
-        // Слушатели
         pads.forEach(pad => pad.addEventListener('click', handlePadClick));
-        restartBtn.addEventListener('click', () => {
-            statusText.style.color = "#ff00ff";
-            startGame();
+        restartBtn.addEventListener('click', startGame);
+        statusText.addEventListener('click', () => {
+            if (!gameStarted) startGame();
         });
-
-        // Старт по клику на экран (нужно для активации аудио)
-        document.body.addEventListener('click', () => {
-            if (statusText.textContent === "Нажми Старт, чтобы начать") {
-                startGame();
-            }
-        }, { once: true });
 
     </script>
 </body>
 </html>
-```
