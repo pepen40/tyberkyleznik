@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>pepen40</title>
+    <title>пепен клуб: экономика</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background-color: #008080; color: #000; font-family: "Times New Roman", Times, serif; text-align: center; margin: 0; padding: 20px; }
@@ -51,9 +51,18 @@
         .modal-content { background: #c0c0c0; border: 4px outset #fff; padding: 20px; width: 80%; max-width: 400px; text-align: left; }
         .modal-content h3 { margin-top: 0; }
         
-        /* Стили для текста инструкции */
         .howto-text { text-align: left; font-size: 18px; line-height: 1.5; background: #fff; border: 2px inset #fff; padding: 15px; margin-top: 10px;}
         .version-text { text-align: center; font-weight: bold; margin-top: 30px; font-size: 16px; color: #000080; }
+
+        /* Стили для РПГ */
+        .rpg-char-card { background: #fff; border: 3px solid #000; padding: 10px; margin: 10px 0; cursor: pointer; text-align: left; }
+        .rpg-char-card:hover { background: #e0e0e0; }
+        .rpg-char-card h3 { margin: 0 0 5px 0; }
+        .rpg-battle { display: flex; justify-content: space-between; margin-bottom: 15px; background: #fff; padding: 10px; border: 2px solid #000;}
+        .rpg-stats { width: 45%; text-align: left; }
+        .rpg-log { height: 150px; overflow-y: auto; background: #000; color: #0f0; font-family: monospace; text-align: left; padding: 10px; border: 2px inset #fff; font-size: 14px; margin-bottom: 10px; }
+        .hp-bar { width: 100%; height: 15px; background: #555; border: 1px solid #000; margin-top: 5px;}
+        .hp-fill { height: 100%; background: #f00; transition: width 0.3s; }
     </style>
 </head>
 <body>
@@ -76,9 +85,9 @@
             Рекорд: <span id="ui-highscore" style="color: cyan;"></span>
         </div>
 
-        <!-- ДОБАВИЛ КНОПКУ "КАК ИГРАТЬ" -->
         <div class="nav-bar">
             <button onclick="switchTab('game')">Играть</button>
+            <button onclick="switchTab('rpg')">РПГ Мясорубка</button>
             <button onclick="switchTab('cases')">Кейсы</button>
             <button onclick="switchTab('inventory')">Инвентарь</button>
             <button onclick="switchTab('market')">Рынок</button>
@@ -101,6 +110,48 @@
                 </tr>
             </table>
             <button id="restart-btn" class="hidden" style="margin-top: 20px;">Рестарт</button>
+        </div>
+
+        <div id="tab-rpg" class="panel hidden">
+            <h2>РПГ МЯСОРУБКА</h2>
+            
+            <div id="rpg-char-select">
+                <p>Выбери своего бойца, чтобы начать мясо:</p>
+                <div class="rpg-char-card" onclick="selectChar('ashab')">
+                    <h3>Ashab Tamaev</h3>
+                    <small>Класс: Берсерк. Огромный запас здоровья и сокрушительные удары.</small>
+                </div>
+                <div class="rpg-char-card" onclick="selectChar('apostol')">
+                    <h3>Apostol</h3>
+                    <small>Класс: Чернокнижник. Хлипкий, но наносит колоссальный магический урон.</small>
+                </div>
+                <div class="rpg-char-card" onclick="selectChar('mee')">
+                    <h3>Мээ</h3>
+                    <small>Класс: Друид. Сбалансированный воин, владеющий целительной магией.</small>
+                </div>
+            </div>
+
+            <div id="rpg-battle-screen" class="hidden">
+                <div class="rpg-battle">
+                    <div class="rpg-stats">
+                        <b id="rpg-player-name">Игрок</b><br>
+                        HP: <span id="rpg-player-hp-text">100/100</span>
+                        <div class="hp-bar"><div id="rpg-player-hp-bar" class="hp-fill" style="width: 100%; background: #0f0;"></div></div>
+                    </div>
+                    <div class="rpg-stats" style="text-align: right;">
+                        <b id="rpg-enemy-name">Враг</b><br>
+                        HP: <span id="rpg-enemy-hp-text">100/100</span>
+                        <div class="hp-bar"><div id="rpg-enemy-hp-bar" class="hp-fill" style="width: 100%; background: #f00;"></div></div>
+                    </div>
+                </div>
+                
+                <div class="rpg-log" id="rpg-log">Бой начался! Нажми атаковать.</div>
+                
+                <div id="rpg-actions">
+                    <button onclick="rpgAttack()">Атаковать</button>
+                    <button id="rpg-skill-btn" onclick="rpgSkill()">Способность</button>
+                </div>
+            </div>
         </div>
 
         <div id="tab-cases" class="panel hidden">
@@ -139,16 +190,13 @@
             </table>
         </div>
 
-        <!-- НОВАЯ ВКЛАДКА: КАК ИГРАТЬ -->
         <div id="tab-howto" class="panel hidden">
             <h2>Как играть</h2>
             <div class="howto-text">
                 привет представляем вашему вниманию новомую игру pepen40 games . У вас наверняка возник вопрос что это за хуйня как в это играть? смотрите нужно нажимать на пидорасов поочередно в соответствии с тем с какой последовательностью каждый из них пищит. Ну там пропищал apostol 2 раза потом амжан желтый 3 раза . Значит надо нажать на apostol 3 раза и потом амжан желтый 3 раза. Также тут представлены кейсы как в ксго . Покупаете вам выпадает всякая хуйня которая в соответствии со своей редкостью выводит вас в топ в Leaderboard на определенный уровень. За хуйню вам маленько дадут баллов за apostol - дохуя. Вы также можете продавать эти хуйни которые выбили. Да да нахуй не ослышались продавать. На торговой площадке. И зарабатывать за это бабки нахуй
             </div>
-            
-            <!-- 3 отступа и версия -->
             <br><br><br>
-            <div class="version-text">версия игры beta 1.0</div>
+            <div class="version-text">версия игры beta 1.1 (RPG Update)</div>
         </div>
 
     </div>
@@ -222,15 +270,150 @@
             document.getElementById('ui-item-points').textContent = currentItemPoints;
         }
 
-        // ОБНОВИЛ ПЕРЕКЛЮЧАТЕЛЬ ВКЛАДОК (добавил howto)
         function switchTab(tab) {
-            ['game', 'cases', 'inventory', 'market', 'leaderboard', 'howto'].forEach(t => document.getElementById('tab-' + t).classList.add('hidden'));
+            ['game', 'rpg', 'cases', 'inventory', 'market', 'leaderboard', 'howto'].forEach(t => document.getElementById('tab-' + t).classList.add('hidden'));
             document.getElementById('tab-' + tab).classList.remove('hidden');
             if (tab === 'inventory') renderInventory();
             if (tab === 'market') renderMarket();
             if (tab === 'leaderboard') renderLeaderboard();
         }
 
+        // ==========================================
+        // ЛОГИКА РПГ МЯСОРУБКИ (ОФФЛАЙН)
+        // ==========================================
+        let rpgChar = null;
+        let rpgEnemy = null;
+
+        const enemies = [
+            { name: "Тугарин Змей", hp: 80, maxHp: 80, atk: 15 },
+            { name: "Конюх с телевизора", hp: 60, maxHp: 60, atk: 20 },
+            { name: "Бомж с пульверизатором", hp: 40, maxHp: 40, atk: 10 },
+            { name: "Пидор с рынка", hp: 100, maxHp: 100, atk: 12 }
+        ];
+
+        function selectChar(type) {
+            if (type === 'ashab') {
+                rpgChar = { name: "Ashab Tamaev", class: "Берсерк", hp: 150, maxHp: 150, atk: 25, crit: 0.1 };
+            } else if (type === 'apostol') {
+                rpgChar = { name: "Apostol", class: "Чернокнижник", hp: 80, maxHp: 80, atk: 40, crit: 0.4 };
+            } else if (type === 'mee') {
+                rpgChar = { name: "Мээ", class: "Друид", hp: 110, maxHp: 110, atk: 18, crit: 0.25 };
+            }
+            
+            document.getElementById('rpg-char-select').classList.add('hidden');
+            document.getElementById('rpg-battle-screen').classList.remove('hidden');
+            document.getElementById('rpg-log').innerHTML = `Ты выбрал ${rpgChar.name} (${rpgChar.class}). Приготовься к мясу!<br>`;
+            
+            // Меняем название скилла в зависимости от класса
+            if (type === 'ashab') document.getElementById('rpg-skill-btn').innerText = "Ярость (Урон)";
+            if (type === 'apostol') document.getElementById('rpg-skill-btn').innerText = "Тёмный ритуал";
+            if (type === 'mee') document.getElementById('rpg-skill-btn').innerText = "Исцеление";
+            
+            spawnEnemy();
+        }
+
+        function spawnEnemy() {
+            rpgEnemy = JSON.parse(JSON.stringify(enemies[Math.floor(Math.random() * enemies.length)]));
+            document.getElementById('rpg-enemy-name').innerText = rpgEnemy.name;
+            updateRpgUI();
+            addLog(`На арене появился ${rpgEnemy.name}!`);
+        }
+
+        function addLog(msg) {
+            const logBox = document.getElementById('rpg-log');
+            logBox.innerHTML += `<br>> ${msg}`;
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function updateRpgUI() {
+            document.getElementById('rpg-player-name').innerText = `${rpgChar.name} (${rpgChar.class})`;
+            document.getElementById('rpg-player-hp-text').innerText = `${Math.max(0, rpgChar.hp)}/${rpgChar.maxHp}`;
+            let pPct = (Math.max(0, rpgChar.hp) / rpgChar.maxHp) * 100;
+            document.getElementById('rpg-player-hp-bar').style.width = pPct + '%';
+
+            document.getElementById('rpg-enemy-name').innerText = rpgEnemy.name;
+            document.getElementById('rpg-enemy-hp-text').innerText = `${Math.max(0, rpgEnemy.hp)}/${rpgEnemy.maxHp}`;
+            let ePct = (Math.max(0, rpgEnemy.hp) / rpgEnemy.maxHp) * 100;
+            document.getElementById('rpg-enemy-hp-bar').style.width = ePct + '%';
+        }
+
+        function rpgAttack() {
+            if (rpgChar.hp <= 0 || rpgEnemy.hp <= 0) return;
+            
+            let dmg = Math.floor(Math.random() * rpgChar.atk) + 5;
+            let isCrit = Math.random() < rpgChar.crit;
+            if (isCrit) dmg *= 2;
+
+            rpgEnemy.hp -= dmg;
+            addLog(`${rpgChar.name} наносит ${dmg} урона. ${isCrit ? '(КРИТ!)' : ''}`);
+            updateRpgUI();
+
+            if (rpgEnemy.hp <= 0) {
+                winRpg();
+            } else {
+                enemyTurn();
+            }
+        }
+
+        function rpgSkill() {
+            if (rpgChar.hp <= 0 || rpgEnemy.hp <= 0) return;
+
+            if (rpgChar.class === "Берсерк") {
+                let dmg = 45;
+                rpgEnemy.hp -= dmg;
+                addLog(`Ashab впадает в ЯРОСТЬ и наносит ${dmg} урона!`);
+            } else if (rpgChar.class === "Чернокнижник") {
+                let dmg = Math.floor(Math.random() * 40) + 40; // 40-80
+                rpgEnemy.hp -= dmg;
+                addLog(`Apostol проводит ТЁМНЫЙ РИТУАЛ. Урон: ${dmg}!`);
+            } else if (rpgChar.class === "Друид") {
+                let heal = 35;
+                rpgChar.hp = Math.min(rpgChar.maxHp, rpgChar.hp + heal);
+                addLog(`Мээ читает ИСЦЕЛЕНИЕ и восстанавливает ${heal} HP!`);
+            }
+
+            updateRpgUI();
+
+            if (rpgEnemy.hp <= 0) {
+                winRpg();
+            } else {
+                enemyTurn();
+            }
+        }
+
+        function enemyTurn() {
+            let dmg = Math.floor(Math.random() * rpgEnemy.atk) + 5;
+            rpgChar.hp -= dmg;
+            addLog(`${rpgEnemy.name} наносит ответный удар на ${dmg} урона.`);
+            updateRpgUI();
+
+            if (rpgChar.hp <= 0) {
+                addLog(`Ты пал смертью храбрых. Рестарт...`);
+                document.getElementById('rpg-actions').style.display = 'none';
+                setTimeout(() => {
+                    document.getElementById('rpg-char-select').classList.remove('hidden');
+                    document.getElementById('rpg-battle-screen').classList.add('hidden');
+                    document.getElementById('rpg-actions').style.display = 'block';
+                }, 3000);
+            }
+        }
+
+        function winRpg() {
+            let reward = 50; 
+            currentCoins += reward; 
+            updateUI();
+            addLog(`Ты победил ${rpgEnemy.name}! Награда: ${reward} монет.`);
+            document.getElementById('rpg-actions').style.display = 'none';
+            
+            setTimeout(() => {
+                spawnEnemy();
+                document.getElementById('rpg-actions').style.display = 'block';
+            }, 2000);
+        }
+
+        // ==========================================
+        // ОСТАЛЬНАЯ ЛОГИКА (КЕЙСЫ И Т.Д.)
+        // ==========================================
         async function openCase(price) {
             const resBox = document.getElementById('case-result');
             resBox.innerHTML = "Крутим барабан...";
@@ -490,7 +673,7 @@
             document.getElementById('profile-modal').classList.add('hidden');
         }
 
-        // ==== ИГРА ====
+        // ==== ИГРА В ПИДОРОВ ====
         const pads = document.querySelectorAll('.pad');
         const statusText = document.getElementById('status');
         const restartBtn = document.getElementById('restart-btn');
