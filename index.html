@@ -31,11 +31,28 @@
         .shop-item { background-color: #fff; border: 2px solid #000; padding: 10px; margin: 10px 0; display: flex; justify-content: space-between; align-items: center; text-align: left;}
         .inv-item { background-color: #fff; border: 2px solid #000; padding: 10px; margin: 5px 0; text-align: left; display: flex; justify-content: space-between; align-items: center;}
 
+        /* Стили картинок */
+        .item-img { width: 40px; height: 40px; object-fit: cover; vertical-align: middle; margin-right: 10px; border: 1px solid #999; background: #eee; }
+
+        /* ЦВЕТА РЕДКОСТЕЙ */
         .rarity-Обычное { color: gray; font-weight: bold; }
         .rarity-Редкое { color: blue; font-weight: bold; }
         .rarity-Эпическое { color: purple; font-weight: bold; }
-        .rarity-Сверхредкое { color: #ff4500; font-weight: bold; }
-        .rarity-Легендарное { color: #D4AF37; font-weight: bold; text-shadow: 1px 1px 0 #000; }
+        .rarity-Сверхредкое { color: #FF4500; font-weight: bold; text-shadow: 1px 1px 0 #000; }
+        
+        /* ЛЕГЕНДАРНОЕ РАДУЖНОЕ МИГАНИЕ */
+        .rarity-Легендарное {
+            font-weight: bold;
+            animation: legendary-blink 1s infinite linear;
+        }
+        @keyframes legendary-blink {
+            0% { color: red; text-shadow: 0 0 5px red; }
+            20% { color: orange; text-shadow: 0 0 5px orange; }
+            40% { color: yellow; text-shadow: 0 0 5px yellow; }
+            60% { color: lime; text-shadow: 0 0 5px lime; }
+            80% { color: cyan; text-shadow: 0 0 5px cyan; }
+            100% { color: magenta; text-shadow: 0 0 5px magenta; }
+        }
         
         .leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 20px; background-color: #fff; border: 3px inset #ffffff; }
         .leaderboard-table th, .leaderboard-table td { border: 1px solid #000; padding: 5px; font-size: 16px; }
@@ -100,7 +117,7 @@
                 <div><b>Стандартный кейс</b><br><small>Шанс выбить Apostol: 3%</small></div>
                 <div><button onclick="openCase(100)">Открыть (100 монет)</button></div>
             </div>
-            <h3 id="case-result" style="color: red; margin-top: 20px;"></h3>
+            <div id="case-result" style="color: red; margin-top: 20px; display:flex; flex-direction: column; align-items:center;"></div>
         </div>
 
         <div id="tab-inventory" class="panel hidden">
@@ -153,6 +170,12 @@
         let currentItemPoints = 0;
         let currentInventory = []; 
 
+        // Заглушка для картинки, если файл не найден
+        function getImgTag(imgName) {
+            if (!imgName) return '<span style="font-size: 30px; margin-right: 10px;">📎</span>';
+            return `<img src="${imgName}" class="item-img" onerror="this.outerHTML='<span style=\\'font-size: 30px; margin-right: 10px;\\'>📎</span>'">`;
+        }
+
         async function register() {
             const u = document.getElementById('username').value.trim();
             const p = document.getElementById('password').value;
@@ -204,22 +227,36 @@
         }
 
         async function openCase(price) {
-            document.getElementById('case-result').textContent = "Крутим барабан...";
+            const resBox = document.getElementById('case-result');
+            resBox.innerHTML = "Крутим барабан...";
             const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
                 body: { action: 'open_case', username: currentUser, data: { price: price } }
             });
             
-            // ТЕПЕРЬ ОН БУДЕТ ПОКАЗЫВАТЬ ТЕКСТ ОШИБКИ ИЗ БАЗЫ
             if (error) {
-                document.getElementById('case-result').textContent = "Ошибка сети. Попробуй позже.";
+                resBox.textContent = "Ошибка сети.";
             } else if (data.error) {
-                document.getElementById('case-result').textContent = data.error;
+                resBox.textContent = data.error;
             } else {
                 currentCoins = data.newCoins;
                 currentInventory = data.newInventory;
                 currentItemPoints = data.newItemPoints;
                 updateUI();
-                document.getElementById('case-result').innerHTML = data.message;
+                
+                // Красивый вывод дропа с картинкой
+                if (data.droppedItem && data.droppedItem.name !== "Вам не повезло") {
+                    resBox.innerHTML = `
+                        <div style="background:#fff; border:2px solid #000; padding:15px; display:flex; align-items:center;">
+                            ${getImgTag(data.droppedItem.img)}
+                            <div>
+                                <div style="font-size:20px;" class="rarity-${data.droppedItem.rarity}">${data.droppedItem.name}</div>
+                                <small>+${data.droppedItem.points} очков</small>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    resBox.textContent = data.message;
+                }
             }
         }
 
@@ -231,7 +268,12 @@
                 const div = document.createElement('div');
                 div.className = 'inv-item';
                 div.innerHTML = `
-                    <div><span class="rarity-${item.rarity}">${item.name}</span> <small>(+${item.points} очков)</small></div>
+                    <div style="display:flex; align-items:center;">
+                        ${getImgTag(item.img)}
+                        <div>
+                            <span class="rarity-${item.rarity}">${item.name}</span> <small>(+${item.points} очков)</small>
+                        </div>
+                    </div>
                     <div><button onclick="sellItem(${index})" style="background-color: #90ee90; font-size: 14px;">Выставить</button></div>
                 `;
                 list.appendChild(div);
@@ -247,11 +289,9 @@
                 body: { action: 'sell_item', username: currentUser, data: { item: item, price: parseInt(price) } }
             });
 
-            if (error) {
-                alert("Ошибка сети.");
-            } else if (data.error) {
-                alert(data.error);
-            } else {
+            if (error) alert("Ошибка сети.");
+            else if (data.error) alert(data.error);
+            else {
                 currentInventory = data.newInventory;
                 currentItemPoints = data.newItemPoints;
                 updateUI();
@@ -275,20 +315,43 @@
                 
                 let actionBtn = '';
                 if (item.seller === currentUser) {
-                    actionBtn = `<button disabled style="background-color: #ccc; font-size: 14px;">Твой лот</button>`;
+                    // Если лот твой - кнопка "Снять"
+                    actionBtn = `<button onclick="removeListing(${item.id})" style="background-color: #ffcccb; font-size: 14px;">Снять</button>`;
                 } else {
+                    // Если чужой - "Купить"
                     actionBtn = `<button onclick="buyItem(${item.id})" style="background-color: #90ee90; font-size: 14px;">Купить (${item.price})</button>`;
                 }
 
                 div.innerHTML = `
-                    <div>
-                        <b class="rarity-${item.rarity}">${item.item_name}</b> <small>(+${item.points} очков)</small><br>
-                        <small>Продавец: ${item.seller}</small>
+                    <div style="display:flex; align-items:center;">
+                        ${getImgTag(item.img)}
+                        <div>
+                            <b class="rarity-${item.rarity}">${item.item_name}</b> <small>(+${item.points} очков)</small><br>
+                            <small>Продавец: ${item.seller}</small>
+                        </div>
                     </div>
                     <div>${actionBtn}</div>
                 `;
                 list.appendChild(div);
             });
+        }
+
+        async function removeListing(listing_id) {
+            if (!confirm("Снять лот с продажи и вернуть в инвентарь?")) return;
+
+            const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
+                body: { action: 'remove_listing', username: currentUser, data: { listing_id: listing_id } }
+            });
+
+            if (error) alert("Ошибка сети.");
+            else if (data.error) alert(data.error);
+            else {
+                currentInventory = data.newInventory;
+                currentItemPoints = data.newItemPoints;
+                updateUI();
+                renderMarket();
+                alert("Лот снят с продажи.");
+            }
         }
 
         async function buyItem(listing_id) {
@@ -298,11 +361,9 @@
                 body: { action: 'buy_item', username: currentUser, data: { listing_id: listing_id } }
             });
 
-            if (error) {
-                alert("Ошибка сети.");
-            } else if (data.error) {
-                alert(data.error);
-            } else {
+            if (error) alert("Ошибка сети.");
+            else if (data.error) alert(data.error);
+            else {
                 currentCoins = data.newCoins;
                 currentInventory = data.newInventory;
                 currentItemPoints = data.newItemPoints;
@@ -367,7 +428,12 @@
                 inv.forEach(item => {
                     const div = document.createElement('div');
                     div.className = 'inv-item';
-                    div.innerHTML = `<span class="rarity-${item.rarity}">${item.name}</span> <small>(+${item.points})</small>`;
+                    div.innerHTML = `
+                        <div style="display:flex; align-items:center;">
+                            ${getImgTag(item.img)}
+                            <span class="rarity-${item.rarity}">${item.name}</span> <small>(+${item.points})</small>
+                        </div>
+                    `;
                     invEl.appendChild(div);
                 });
             }
