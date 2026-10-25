@@ -116,8 +116,8 @@
 </head>
 <body>
 
-    <!-- АУДИО ДЛЯ БОЯ -->
-    <audio id="battle-music" src="ambient.mp4" loop></audio>
+    <!-- АУДИО ДЛЯ БОЯ (теперь mp3, добавлена обработка ошибок) -->
+    <audio id="battle-music" src="ambient.mp3" loop onerror="alert('Файл ambient.mp3 не найден на Гитхабе! Закинь его в корень.')"></audio>
 
     <div id="auth-screen" class="panel">
         <h1>добро пожаловать</h1>
@@ -290,7 +290,7 @@
                 привет представляем вашему вниманию новомую игру pepen40 games . У вас наверняка возник вопрос что это за хуйня как в это играть? смотрите нужно нажимать на пидорасов поочередно в соответствии с тем с какой последовательностью каждый из них пищит. Ну там пропищал apostol 2 раза потом амжан желтый 3 раза . Значит надо нажать на apostol 3 раза и потом амжан желтый 3 раза. Также тут представлены кейсы как в ксго . Покупаете вам выпадает всякая хуйня которая в соответствии со своей редкостью выводит вас в топ в Leaderboard на определенный уровень. За хуйню вам маленько дадут баллов за apostol - дохуя. Вы также можете продавать эти хуйни которые выбили. Да да нахуй не ослышались продавать. На торговой площадке. И зарабатывать за это бабки нахуй
             </div>
             <br><br><br>
-            <div class="version-text">версия игры beta 2.6 (Music & Border Update)</div>
+            <div class="version-text">версия игры beta 2.7 (Sound Fix Update)</div>
         </div>
 
     </div>
@@ -332,6 +332,13 @@
         let currentMaxFloors = {"ashab":0,"apostol":0,"mee":0};
 
         const rarityWeight = { 'Легендарное': 5, 'Сверхредкое': 4, 'Эпическое': 3, 'Редкое': 2, 'Обычное': 1, 'Мусор': 0 };
+
+        // ГЛОБАЛЬНЫЙ РАЗБЛОКИРОВЩИК ЗВУКА
+        document.body.addEventListener('click', () => {
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }, { once: true });
 
         let onlineChannel = null;
         function initOnlineCounter() {
@@ -523,11 +530,19 @@
             if (type === 'apostol') document.getElementById('rpg-skill-btn').innerText = "Тёмный ритуал (100)";
             if (type === 'mee') document.getElementById('rpg-skill-btn').innerText = "Исцеление (100)";
             
-            // ВКЛЮЧАЕМ МУЗЫКУ
+            // ВКЛЮЧАЕМ МУЗЫКУ С ОБРАБОТКОЙ ОШИБОК
             const bgMusic = document.getElementById('battle-music');
             bgMusic.currentTime = 0;
-            bgMusic.volume = 0.5; // Чтоб не ебануло по ушам
-            bgMusic.play().catch(e => console.log("Audio play blocked", e));
+            bgMusic.volume = 0.5; 
+            bgMusic.play().then(() => {
+                console.log("Музыка заиграла!");
+            }).catch(e => {
+                console.log("Ошибка воспроизведения: ", e);
+                // Если браузер блокирует, выведем алерт, чтобы Леха понял
+                if(e.name === 'NotAllowedError') {
+                    alert("Браузер заблокировал музыку! Кликни еще раз по кнопке 'В БОЙ!' или разреши звук в настройках сайта.");
+                }
+            });
 
             changeBackground(); 
             spawnEnemy();
@@ -624,7 +639,6 @@
                 setTimeout(() => {
                     el.remove();
                     let eImg = document.getElementById('rpg-enemy-img');
-                    // Сохраняем красную окантовку при вспышке
                     eImg.style.filter = 'brightness(2) drop-shadow(2px 0 0 #ff0000) drop-shadow(-2px 0 0 #ff0000) drop-shadow(0 2px 0 #ff0000) drop-shadow(0 -2px 0 #ff0000)';
                     eImg.style.transform = 'translateX(15px) rotate(5deg)'; 
                     setTimeout(() => { 
@@ -698,7 +712,6 @@
             if (rpgChar.hp <= 0) {
                 addLog(`Ты сдох на ${rpgFloorMain}.${rpgFloorSub} этаже...`); isPlayerTurn = false; checkButtons();
                 
-                // ОСТАНАВЛИВАЕМ МУЗЫКУ ПРИ СМЕРТИ
                 const bgMusic = document.getElementById('battle-music');
                 bgMusic.pause();
                 bgMusic.currentTime = 0;
@@ -983,7 +996,8 @@
 
         // ИГРА В ПИДОРОВ
         const pads = document.querySelectorAll('.pad'); const statusText = document.getElementById('status'); const restartBtn = document.getElementById('restart-btn');
-        const AudioContext = window.AudioContext || window.webkitAudioContext; const audioCtx = new AudioContext();
+        const AudioContext = window.AudioContext || window.webkitAudioContext; 
+        const audioCtx = new AudioContext();
         const frequencies = { '1': 200, '2': 300, '3': 400, '4': 500 }; 
         let gameSequence = [], playerSequence = [], level = 1, maxPads = 1, isPlayingSequence = false, canClick = false, gameStarted = false;
 
