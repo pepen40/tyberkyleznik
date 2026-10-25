@@ -129,7 +129,7 @@
             Рекорд: <span id="ui-highscore" style="color: green;"></span>
         </div>
         
-        <div id="status">ЖМИ ЧТОБ НАЧАТЬ</div>
+        <div id="status">НАЖМИ ЧТОБЫ НАЧАТЬ</div>
         
         <table>
             <tr>
@@ -177,12 +177,13 @@
             const msg = document.getElementById('auth-msg');
 
             if (!u || !p) {
-                msg.textContent = "Ты че, даун? Заполни оба поля!";
+                msg.style.color = "red";
+                msg.textContent = "Пожалуйста, заполните все поля.";
                 return;
             }
 
-            msg.style.color = "yellow";
-            msg.textContent = "Стучимся в базу...";
+            msg.style.color = "#000080";
+            msg.textContent = "Загрузка...";
 
             const { data: existing } = await supabaseClient
                 .from('players')
@@ -191,7 +192,7 @@
 
             if (existing && existing.length > 0) {
                 msg.style.color = "red";
-                msg.textContent = "Такой пидор уже есть, вводи пароль!";
+                msg.textContent = "Этот ник уже занят. Попробуйте другой или войдите.";
                 return;
             }
 
@@ -203,8 +204,8 @@
                 msg.style.color = "red";
                 msg.textContent = "Ошибка сервера: " + error.message;
             } else {
-                msg.style.color = "lime";
-                msg.textContent = "Успешно! Теперь жми 'Войти'.";
+                msg.style.color = "green";
+                msg.textContent = "Успешная регистрация! Теперь нажмите 'Войти'.";
             }
         }
 
@@ -214,7 +215,8 @@
             const msg = document.getElementById('auth-msg');
 
             if (!u || !p) {
-                msg.textContent = "Заполни поля, еблан!";
+                msg.style.color = "red";
+                msg.textContent = "Пожалуйста, заполните все поля.";
                 return;
             }
 
@@ -227,7 +229,7 @@
 
             if (error || !data) {
                 msg.style.color = "red";
-                msg.textContent = "Неверный ник или пароль!";
+                msg.textContent = "Неверный ник или пароль.";
             } else {
                 currentUser = data.username;
                 currentHighScore = data.max_score;
@@ -250,7 +252,7 @@
             document.getElementById('leaderboard-screen').classList.remove('hidden');
             
             const tbody = document.getElementById('leaderboard-body');
-            tbody.innerHTML = '<tr><td colspan="3">Загружаем...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="3">Загрузка...</td></tr>';
 
             const { data, error } = await supabaseClient
                 .from('players')
@@ -259,14 +261,14 @@
                 .limit(10);
 
             if (error) {
-                tbody.innerHTML = '<tr><td colspan="3">Ошибка ебучая: ' + error.message + '</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="3">Ошибка загрузки данных: ' + error.message + '</td></tr>';
                 return;
             }
 
             tbody.innerHTML = ''; 
 
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3">Тут пока пусто, как в голове у Лехи</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="3">Пока нет результатов. Станьте первым!</td></tr>';
                 return;
             }
 
@@ -326,7 +328,7 @@
             maxPads = 1;
             gameStarted = false;
             restartBtn.classList.add('hidden');
-            statusText.textContent = "ЖМИ ЧТОБ НАЧАТЬ";
+            statusText.textContent = "НАЖМИ ЧТОБЫ НАЧАТЬ";
             statusText.style.color = "#00FF00";
             pads.forEach(p => p.classList.add('disabled'));
         }
@@ -354,7 +356,7 @@
 
         function nextRound() {
             playerSequence = [];
-            statusText.textContent = "ЗАПОМИНАЙ, ЕБЛАН...";
+            statusText.textContent = "ЗАПОМИНАЙТЕ...";
             
             if (level > 1) {
                 if (level % 2 === 0 && maxPads < 4) {
@@ -377,7 +379,7 @@
                         setTimeout(() => {
                             isPlayingSequence = false;
                             canClick = true;
-                            statusText.textContent = "ТВОЙ ХОД, ДАВАЙ!";
+                            statusText.textContent = "ВАШ ХОД!";
                         }, 400);
                     }
                 }, index * 600);
@@ -396,7 +398,7 @@
                 // ПРОИГРЫШ
                 canClick = false;
                 gameStarted = false;
-                statusText.textContent = "ХУЙНЯ! ТЫ ПРОИГРАЛ!";
+                statusText.textContent = "ОШИБКА! ВЫ ПРОИГРАЛИ.";
                 statusText.style.color = "#FF0000";
                 
                 let currentScore = level - 1;
