@@ -712,6 +712,7 @@ function openPvpItemMenu() {
 }
 
 async function pvpUseItem(itemName) {
+    // ПРОВЕРКА ХОДА
     if (!pvpGameState.isMyTurn || pvpGameState.myItemUsed) return;
     const itemIndex = currentInventory.findIndex(i => i.name === itemName);
     if (itemIndex === -1) return;
@@ -720,7 +721,7 @@ async function pvpUseItem(itemName) {
     disablePvpButtons(); 
     closeItemMenu();
     
-    // ЗВУК УДАРА/ШВЫРКА СРАЗУ ПРИ НАЖАТИИ
+    // ЗВУК УДАРА/ШВЫРКА СРАЗУ ПРИ НАЖАТИИ (ТОЛЬКО ЕСЛИ ХОД ТВОЙ)
     if (item.name === 'Сбриватель хуйни') {
         playSoundEffect('shaver');
     } else if (item.name === 'голова барана' || item.name === 'apostol') {
@@ -1370,6 +1371,7 @@ function openItemMenu() {
 function closeItemMenu() { document.getElementById('rpg-item-modal').classList.add('hidden'); }
 
 async function useItemInBattle(itemName) {
+    // ПРОВЕРКА ХОДА
     if (!isPlayerTurn) return;
     const itemIndex = currentInventory.findIndex(i => i.name === itemName);
     if (itemIndex === -1) return;
