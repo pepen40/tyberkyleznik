@@ -157,7 +157,7 @@
         <button onclick="register()">Зарегаться</button>
         <button onclick="login()">Войти</button>
         <p id="auth-msg"></p>
-        <div class="version-text" style="margin-top: 15px;">версия игры beta 4.3</div>
+        <div class="version-text" style="margin-top: 15px;">версия игры beta 4.4</div>
     </div>
 
     <div id="main-screen" class="hidden">
@@ -381,7 +381,7 @@
                 привет представляем вашему вниманию новомую игру pepen40 games . У вас наверняка возник вопрос что это за хуйня как в это играть? смотрите нужно нажимать на пидорасов поочередно в соответствии с тем с какой последовательностью каждый из них пищит. Ну там пропищал apostol 2 раза потом амжан желтый 3 раза . Значит надо нажать на apostol 3 раза и потом амжан желтый 3 раза. Также тут представлены кейсы как в ксго . Покупаете вам выпадает всякая хуйня которая в соответствии со своей редкостью выводит вас в топ в Leaderboard на определенный уровень. За хуйню вам маленько дадут баллов за apostol - дохуя. Вы также можете продавать эти хуйни которые выбили. Да да нахуй не ослышались продавать. На торговой площадке. И зарабатывать за это бабки нахуй
             </div>
             <br><br><br>
-            <div class="version-text">версия игры beta 4.3</div>
+            <div class="version-text">версия игры beta 4.4</div>
         </div>
     </div>
 
@@ -875,10 +875,6 @@
                     pvpGameState.enemyHp -= 5; // Контрудар Бориса
                     logPvp(`Борис отражает 5 урона!`);
                     if(pvpGameState.myBorisHp <= 0) { logPvp("Борис разрушен!"); pvpGameState.myBorisHp = 0; }
-                } else if (pvpGameState.myParashnikHp > 0) {
-                    pvpGameState.myParashnikHp -= dmg;
-                    logPvp(`Враг бьет Парашника на ${dmg}. Осталось ${Math.max(0, pvpGameState.myParashnikHp)} HP.`);
-                    if(pvpGameState.myParashnikHp <= 0) { logPvp("Парашник уничтожен!"); pvpGameState.myParashnikHp = 0; }
                 } else {
                     pvpGameState.myHp -= dmg;
                     logPvp(`Враг бьет на ${dmg} урона!`);
@@ -893,10 +889,6 @@
                     pvpGameState.enemyHp -= 5;
                     logPvp(`Борис отражает 5 урона!`);
                     if(pvpGameState.myBorisHp <= 0) { logPvp("Борис разрушен!"); pvpGameState.myBorisHp = 0; }
-                } else if (pvpGameState.myParashnikHp > 0) {
-                    pvpGameState.myParashnikHp -= dmg;
-                    logPvp(`Враг бьет Парашника способностью.`);
-                    if(pvpGameState.myParashnikHp <= 0) { logPvp("Парашник уничтожен!"); pvpGameState.myParashnikHp = 0; }
                 } else {
                     pvpGameState.myHp -= dmg;
                     logPvp(`Враг использует способность! Урон: ${dmg}`);
@@ -913,20 +905,22 @@
                         pvpGameState.enemyHp -= 5;
                         logPvp(`Борис отражает 5 урона!`);
                         if(pvpGameState.myBorisHp <= 0) { logPvp("Борис разрушен!"); pvpGameState.myBorisHp = 0; }
-                    } else if(pvpGameState.myParashnikHp > 0) {
-                        pvpGameState.myParashnikHp -= payload.val;
-                        logPvp(`Враг швыряет предмет в Парашника! Урон: ${payload.val}`);
-                        if(pvpGameState.myParashnikHp <= 0) { logPvp("Парашник уничтожен!"); pvpGameState.myParashnikHp = 0; }
                     } else {
                         pvpGameState.myHp -= payload.val; logPvp(`Враг швыряет предмет! Урон: ${payload.val}`); 
                     }
                 }
                 else if (payload.effect === 'atk') { logPvp(`Враг юзает бафф на атаку!`); }
                 else if (payload.effect === 'boris') { pvpGameState.enemyBorisHp += 100; logPvp(`Враг поставил Бориса!`); }
-                else if (payload.effect === 'parashnik') { pvpGameState.myParashnikHp += 30; logPvp(`Враг поставил Парашника!`); }
+                else if (payload.effect === 'parashnik') { 
+                    // Враг ставит парашник на ИГРОКА
+                    pvpGameState.myParashnikHp = 30; 
+                    logPvp(`Враг поставил Парашника на тебя!`); 
+                }
                 else if (payload.effect === 'shaver') { 
-                    pvpGameState.enemyBorisHp = 0; pvpGameState.myParashnikHp = 0;
-                    logPvp(`Враг сбрил твоего Бориса и Парашника!`);
+                    pvpGameState.enemyBorisHp = 0; 
+                    // Враг сбривает ПАРАШНИК, который стоит на нем
+                    pvpGameState.enemyParashnikHp = 0;
+                    logPvp(`Враг сбрил всю хуйню!`);
                 }
             }
 
@@ -936,6 +930,7 @@
                 if (pvpGameState.myParashnikHp > 0) {
                     pvpGameState.myHp -= 10;
                     pvpGameState.myMp = Math.max(0, pvpGameState.myMp - 15);
+                    pvpGameState.myParashnikHp--; // Уменьшаем заряд парашника
                     logPvp(`Тебя отравил парашник! -10 HP, -15 энергии.`);
                     updatePvpUI();
                     if(pvpGameState.myHp <= 0) { endPvpBattle(false); return; }
@@ -957,10 +952,6 @@
                 pvpGameState.myHp -= 5; // Контрудар Бориса по тебе
                 logPvp(`Борис врага отражает 5 урона!`);
                 if(pvpGameState.enemyBorisHp <= 0) { logPvp("Борис врага разрушен!"); pvpGameState.enemyBorisHp = 0; }
-            } else if (pvpGameState.enemyParashnikHp > 0) {
-                pvpGameState.enemyParashnikHp -= dmg;
-                logPvp(`Ты бьешь Парашника на ${dmg}. Осталось ${Math.max(0, pvpGameState.enemyParashnikHp)} HP.`);
-                if(pvpGameState.enemyParashnikHp <= 0) { logPvp("Парашник врага уничтожен!"); pvpGameState.enemyParashnikHp = 0; }
             } else {
                 pvpGameState.enemyHp -= dmg; 
                 logPvp(`Ты бьешь на ${dmg} урона!`);
@@ -976,6 +967,7 @@
                 if (pvpGameState.enemyParashnikHp > 0) {
                     pvpGameState.enemyHp -= 10;
                     pvpGameState.enemyMp = Math.max(0, pvpGameState.enemyMp - 15);
+                    pvpGameState.enemyParashnikHp--;
                     logPvp(`Враг отравлен парашником! -10 HP.`);
                     updatePvpUI();
                     if(pvpGameState.enemyHp <= 0) { endPvpBattle(true); return; }
@@ -1007,10 +999,6 @@
                     pvpGameState.myHp -= 5;
                     logPvp(`Борис врага отражает 5 урона!`);
                     if(pvpGameState.enemyBorisHp <= 0) { logPvp("Борис врага разрушен!"); pvpGameState.enemyBorisHp = 0; }
-                } else if (pvpGameState.enemyParashnikHp > 0) {
-                    pvpGameState.enemyParashnikHp -= dmg;
-                    logPvp(`Ты бьешь Парашника способностью на ${dmg}.`);
-                    if(pvpGameState.enemyParashnikHp <= 0) { logPvp("Парашник врага уничтожен!"); pvpGameState.enemyParashnikHp = 0; }
                 } else {
                     pvpGameState.enemyHp -= dmg;
                     logPvp(`Ты ебашишь способностью на ${dmg} урона!`);
@@ -1085,21 +1073,24 @@
                 else if (item.name === 'картофель') { pvpGameState.myAtk += 10; logPvp(`Атака +10!`); payload.effect='atk'; payload.val=10; }
                 else if (item.name === 'голова барана') { 
                     if(pvpGameState.enemyBorisHp > 0) { pvpGameState.enemyBorisHp -= 40; logPvp(`Швырнул голову в Бориса!`); if(pvpGameState.enemyBorisHp <= 0) pvpGameState.enemyBorisHp=0; }
-                    else if (pvpGameState.enemyParashnikHp > 0) { pvpGameState.enemyParashnikHp -= 40; logPvp(`Швырнул голову в Парашника!`); if(pvpGameState.enemyParashnikHp <= 0) pvpGameState.enemyParashnikHp=0; }
                     else { pvpGameState.enemyHp -= 40; logPvp(`40 урона!`); }
                     payload.effect='damage'; payload.val=40; 
                 }
                 else if (item.name === 'коала') { pvpGameState.myMp = 100; logPvp(`Энергия 100!`); payload.effect='mp'; payload.val=100; }
                 else if (item.name === 'apostol') { 
                     if(pvpGameState.enemyBorisHp > 0) { pvpGameState.enemyBorisHp -= 100; logPvp(`Швырнул Apostol в Бориса!`); if(pvpGameState.enemyBorisHp <= 0) pvpGameState.enemyBorisHp=0; }
-                    else if (pvpGameState.enemyParashnikHp > 0) { pvpGameState.enemyParashnikHp -= 100; logPvp(`Швырнул Apostol в Парашника!`); if(pvpGameState.enemyParashnikHp <= 0) pvpGameState.enemyParashnikHp=0; }
                     else { pvpGameState.enemyHp -= 100; logPvp(`100 УРОНА!`); }
                     pvpGameState.myHp = Math.min(pvpGameState.myMaxHp, pvpGameState.myHp + 30); logPvp(`+30 HP (вампиризм)`);
                     payload.effect='damage'; payload.val=100; 
                 }
                 else if (item.name === 'шприц и лекарство') { pvpGameState.myHp = pvpGameState.myMaxHp; logPvp(`100% лечение!`); payload.effect='heal'; payload.val=999; }
                 else if (item.name === 'boris') { pvpGameState.myBorisHp += 100; logPvp(`Ты поставил Бориса (100 HP)!`); payload.effect='boris'; }
-                else if (item.name === 'парашник') { pvpGameState.enemyParashnikHp += 30; logPvp(`Ты поставил Парашника врагу!`); payload.effect='parashnik'; }
+                else if (item.name === 'парашник') { 
+                    // Игрок ставит парашник на ВРАГА
+                    pvpGameState.enemyParashnikHp = 30; 
+                    logPvp(`Ты поставил Парашника на врага!`); 
+                    payload.effect='parashnik'; 
+                }
                 else if (item.name === 'Сбриватель хуйни') { 
                     let dmg = 0;
                     if(pvpGameState.enemyBorisHp > 0 || pvpGameState.enemyParashnikHp > 0) dmg = 15;
@@ -1116,6 +1107,7 @@
                 else {
                     if (pvpGameState.enemyParashnikHp > 0 && item.name !== 'Сбриватель хуйни') {
                         pvpGameState.enemyHp -= 10; pvpGameState.enemyMp = Math.max(0, pvpGameState.enemyMp - 15);
+                        pvpGameState.enemyParashnikHp--;
                         logPvp(`Враг отравлен парашником! -10 HP.`); updatePvpUI();
                         if(pvpGameState.enemyHp <= 0) { endPvpBattle(true); return; }
                     }
@@ -1168,13 +1160,6 @@
                         <div class="hp-bar-container"><div class="hp-bar-fill" style="width: ${(pvpGameState.myBorisHp/100)*100}%; background: #00ff00;"></div></div>
                     </div>`;
             }
-            if (pvpGameState.myParashnikHp > 0) {
-                pDep.innerHTML += `
-                    <div class="deployed-item">
-                        <img src="img_parashnik.png" onerror="this.src='https://via.placeholder.com/50?text=P'">
-                        <div class="hp-bar-container"><div class="hp-bar-fill" style="width: ${(pvpGameState.myParashnikHp/30)*100}%; background: #a020f0;"></div></div>
-                    </div>`;
-            }
             if (pvpGameState.enemyBorisHp > 0) {
                 eDep.innerHTML += `
                     <div class="deployed-item">
@@ -1182,11 +1167,19 @@
                         <div class="hp-bar-container"><div class="hp-bar-fill" style="width: ${(pvpGameState.enemyBorisHp/100)*100}%; background: #00ff00;"></div></div>
                     </div>`;
             }
+            // Парашник - это НЕ щит, его полоска означает оставшиеся ходы отравления
             if (pvpGameState.enemyParashnikHp > 0) {
                 eDep.innerHTML += `
                     <div class="deployed-item">
                         <img src="img_parashnik.png" onerror="this.src='https://via.placeholder.com/50?text=P'">
                         <div class="hp-bar-container"><div class="hp-bar-fill" style="width: ${(pvpGameState.enemyParashnikHp/30)*100}%; background: #a020f0;"></div></div>
+                    </div>`;
+            }
+            if (pvpGameState.myParashnikHp > 0) {
+                pDep.innerHTML += `
+                    <div class="deployed-item">
+                        <img src="img_parashnik.png" onerror="this.src='https://via.placeholder.com/50?text=P'">
+                        <div class="hp-bar-container"><div class="hp-bar-fill" style="width: ${(pvpGameState.myParashnikHp/30)*100}%; background: #a020f0;"></div></div>
                     </div>`;
             }
         }
@@ -1315,13 +1308,6 @@
                         <div class="hp-bar-container"><div class="hp-bar-fill" style="width: ${(rpgPlayerBorisHp/100)*100}%; background: #00ff00;"></div></div>
                     </div>`;
             }
-            if (rpgPlayerParashnikHp > 0) {
-                pDep.innerHTML += `
-                    <div class="deployed-item">
-                        <img src="img_parashnik.png" onerror="this.src='https://via.placeholder.com/50?text=P'">
-                        <div class="hp-bar-container"><div class="hp-bar-fill" style="width: ${(rpgPlayerParashnikHp/30)*100}%; background: #a020f0;"></div></div>
-                    </div>`;
-            }
             if (rpgEnemyBorisHp > 0) {
                 eDep.innerHTML += `
                     <div class="deployed-item">
@@ -1334,6 +1320,13 @@
                     <div class="deployed-item">
                         <img src="img_parashnik.png" onerror="this.src='https://via.placeholder.com/50?text=P'">
                         <div class="hp-bar-container"><div class="hp-bar-fill" style="width: ${(rpgEnemyParashnikHp/30)*100}%; background: #a020f0;"></div></div>
+                    </div>`;
+            }
+            if (rpgPlayerParashnikHp > 0) {
+                pDep.innerHTML += `
+                    <div class="deployed-item">
+                        <img src="img_parashnik.png" onerror="this.src='https://via.placeholder.com/50?text=P'">
+                        <div class="hp-bar-container"><div class="hp-bar-fill" style="width: ${(rpgPlayerParashnikHp/30)*100}%; background: #a020f0;"></div></div>
                     </div>`;
             }
         }
@@ -1356,8 +1349,6 @@
                 rpgEnemyBorisHp -= dmg; addLog(`Ты бьешь Бориса на ${dmg}.`); 
                 rpgChar.hp -= 5; addLog(`Борис отражает 5 урона!`);
                 if(rpgEnemyBorisHp <= 0) { rpgEnemyBorisHp = 0; addLog("Борис разрушен!"); }
-            } else if (rpgEnemyParashnikHp > 0) {
-                rpgEnemyParashnikHp -= dmg; addLog(`Ты бьешь Парашника на ${dmg}.`); if(rpgEnemyParashnikHp <= 0) { rpgEnemyParashnikHp = 0; addLog("Парашник уничтожен!"); }
             } else {
                 rpgEnemy.hp -= dmg; addLog(`${rpgChar.name} бьет на ${dmg} урона.`);
             }
@@ -1385,8 +1376,6 @@
                     rpgEnemyBorisHp -= dmg; addLog(`Ты бьешь Бориса способностью.`); 
                     rpgChar.hp -= 5; addLog(`Борис отражает 5 урона!`);
                     if(rpgEnemyBorisHp <= 0) { rpgEnemyBorisHp = 0; addLog("Борис разрушен!"); }
-                } else if (rpgEnemyParashnikHp > 0) {
-                    rpgEnemyParashnikHp -= dmg; addLog(`Ты бьешь Парашника способностью.`); if(rpgEnemyParashnikHp <= 0) { rpgEnemyParashnikHp = 0; addLog("Парашник уничтожен!"); }
                 } else {
                     rpgEnemy.hp -= dmg; 
                 }
@@ -1408,8 +1397,6 @@
                 rpgPlayerBorisHp -= dmg; addLog(`Атака ушла в Бориса.`); 
                 rpgEnemy.hp -= 5; addLog(`Борис отражает 5 урона!`);
                 if(rpgPlayerBorisHp <= 0) { rpgPlayerBorisHp = 0; addLog("Твой Борис разрушен!"); }
-            } else if (rpgPlayerParashnikHp > 0) {
-                rpgPlayerParashnikHp -= dmg; addLog(`Атака ушла в Парашника.`); if(rpgPlayerParashnikHp <= 0) { rpgPlayerParashnikHp = 0; addLog("Твой Парашник уничтожен!"); }
             } else {
                 rpgChar.hp -= dmg; 
             }
@@ -1418,11 +1405,13 @@
             if (rpgChar.hp <= 0) { 
                 addLog(`Ты сдох...`); isPlayerTurn = false; checkButtons(); document.getElementById('battle-music').pause(); setTimeout(() => { document.getElementById('rpg-char-select').classList.remove('hidden'); document.getElementById('rpg-battle-screen').classList.add('hidden'); renderCharStats(); updateUI(); }, 3000); 
             } else { 
-                if(rpgPlayerParashnikHp > 0) {
-                    rpgChar.hp -= 10; rpgEnergy = Math.max(0, rpgEnergy - 15);
-                    addLog(`Тебя отравил парашник! -10 HP.`);
+                if(rpgEnemyParashnikHp > 0) {
+                    // Парашник игрока на враге
+                    rpgEnemy.hp -= 10; rpgEnemy.mp = Math.max(0, (rpgEnemy.mp||0) - 15);
+                    rpgEnemyParashnikHp--;
+                    addLog(`Враг отравлен твоим парашником! -10 HP.`);
                     updateRpgUI();
-                    if(rpgChar.hp <= 0) { addLog(`Ты сдох от яда...`); isPlayerTurn = false; checkButtons(); document.getElementById('battle-music').pause(); setTimeout(() => { document.getElementById('rpg-char-select').classList.remove('hidden'); document.getElementById('rpg-battle-screen').classList.add('hidden'); renderCharStats(); updateUI(); }, 3000); return; }
+                    if(rpgEnemy.hp <= 0) { winRpg(); return; }
                 }
                 
                 isPlayerTurn = true; setTurnIndicator(true); checkButtons(); 
@@ -1699,19 +1688,20 @@
                 else if (item.name === 'картофель') { rpgChar.atk += 10; addLog(`Съел ${item.name}. Атака +10!`); }
                 else if (item.name === 'голова барана') { 
                     if(rpgEnemyBorisHp > 0) { rpgEnemyBorisHp -= 40; addLog(`Швырнул голову в Бориса!`); if(rpgEnemyBorisHp <= 0) { rpgEnemyBorisHp=0; addLog("Борис разрушен!"); } }
-                    else if(rpgEnemyParashnikHp > 0) { rpgEnemyParashnikHp -= 40; addLog(`Швырнул голову в Парашника!`); if(rpgEnemyParashnikHp <= 0) { rpgEnemyParashnikHp=0; addLog("Парашник уничтожен!"); } }
                     else { rpgEnemy.hp -= 40; addLog(`Швырнул ${item.name}. 40 урона!`); }
                 }
                 else if (item.name === 'коала') { rpgEnergy = 100; addLog(`Использовал ${item.name}. Энергия 100!`); }
                 else if (item.name === 'apostol') { 
                     if(rpgEnemyBorisHp > 0) { rpgEnemyBorisHp -= 100; addLog(`Швырнул Apostol в Бориса!`); if(rpgEnemyBorisHp <= 0) { rpgEnemyBorisHp=0; addLog("Борис разрушен!"); } }
-                    else if(rpgEnemyParashnikHp > 0) { rpgEnemyParashnikHp -= 100; addLog(`Швырнул Apostol в Парашника!`); if(rpgEnemyParashnikHp <= 0) { rpgEnemyParashnikHp=0; addLog("Парашник уничтожен!"); } }
                     else { rpgEnemy.hp -= 100; addLog(`ПРИЗВАН APOSTOL! 100 УРОНА!`); }
                     rpgChar.hp = Math.min(rpgChar.maxHp, rpgChar.hp + 30); addLog(`+30 HP (вампиризм)`);
                 }
                 else if (item.name === 'шприц и лекарство') { rpgChar.hp = rpgChar.maxHp; addLog(`100% лечение!`); }
                 else if (item.name === 'boris') { rpgPlayerBorisHp += 100; addLog(`Ты поставил Бориса (100 HP)!`); }
-                else if (item.name === 'парашник') { rpgEnemyParashnikHp += 30; addLog(`Ты поставил Парашника врагу!`); }
+                else if (item.name === 'парашник') { 
+                    rpgEnemyParashnikHp = 30; 
+                    addLog(`Ты поставил Парашника на врага!`); 
+                }
                 else if (item.name === 'Сбриватель хуйни') { 
                     let dmg = 0;
                     if(rpgEnemyBorisHp > 0 || rpgEnemyParashnikHp > 0) dmg = 15;
@@ -1724,7 +1714,8 @@
                 if (rpgEnemy.hp <= 0) winRpg(); else {
                     if (rpgEnemyParashnikHp > 0 && item.name !== 'Сбриватель хуйни') {
                         rpgEnemy.hp -= 10; rpgEnemy.mp = Math.max(0, (rpgEnemy.mp||0) - 15);
-                        addLog(`Враг отравлен парашником! -10 HP.`); updateRpgUI();
+                        rpgEnemyParashnikHp--;
+                        addLog(`Враг отравлен твоим парашником! -10 HP.`); updateRpgUI();
                         if(rpgEnemy.hp <= 0) { winRpg(); return; }
                     }
                     setTimeout(enemyTurn, 800); 
