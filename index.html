@@ -256,11 +256,25 @@
         </div>
     </div>
     
-     <div id="tab-settings" class="panel hidden">
+        <div id="tab-settings" class="panel hidden">
             <h2>Настройки</h2>
             <div class="settings-text">
              эта вкладка на случай если кто то зайдет на сайт и подумает а хули эта хуйня не фурычит как я хочю нахуй или просто хочет обезопасить свой аккаунт тут вы можете почти все что угодно нахуй разгуляться есть где
             </div>
+
+            <br>
+            <div id="mfa-block">
+                <button onclick="enable2FA()">🔐 подключить жоскую 2fa аутинфикацию с помощью наших партнеров FreeOTP</button>
+                <div id="mfa-setup" class="hidden">
+                    <p>скачай приложуху FreeOTP с gugl play и отскнируй эту хуйню:</p>
+                    <img id="mfa-qr" width="200" height="200">
+                    <p>ну или текстом тож можно:<br>
+                       <b id="mfa-secret"></b></p>
+                    <input type="text" id="mfa-code" placeholder="6-значный код" maxlength="6">
+                    <button onclick="confirm2FA()">Подтвердить</button>
+                </div>
+            </div>
+
             <br><br><br>
             <div class="version-text">версия игры beta 5.3</div>
         </div>
