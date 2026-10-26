@@ -4,7 +4,7 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const EDGE_FUNCTION_NAME = 'award-coins'; 
 const battleBackgrounds = ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png', 'bg6.png'];
 
-// ВЫРЕЗАЛИ НАХУЙ ЗАГРУЗКУ. СРАЗУ ПОКАЗЫВАЕМ ЭКРАН ЛОГИНА.
+// СРАЗУ ПОКАЗЫВАЕМ ЭКРАН ЛОГИНА.
 window.addEventListener('load', () => {
     document.getElementById('loading-screen').classList.add('hidden');
     document.getElementById('auth-screen').classList.remove('hidden');
@@ -607,7 +607,7 @@ function handlePvpEnemyAction(payload) {
 
 function pvpAttack() {
     if (!pvpGameState.isMyTurn) return;
-    playSoundEffect('attack');
+    playSoundEffect('attack'); // СРАЗУ ЗВУК
     pvpGameState.isMyTurn = false; pvpGameState.myItemUsed = false; disablePvpButtons(); setPvpTurn(false);
     let dmg = Math.floor(Math.random() * 10) + pvpGameState.myAtk;
     if (pvpGameState.enemyDefending) { dmg = Math.floor(dmg * 0.2); pvpGameState.enemyDefending = false; logPvp(`Враг заблокировал атаку, он получил ${dmg} урона (80% срезано).`); }
@@ -641,7 +641,7 @@ function pvpAttack() {
 function pvpDefend() {
     if (!pvpGameState.isMyTurn) return;
     if (pvpGameState.myMp < 40) { alert("Мало маны для защиты! Нужно 40."); return; }
-    playSoundEffect('protection');
+    playSoundEffect('protection'); // СРАЗУ ЗВУК
     pvpGameState.myMp -= 40;
     pvpGameState.myItemUsed = false;
     pvpGameState.isMyTurn = false; disablePvpButtons(); setPvpTurn(false);
@@ -652,7 +652,7 @@ function pvpDefend() {
 
 function pvpSkill() {
     if (!pvpGameState.isMyTurn || pvpGameState.myMp < 100) return;
-    playSoundEffect('attack');
+    playSoundEffect('attack'); // СРАЗУ ЗВУК
     pvpGameState.isMyTurn = false; pvpGameState.myMp = 0; pvpGameState.myItemUsed = false; disablePvpButtons(); setPvpTurn(false);
     let dmg = 0;
     let charType = currentPvpChar;
@@ -860,7 +860,7 @@ function animatePvpItemUse(item, isDamage) {
     const battlefield = document.getElementById('pvp-battlefield-bg');
     const el = document.createElement('img');
     el.src = item.img || 'https://via.placeholder.com/50?text=ITEM'; 
-    el.style.position = 'absolute'; el.style.width = '80px'; el.style.height = '80px'; el.style.zIndex = '50'; 
+    el.style.position = 'absolute'; el.style.width = '80px'; el.style.height = '80px'; el.style.zIndex = '9999'; // ПОДНЯЛИ ВЫШЕ ВСЕХ
     el.style.transition = 'all 2.6s cubic-bezier(0.25, 0.1, 0.25, 1)'; // 2.6 СЕКУНДЫ
     
     if (isDamage) {
@@ -927,7 +927,9 @@ function spawnEnemy() {
     ];
     let eType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)]; let eHp = Math.floor(baseHp * eType.hpMult);
     rpgEnemy = { name: `${eType.name} (Ур. ${rpgFloorMain}.${rpgFloorSub})`, hp: eHp, maxHp: eHp, atk: Math.floor(baseAtk * eType.atkMult), img: eType.img };
-    rpgPlayerBorisHp = 0; rpgPlayerParashnikHp = 0; rpgEnemyBorisHp = 0; rpgEnemyParashnikHp = 0; rpgItemUsed = false; rpgPlayerDefending = false; rpgEnemyStunned = false;
+    // БОРИС И ПАРАШНИК ОСТАЮТСЯ!
+    // rpgPlayerBorisHp = 0; rpgPlayerParashnikHp = 0; <-- УБРАЛИ ЭТО
+    rpgEnemyBorisHp = 0; rpgEnemyParashnikHp = 0; rpgItemUsed = false; rpgPlayerDefending = false; rpgEnemyStunned = false;
     document.getElementById('rpg-floor').innerText = `ЭТАЖ ${rpgFloorMain}.${rpgFloorSub}`;
     document.getElementById('rpg-enemy-img').src = rpgEnemy.img;
     updateRpgUI(); addLog(`На арене появился ${rpgEnemy.name}!`);
@@ -985,7 +987,7 @@ function animateAttack(isPlayer) {
 
 function rpgAttack() {
     if (!isPlayerTurn || rpgChar.hp <= 0 || rpgEnemy.hp <= 0) return;
-    playSoundEffect('attack');
+    playSoundEffect('attack'); // СРАЗУ ЗВУК
     isPlayerTurn = false; rpgItemUsed = false; setTurnIndicator(false); checkButtons(); animateAttack(true);
     let dmg = Math.floor(Math.random() * 10) + rpgChar.atk;
     if(rpgEnemyBorisHp > 0) {
@@ -1002,14 +1004,14 @@ function rpgAttack() {
 function rpgDefend() {
     if (!isPlayerTurn || rpgChar.hp <= 0 || rpgEnemy.hp <= 0) return;
     if (rpgMana < 40) { alert("Мало маны для защиты! Нужно 40."); return; }
-    playSoundEffect('protection');
+    playSoundEffect('protection'); // СРАЗУ ЗВУК
     rpgMana -= 40;
     isPlayerTurn = false; rpgItemUsed = false; rpgPlayerDefending = true; rpgEnemyStunned = true; setTurnIndicator(false); checkButtons();
     addLog(`${rpgChar.name} в защите (-40 маны). Враг споткнется на след. ход!`); updateRpgUI(); enemyTurnTimeout = setTimeout(() => enemyTurn(true), 800);
 }
 function rpgSkill() {
     if (!isPlayerTurn || rpgMana < 100 || rpgChar.hp <= 0 || rpgEnemy.hp <= 0) return;
-    playSoundEffect('attack');
+    playSoundEffect('attack'); // СРАЗУ ЗВУК
     isPlayerTurn = false; rpgMana = 0; rpgItemUsed = false; setTurnIndicator(false); checkButtons(); animateAttack(true);
     let dmg = 0;
     if (rpgChar.class === "Берсерк") { dmg = 60 + (currentUpgrades[currentCharType].atk * 10); addLog(`Сокрушающий удар на ${dmg}!`); }
@@ -1419,7 +1421,7 @@ function animateItemUse(item, isDamage) {
     const battlefield = document.getElementById('battlefield-bg');
     const el = document.createElement('img');
     el.src = item.img || 'https://via.placeholder.com/50?text=ITEM'; 
-    el.style.position = 'absolute'; el.style.width = '80px'; el.style.height = '80px'; el.style.zIndex = '50'; 
+    el.style.position = 'absolute'; el.style.width = '80px'; el.style.height = '80px'; el.style.zIndex = '9999'; // ПОДНЯЛИ ВЫШЕ ВСЕХ
     el.style.transition = 'all 2.6s cubic-bezier(0.25, 0.1, 0.25, 1)'; // 2.6 СЕКУНДЫ
     
     if (isDamage) {
