@@ -17,6 +17,14 @@ function loadAssets() {
         const sounds = ['attack.mp4', 'protection.mp4', 'heal.mp4', 'harmful.mp4', 'thing.mp4', 'ambient.mp3'];
         const total = images.length + sounds.length;
         let loaded = 0;
+        
+        let finished = false;
+        const finish = () => {
+            if (finished) return;
+            finished = true;
+            resolve();
+        };
+        setTimeout(finish, 10000);
 
         const updateProgress = () => {
             loaded++;
@@ -25,7 +33,7 @@ function loadAssets() {
             const loadText = document.getElementById('load-text');
             if (progressBar) progressBar.style.width = percent + '%';
             if (loadText) loadText.innerText = percent + '%';
-            if (loaded === total) resolve();
+            if (loaded === total) finish();
         };
 
         images.forEach(src => {
