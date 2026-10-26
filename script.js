@@ -99,7 +99,7 @@ function preloadSounds() {
     for (let key in sounds) {
         let audio = new Audio(sounds[key]);
         audio.preload = 'auto';
-        audio.volume = 1.0; // ГРОМКОСТЬ НА МАКСИМУМ
+        audio.volume = 1.0; 
         soundCache[key] = audio;
     }
 }
@@ -107,7 +107,7 @@ function preloadSounds() {
 function playSoundEffect(type) {
     if (soundCache[type]) {
         let clone = soundCache[type].cloneNode();
-        clone.volume = 1.0; // ГРОМКОСТЬ НА МАКСИМУМ
+        clone.volume = 1.0; 
         clone.play().catch(e => console.log("Звук заблокирован:", e));
     }
 }
@@ -769,6 +769,10 @@ async function pvpUseItem(itemName) {
     pvpGameState.myItemUsed = true; 
     disablePvpButtons(); 
     closeItemMenu();
+    
+    // ЗВУК СРАЗУ ПРИ НАЖАТИИ
+    playSoundEffect('thing');
+    
     let isDamaging = (item.name === 'голова барана' || item.name === 'apostol' || item.name === 'Сбриватель хуйни');
     animatePvpItemUse(item, isDamaging);
     try {
@@ -779,7 +783,7 @@ async function pvpUseItem(itemName) {
     const applyEffect = () => {
         let payload = { type: 'item', effect: '', val: 0 };
         if (item.name === 'хуйня') { pvpGameState.myHp = Math.min(pvpGameState.myMaxHp, pvpGameState.myHp + 20); logPvp(`+20 HP`); payload.effect='heal'; payload.val=20; playSoundEffect('heal'); }
-        else if (item.name === 'картофель') { pvpGameState.myAtk += 10; logPvp(`Атака +10!`); payload.effect='atk'; payload.val=10; playSoundEffect('thing'); }
+        else if (item.name === 'картофель') { pvpGameState.myAtk += 10; logPvp(`Атака +10!`); payload.effect='atk'; payload.val=10; }
         else if (item.name === 'голова барана') { 
             playSoundEffect('harmful'); // ЗВУК УДАРА ПРИ ПОПАДАНИИ
             let dmg = 40;
@@ -789,7 +793,7 @@ async function pvpUseItem(itemName) {
             else { pvpGameState.enemyHp -= dmg; logPvp(`${dmg} урона!`); }
             payload.effect='damage'; payload.val=dmg; 
         }
-        else if (item.name === 'коала') { pvpGameState.myMp = 100; logPvp(`Мана 100!`); payload.effect='mp'; payload.val=100; playSoundEffect('thing'); }
+        else if (item.name === 'коала') { pvpGameState.myMp = 100; logPvp(`Мана 100!`); payload.effect='mp'; payload.val=100; }
         else if (item.name === 'apostol') { 
             playSoundEffect('harmful'); // ЗВУК УДАРА ПРИ ПОПАДАНИИ
             let dmg = 100;
@@ -800,10 +804,10 @@ async function pvpUseItem(itemName) {
             payload.effect='damage'; payload.val=dmg; 
         }
         else if (item.name === 'шприц и лекарство') { pvpGameState.myHp = pvpGameState.myMaxHp; logPvp(`100% лечение!`); payload.effect='heal'; payload.val=999; playSoundEffect('heal'); }
-        else if (item.name === 'boris') { pvpGameState.myBorisHp += 60; logPvp(`Ты поставил Бориса!`); payload.effect='boris'; playSoundEffect('thing'); }
-        else if (item.name === 'парашник') { pvpGameState.enemyParashnikHp += 30; logPvp(`Ты поставил Парашника врагу!`); payload.effect='parashnik'; playSoundEffect('thing'); }
+        else if (item.name === 'boris') { pvpGameState.myBorisHp += 60; logPvp(`Ты поставил Бориса!`); payload.effect='boris'; }
+        else if (item.name === 'парашник') { pvpGameState.enemyParashnikHp += 30; logPvp(`Ты поставил Парашника врагу!`); payload.effect='parashnik'; }
         else if (item.name === 'Сбриватель хуйни') { 
-            pvpGameState.enemyBorisHp = 0; pvpGameState.enemyParashnikHp = 0; logPvp(`Ты сбрил всю хуйню врага!`); payload.effect='shaver'; playSoundEffect('thing');
+            pvpGameState.enemyBorisHp = 0; pvpGameState.enemyParashnikHp = 0; logPvp(`Ты сбрил всю хуйню врага!`); payload.effect='shaver'; 
         }
         else if (item.name === 'Вам не повезло') { logPvp(`Вы нихуя не сделали.`); payload.effect='nothing'; }
         updatePvpUI();
@@ -818,7 +822,7 @@ async function pvpUseItem(itemName) {
             enablePvpButtons(); 
         }
     };
-    setTimeout(applyEffect, 2300); // ЖДЕМ 2.3 СЕКУНДЫ ПОКА ЛЕТИТ
+    setTimeout(applyEffect, 4000); // ЖДЕМ 4 СЕКУНДЫ ПОКА ЛЕТИТ
 }
 
 async function endPvpBattle(isWin) {
@@ -904,7 +908,7 @@ function animatePvpItemUse(item, isDamage) {
     const el = document.createElement('img');
     el.src = item.img || 'https://via.placeholder.com/50?text=ITEM'; 
     el.style.position = 'absolute'; el.style.width = '80px'; el.style.height = '80px'; el.style.zIndex = '50'; 
-    el.style.transition = 'all 2.3s cubic-bezier(0.25, 0.1, 0.25, 1)'; // ЗАМЕДЛЕНО НА 65%
+    el.style.transition = 'all 4s cubic-bezier(0.25, 0.1, 0.25, 1)'; // ЗАМЕДЛЕНО НА 4 СЕКУНДЫ
     
     if (isDamage) {
         el.style.left = '20%'; el.style.top = '40%'; el.style.transform = 'rotate(-20deg) scale(1)'; battlefield.appendChild(el);
@@ -913,16 +917,14 @@ function animatePvpItemUse(item, isDamage) {
         el.style.left = '75%'; el.style.top = '30%'; el.style.transform = 'scale(1.5) rotate(720deg)'; 
         setTimeout(() => { 
             el.remove(); 
-            playSoundEffect('thing'); // ЗВУК ШВЫРКА ПРИ ПОПАДАНИИ
-        }, 2300);
+        }, 4000);
     } else {
         el.style.left = '25%'; el.style.top = '30%'; el.style.transform = 'rotate(0deg) scale(1)'; battlefield.appendChild(el);
         void el.offsetWidth;
         el.style.top = '60%'; el.style.opacity = '0'; el.style.transform = 'scale(0.8) rotate(15deg)';
         setTimeout(() => { 
             el.remove(); 
-            playSoundEffect('thing');
-        }, 2300);
+        }, 4000);
     }
 }
 
@@ -1413,6 +1415,10 @@ async function useItemInBattle(itemName) {
     if (itemIndex === -1) return;
     const item = currentInventory[itemIndex];
     isPlayerTurn = false; rpgItemUsed = true; setTurnIndicator(false); checkButtons();
+    
+    // ЗВУК СРАЗУ ПРИ НАЖАТИИ
+    playSoundEffect('thing');
+    
     let isDamaging = (item.name === 'голова барана' || item.name === 'apostol' || item.name === 'Сбриватель хуйни');
     animateItemUse(item, isDamaging);
     try {
@@ -1422,7 +1428,7 @@ async function useItemInBattle(itemName) {
     } catch(e) { addLog("Фатальная ошибка сервера."); isPlayerTurn = true; rpgItemUsed = false; checkButtons(); return; }
     const applyEffect = () => {
         if (item.name === 'хуйня') { rpgChar.hp = Math.min(rpgChar.maxHp, rpgChar.hp + 20); addLog(`Выпил ${item.name}. +20 HP.`); playSoundEffect('heal'); }
-        else if (item.name === 'картофель') { rpgChar.atk += 10; addLog(`Съел ${item.name}. Атака +10!`); playSoundEffect('thing'); }
+        else if (item.name === 'картофель') { rpgChar.atk += 10; addLog(`Съел ${item.name}. Атака +10!`); }
         else if (item.name === 'голова барана') { 
             playSoundEffect('harmful'); // ЗВУК УДАРА ПРИ ПОПАДАНИИ
             let dmg = 40;
@@ -1430,7 +1436,7 @@ async function useItemInBattle(itemName) {
             else if(rpgEnemyParashnikHp > 0) { rpgEnemyParashnikHp -= dmg; addLog(`Швырнул голову в Парашника!`); if(rpgEnemyParashnikHp <= 0) { rpgEnemyParashnikHp=0; addLog("Парашник уничтожен!"); } }
             else { rpgEnemy.hp -= dmg; addLog(`Швырнул ${item.name}. ${dmg} урона!`); }
         }
-        else if (item.name === 'коала') { rpgMana = 100; addLog(`Использовал ${item.name}. Мана 100!`); playSoundEffect('thing'); }
+        else if (item.name === 'коала') { rpgMana = 100; addLog(`Использовал ${item.name}. Мана 100!`); }
         else if (item.name === 'apostol') { 
             playSoundEffect('harmful'); // ЗВУК УДАРА ПРИ ПОПАДАНИИ
             let dmg = 100;
@@ -1439,9 +1445,9 @@ async function useItemInBattle(itemName) {
             else { rpgEnemy.hp -= dmg; addLog(`ПРИЗВАН APOSTOL! ${dmg} УРОНА!`); }
         }
         else if (item.name === 'шприц и лекарство') { rpgChar.hp = rpgChar.maxHp; addLog(`100% лечение!`); playSoundEffect('heal'); }
-        else if (item.name === 'boris') { rpgPlayerBorisHp += 60; addLog(`Ты поставил Бориса!`); playSoundEffect('thing'); }
-        else if (item.name === 'парашник') { rpgEnemyParashnikHp += 30; addLog(`Ты поставил Парашника врагу!`); playSoundEffect('thing'); }
-        else if (item.name === 'Сбриватель хуйни') { rpgEnemyBorisHp = 0; rpgEnemyParashnikHp = 0; addLog(`Ты сбрил всю хуйню врага!`); playSoundEffect('thing'); }
+        else if (item.name === 'boris') { rpgPlayerBorisHp += 60; addLog(`Ты поставил Бориса!`); }
+        else if (item.name === 'парашник') { rpgEnemyParashnikHp += 30; addLog(`Ты поставил Парашника врагу!`); }
+        else if (item.name === 'Сбриватель хуйни') { rpgEnemyBorisHp = 0; rpgEnemyParashnikHp = 0; addLog(`Ты сбрил всю хуйню врага!`); }
         else if (item.name === 'Вам не повезло') { addLog(`Вы нихуя не сделали.`); }
         updateRpgUI(); 
         if (rpgEnemy.hp <= 0) winRpg(); else {
@@ -1455,7 +1461,7 @@ async function useItemInBattle(itemName) {
             checkButtons(); 
         }
     };
-    setTimeout(applyEffect, 2300); // ЖДЕМ 2.3 СЕКУНДЫ ПОКА ЛЕТИТ
+    setTimeout(applyEffect, 4000); // ЖДЕМ 4 СЕКУНДЫ ПОКА ЛЕТИТ
     closeItemMenu();
 }
 
@@ -1464,7 +1470,7 @@ function animateItemUse(item, isDamage) {
     const el = document.createElement('img');
     el.src = item.img || 'https://via.placeholder.com/50?text=ITEM'; 
     el.style.position = 'absolute'; el.style.width = '80px'; el.style.height = '80px'; el.style.zIndex = '50'; 
-    el.style.transition = 'all 2.3s cubic-bezier(0.25, 0.1, 0.25, 1)'; // ЗАМЕДЛЕНО НА 65%
+    el.style.transition = 'all 4s cubic-bezier(0.25, 0.1, 0.25, 1)'; // ЗАМЕДЛЕНО НА 4 СЕКУНДЫ
     
     if (isDamage) {
         el.style.left = '20%'; el.style.top = '40%'; el.style.transform = 'rotate(-20deg) scale(1)'; battlefield.appendChild(el);
@@ -1473,16 +1479,14 @@ function animateItemUse(item, isDamage) {
         el.style.left = '75%'; el.style.top = '30%'; el.style.transform = 'scale(1.5) rotate(720deg)'; 
         setTimeout(() => { 
             el.remove(); 
-            playSoundEffect('thing'); // ЗВУК ШВЫРКА ПРИ ПОПАДАНИИ
-        }, 2300);
+        }, 4000);
     } else {
         el.style.left = '25%'; el.style.top = '30%'; el.style.transform = 'rotate(0deg) scale(1)'; battlefield.appendChild(el);
         void el.offsetWidth;
         el.style.top = '60%'; el.style.opacity = '0'; el.style.transform = 'scale(0.8) rotate(15deg)';
         setTimeout(() => { 
             el.remove(); 
-            playSoundEffect('thing');
-        }, 2300);
+        }, 4000);
     }
 }
 
