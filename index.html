@@ -125,8 +125,24 @@
         .case-item-left { display: flex; align-items: center; gap: 10px; }
         .case-item-desc { font-size: 12px; color: #333; margin-top: 3px; }
 
-        /* Стили для Бориса (Щит) */
-        .shield-indicator { position: absolute; top: 50px; left: 50%; transform: translateX(-50%); background: rgba(0,0,255,0.7); color: #fff; padding: 2px 8px; border-radius: 5px; font-size: 12px; font-weight: bold; border: 1px solid #fff; z-index: 15;}
+        /* ВИЗУАЛ РАЗМЕЩЕННЫХ ПРЕДМЕТОВ (BORIS, ПАРАШНИК) */
+        .deployed-items-container {
+            position: absolute; bottom: 60px; display: flex; gap: 10px; z-index: 20;
+        }
+        .deployed-items-container.left { left: 10%; }
+        .deployed-items-container.right { right: 10%; }
+
+        .deployed-item {
+            display: flex; flex-direction: column; align-items: center; width: 60px;
+            animation: dropIn 0.3s ease-out;
+        }
+        @keyframes dropIn { 0% { transform: translateY(-50px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+        
+        .deployed-item img { width: 50px; height: 50px; object-fit: contain; filter: drop-shadow(0 0 5px #fff); }
+        .deployed-item .hp-bar-container {
+            width: 100%; height: 6px; background: #333; border: 1px solid #000; margin-top: 2px; border-radius: 3px; overflow: hidden;
+        }
+        .deployed-item .hp-bar-fill { height: 100%; background: #00ff00; transition: width 0.3s; }
     </style>
 </head>
 <body>
@@ -141,7 +157,7 @@
         <button onclick="register()">Зарегаться</button>
         <button onclick="login()">Войти</button>
         <p id="auth-msg"></p>
-        <div class="version-text" style="margin-top: 15px;">версия игры beta 3.9</div>
+        <div class="version-text" style="margin-top: 15px;">версия игры beta 4.0</div>
     </div>
 
     <div id="main-screen" class="hidden">
@@ -234,8 +250,11 @@
                 <h3 id="rpg-floor" style="margin: 0 0 10px 0; color: #000080;">ЭТАЖ 1.1</h3>
                 
                 <div class="battlefield" id="battlefield-bg">
+                    <!-- КОНТЕЙНЕРЫ ДЛЯ РАЗМЕЩЕННЫХ ПРЕДМЕТОВ -->
+                    <div class="deployed-items-container left" id="rpg-player-deployed"></div>
+                    <div class="deployed-items-container right" id="rpg-enemy-deployed"></div>
+
                     <div class="combatant">
-                        <div id="rpg-player-shield" class="shield-indicator hidden">Boris: 60/60</div>
                         <div class="combatant-stats">
                             <b id="rpg-player-name">Игрок</b><br>
                             HP: <span id="rpg-player-hp-text">100/100</span>
@@ -246,7 +265,6 @@
                         <img id="rpg-player-img" src="https://via.placeholder.com/100?text=CHAR" class="char-sprite">
                     </div>
                     <div class="combatant">
-                        <div id="rpg-enemy-shield" class="shield-indicator hidden">Boris: 60/60</div>
                         <div class="combatant-stats" style="text-align: right;">
                             <b id="rpg-enemy-name">Враг</b><br>
                             HP: <span id="rpg-enemy-hp-text">100/100</span>
@@ -272,8 +290,11 @@
                 <h3 style="margin: 0 0 10px 0; color: #000080;">PVP БОЙ</h3>
                 
                 <div class="battlefield" id="pvp-battlefield-bg">
+                    <!-- КОНТЕЙНЕРЫ ДЛЯ РАЗМЕЩЕННЫХ ПРЕДМЕТОВ -->
+                    <div class="deployed-items-container left" id="pvp-player-deployed"></div>
+                    <div class="deployed-items-container right" id="pvp-enemy-deployed"></div>
+
                     <div class="combatant">
-                        <div id="pvp-player-shield" class="shield-indicator hidden">Boris: 60/60</div>
                         <div class="combatant-stats">
                             <b id="pvp-player-name">Ты</b><br>
                             HP: <span id="pvp-player-hp-text">100/100</span>
@@ -284,7 +305,6 @@
                         <img id="pvp-player-img" src="https://via.placeholder.com/100?text=YOU" class="char-sprite">
                     </div>
                     <div class="combatant">
-                        <div id="pvp-enemy-shield" class="shield-indicator hidden">Boris: 60/60</div>
                         <div class="combatant-stats" style="text-align: right;">
                             <b id="pvp-enemy-name">Враг</b><br>
                             HP: <span id="pvp-enemy-hp-text">100/100</span>
@@ -363,7 +383,7 @@
                 привет представляем вашему вниманию новомую игру pepen40 games . У вас наверняка возник вопрос что это за хуйня как в это играть? смотрите нужно нажимать на пидорасов поочередно в соответствии с тем с какой последовательностью каждый из них пищит. Ну там пропищал apostol 2 раза потом амжан желтый 3 раза . Значит надо нажать на apostol 3 раза и потом амжан желтый 3 раза. Также тут представлены кейсы как в ксго . Покупаете вам выпадает всякая хуйня которая в соответствии со своей редкостью выводит вас в топ в Leaderboard на определенный уровень. За хуйню вам маленько дадут баллов за apostol - дохуя. Вы также можете продавать эти хуйни которые выбили. Да да нахуй не ослышались продавать. На торговой площадке. И зарабатывать за это бабки нахуй
             </div>
             <br><br><br>
-            <div class="version-text">версия игры beta 3.9</div>
+            <div class="version-text">версия игры beta 4.0</div>
         </div>
     </div>
 
@@ -448,7 +468,7 @@
             "голова барана": { desc: "ее удалось спиздить у дяди мухмеда . если ебануть такую в кого нибудь то оно снесет 40 хп!", chance: "15%" },
             "коала": { desc: "коала. восстановит энергию на 100%.", chance: "10%" },
             "apostol": { desc: "apostol. apostol! apostol!!!", chance: "3%" },
-            "парашник": { desc: "ставишь его он пускает пары и отравляет противника также забирает его энергию. наносит 10 урона и сжигает 15 энергии в течение 3 ходов.", chance: "20%" },
+            "парашник": { desc: "ставишь его он пускает пары и отравляет противника также забирает его энергию. наносит 10 урона и сжигает 15 энергии в течение 3 ходов. имеет 30 хп.", chance: "20%" },
             "boris": { desc: "ставишь его и он поглощает в себя весь урон от врага. но он не вечный. у него 60 хп.", chance: "3%" },
             "шприц и лекарство": { desc: "100% лечение персонажа. восстанавливает все здоровье.", chance: "12%" },
             "Сбриватель хуйни": { desc: "с одного применения убирает всю хуйню которую поставил противник (boris, парашник). урон не наносит.", chance: "7%" },
@@ -710,7 +730,7 @@
         // ==========================================
         let currentPvpChar = null;
         let isPvpHost = false;
-        let pvpGameState = { myHp: 0, enemyHp: 0, myMaxHp: 0, enemyMaxHp: 0, myMp: 0, enemyMp: 0, isMyTurn: false, myShieldHp: 0, enemyShieldHp: 0, myPoison: 0, enemyPoison: 0 };
+        let pvpGameState = { myHp: 0, enemyHp: 0, myMaxHp: 0, enemyMaxHp: 0, myMp: 0, enemyMp: 0, isMyTurn: false, myBorisHp: 0, enemyBorisHp: 0, myParashnikHp: 0, enemyParashnikHp: 0 };
         
         function openPvpLobby() {
             document.getElementById('pvp-lobby-modal').classList.remove('hidden');
@@ -833,7 +853,7 @@
             let hp = baseHp + (currentUpgrades[charType].hp * 20);
             let atk = baseAtk + (currentUpgrades[charType].atk * 5);
 
-            pvpGameState = { myHp: hp, myMaxHp: hp, myAtk: atk, myMp: 0, enemyHp: enemyHp, enemyMaxHp: enemyHp, enemyName: enemyName, enemyMp: 0, isMyTurn: isPvpHost, myShieldHp: 0, enemyShieldHp: 0, myPoison: 0, enemyPoison: 0 };
+            pvpGameState = { myHp: hp, myMaxHp: hp, myAtk: atk, myMp: 0, enemyHp: enemyHp, enemyMaxHp: enemyHp, enemyName: enemyName, enemyMp: 0, isMyTurn: isPvpHost, myBorisHp: 0, enemyBorisHp: 0, myParashnikHp: 0, enemyParashnikHp: 0 };
 
             document.getElementById('pvp-enemy-name').innerText = enemyName;
             document.getElementById('pvp-enemy-img').src = "https://via.placeholder.com/100?text=ENEMY"; 
@@ -851,10 +871,14 @@
 
             if (payload.type === 'attack') {
                 let dmg = payload.dmg;
-                if (pvpGameState.myShieldHp > 0) {
-                    pvpGameState.myShieldHp -= dmg;
-                    logPvp(`Враг бьет Бориса на ${dmg}. Осталось ${Math.max(0, pvpGameState.myShieldHp)} HP.`);
-                    if(pvpGameState.myShieldHp <= 0) { logPvp("Борис разрушен!"); pvpGameState.myShieldHp = 0; }
+                if (pvpGameState.myBorisHp > 0) {
+                    pvpGameState.myBorisHp -= dmg;
+                    logPvp(`Враг бьет Бориса на ${dmg}. Осталось ${Math.max(0, pvpGameState.myBorisHp)} HP.`);
+                    if(pvpGameState.myBorisHp <= 0) { logPvp("Борис разрушен!"); pvpGameState.myBorisHp = 0; }
+                } else if (pvpGameState.myParashnikHp > 0) {
+                    pvpGameState.myParashnikHp -= dmg;
+                    logPvp(`Враг бьет Парашника на ${dmg}. Осталось ${Math.max(0, pvpGameState.myParashnikHp)} HP.`);
+                    if(pvpGameState.myParashnikHp <= 0) { logPvp("Парашник уничтожен!"); pvpGameState.myParashnikHp = 0; }
                 } else {
                     pvpGameState.myHp -= dmg;
                     logPvp(`Враг бьет на ${dmg} урона!`);
@@ -863,10 +887,14 @@
                 logPvp(`Враг встает в защиту.`);
             } else if (payload.type === 'skill') {
                 let dmg = payload.dmg;
-                if (pvpGameState.myShieldHp > 0) {
-                    pvpGameState.myShieldHp -= dmg;
+                if (pvpGameState.myBorisHp > 0) {
+                    pvpGameState.myBorisHp -= dmg;
                     logPvp(`Враг бьет Бориса способностью на ${dmg}.`);
-                    if(pvpGameState.myShieldHp <= 0) { logPvp("Борис разрушен!"); pvpGameState.myShieldHp = 0; }
+                    if(pvpGameState.myBorisHp <= 0) { logPvp("Борис разрушен!"); pvpGameState.myBorisHp = 0; }
+                } else if (pvpGameState.myParashnikHp > 0) {
+                    pvpGameState.myParashnikHp -= dmg;
+                    logPvp(`Враг бьет Парашника способностью.`);
+                    if(pvpGameState.myParashnikHp <= 0) { logPvp("Парашник уничтожен!"); pvpGameState.myParashnikHp = 0; }
                 } else {
                     pvpGameState.myHp -= dmg;
                     logPvp(`Враг использует способность! Урон: ${dmg}`);
@@ -877,42 +905,37 @@
                     else { pvpGameState.enemyHp = Math.min(pvpGameState.enemyMaxHp, pvpGameState.enemyHp + payload.val); logPvp(`Враг хилится на ${payload.val}!`); }
                 }
                 else if (payload.effect === 'damage') { 
-                    if(pvpGameState.myShieldHp > 0) {
-                        pvpGameState.myShieldHp -= payload.val;
+                    if(pvpGameState.myBorisHp > 0) {
+                        pvpGameState.myBorisHp -= payload.val;
                         logPvp(`Враг швыряет предмет в Бориса! Урон: ${payload.val}`);
-                        if(pvpGameState.myShieldHp <= 0) { logPvp("Борис разрушен!"); pvpGameState.myShieldHp = 0; }
+                        if(pvpGameState.myBorisHp <= 0) { logPvp("Борис разрушен!"); pvpGameState.myBorisHp = 0; }
+                    } else if(pvpGameState.myParashnikHp > 0) {
+                        pvpGameState.myParashnikHp -= payload.val;
+                        logPvp(`Враг швыряет предмет в Парашника! Урон: ${payload.val}`);
+                        if(pvpGameState.myParashnikHp <= 0) { logPvp("Парашник уничтожен!"); pvpGameState.myParashnikHp = 0; }
                     } else {
                         pvpGameState.myHp -= payload.val; logPvp(`Враг швыряет предмет! Урон: ${payload.val}`); 
                     }
                 }
                 else if (payload.effect === 'atk') { logPvp(`Враг юзает бафф на атаку!`); }
-                else if (payload.effect === 'boris') { pvpGameState.enemyShieldHp += 60; logPvp(`Враг поставил Бориса!`); }
-                else if (payload.effect === 'parashnik') { pvpGameState.myPoison = 3; logPvp(`Враг отравил тебя парашником!`); }
+                else if (payload.effect === 'boris') { pvpGameState.enemyBorisHp += 60; logPvp(`Враг поставил Бориса!`); }
+                else if (payload.effect === 'parashnik') { pvpGameState.myParashnikHp += 30; logPvp(`Враг поставил Парашника!`); }
                 else if (payload.effect === 'shaver') { 
-                    if(pvpGameState.enemyShieldHp > 0) { pvpGameState.enemyShieldHp = 0; logPvp(`Враг сбрил своего Бориса!`); }
-                    // Игрок сбривает ХУЙНЮ ВРАГА (то есть он применяет сбриватель на врага, и убирает то, что поставил враг у СЕБЯ? Или у игрока?)
-                    // "Он с одного применения убирает всю хуйню которую поставил противник. Имеется в виду на подобии boris и парашника. Все что он может поставить перед собой вся эта хуйня просто с одного удара сбривается"
-                    // Значит, он убирает бориса и парашника у ПРОТИВНИКА.
-                    pvpGameState.enemyShieldHp = 0;
-                    pvpGameState.myPoison = 0; // Парашник врага перестает действовать
-                    logPvp(`Враг сбрил твои парашники и Бориса!`);
+                    pvpGameState.enemyBorisHp = 0; pvpGameState.myParashnikHp = 0;
+                    logPvp(`Враг сбрил твоего Бориса и Парашника!`);
                 }
             }
 
             updatePvpUI();
             if (pvpGameState.myHp <= 0) { endPvpBattle(false); } 
             else { 
-                // Враг походил. Теперь ход игрока.
-                // Применяем яд на игроке (если он есть)
-                if (pvpGameState.myPoison > 0) {
+                if (pvpGameState.myParashnikHp > 0) {
                     pvpGameState.myHp -= 10;
                     pvpGameState.myMp = Math.max(0, pvpGameState.myMp - 15);
-                    pvpGameState.myPoison--;
                     logPvp(`Тебя отравил парашник! -10 HP, -15 энергии.`);
                     updatePvpUI();
                     if(pvpGameState.myHp <= 0) { endPvpBattle(false); return; }
                 }
-
                 pvpGameState.isMyTurn = true; 
                 setPvpTurn(true); 
                 enablePvpButtons(); 
@@ -924,10 +947,14 @@
             pvpGameState.isMyTurn = false; disablePvpButtons(); setPvpTurn(false);
             let dmg = Math.floor(Math.random() * 10) + pvpGameState.myAtk;
             
-            if (pvpGameState.enemyShieldHp > 0) {
-                pvpGameState.enemyShieldHp -= dmg;
-                logPvp(`Ты бьешь Бориса на ${dmg}. Осталось ${Math.max(0, pvpGameState.enemyShieldHp)} HP.`);
-                if(pvpGameState.enemyShieldHp <= 0) { logPvp("Борис врага разрушен!"); pvpGameState.enemyShieldHp = 0; }
+            if (pvpGameState.enemyBorisHp > 0) {
+                pvpGameState.enemyBorisHp -= dmg;
+                logPvp(`Ты бьешь Бориса на ${dmg}. Осталось ${Math.max(0, pvpGameState.enemyBorisHp)} HP.`);
+                if(pvpGameState.enemyBorisHp <= 0) { logPvp("Борис врага разрушен!"); pvpGameState.enemyBorisHp = 0; }
+            } else if (pvpGameState.enemyParashnikHp > 0) {
+                pvpGameState.enemyParashnikHp -= dmg;
+                logPvp(`Ты бьешь Парашника на ${dmg}. Осталось ${Math.max(0, pvpGameState.enemyParashnikHp)} HP.`);
+                if(pvpGameState.enemyParashnikHp <= 0) { logPvp("Парашник врага уничтожен!"); pvpGameState.enemyParashnikHp = 0; }
             } else {
                 pvpGameState.enemyHp -= dmg; 
                 logPvp(`Ты бьешь на ${dmg} урона!`);
@@ -940,16 +967,13 @@
             
             if (pvpGameState.enemyHp <= 0) { endPvpBattle(true); }
             else {
-                // Обрабатываем яд на враге
-                if (pvpGameState.enemyPoison > 0) {
+                if (pvpGameState.enemyParashnikHp > 0) {
                     pvpGameState.enemyHp -= 10;
                     pvpGameState.enemyMp = Math.max(0, pvpGameState.enemyMp - 15);
-                    pvpGameState.enemyPoison--;
                     logPvp(`Враг отравлен парашником! -10 HP.`);
                     updatePvpUI();
                     if(pvpGameState.enemyHp <= 0) { endPvpBattle(true); return; }
                 }
-                // Ход переходит к врагу
             }
         }
 
@@ -959,9 +983,6 @@
             pvpGameState.myMp = Math.min(100, pvpGameState.myMp + 15);
             updatePvpUI(); logPvp(`Ты встаешь в защиту. (+15 эн.)`);
             if(roomChannel) roomChannel.send({ type: 'broadcast', event: 'enemy_action', payload: { type: 'defend' } });
-            
-            // Враг бьет в ответ (в PVP ходы не асинхронны, а пошаговые через броадкаст)
-            // Ход переходит к врагу.
         }
 
         function pvpSkill() {
@@ -974,10 +995,14 @@
             else if (charType === 'mee') { dmg = 0; pvpGameState.myHp = Math.min(pvpGameState.myMaxHp, pvpGameState.myHp + 50); logPvp(`Ты хилишься на 50 HP!`); }
 
             if (dmg > 0) {
-                if (pvpGameState.enemyShieldHp > 0) {
-                    pvpGameState.enemyShieldHp -= dmg;
+                if (pvpGameState.enemyBorisHp > 0) {
+                    pvpGameState.enemyBorisHp -= dmg;
                     logPvp(`Ты бьешь Бориса способностью на ${dmg}.`);
-                    if(pvpGameState.enemyShieldHp <= 0) { logPvp("Борис врага разрушен!"); pvpGameState.enemyShieldHp = 0; }
+                    if(pvpGameState.enemyBorisHp <= 0) { logPvp("Борис врага разрушен!"); pvpGameState.enemyBorisHp = 0; }
+                } else if (pvpGameState.enemyParashnikHp > 0) {
+                    pvpGameState.enemyParashnikHp -= dmg;
+                    logPvp(`Ты бьешь Парашника способностью на ${dmg}.`);
+                    if(pvpGameState.enemyParashnikHp <= 0) { logPvp("Парашник врага уничтожен!"); pvpGameState.enemyParashnikHp = 0; }
                 } else {
                     pvpGameState.enemyHp -= dmg;
                     logPvp(`Ты ебашишь способностью на ${dmg} урона!`);
@@ -1037,7 +1062,6 @@
 
             pvpGameState.isMyTurn = false; disablePvpButtons(); setPvpTurn(false); closeItemMenu();
             
-            // Анимация
             let isDamaging = (item.name === 'голова барана' || item.name === 'apostol' || item.name === 'Сбриватель хуйни');
             animatePvpItemUse(item, isDamaging);
 
@@ -1052,21 +1076,23 @@
                 if (item.name === 'хуйня') { pvpGameState.myHp = Math.min(pvpGameState.myMaxHp, pvpGameState.myHp + 20); logPvp(`+20 HP`); payload.effect='heal'; payload.val=20; }
                 else if (item.name === 'картофель') { pvpGameState.myAtk += 10; logPvp(`Атака +10!`); payload.effect='atk'; payload.val=10; }
                 else if (item.name === 'голова барана') { 
-                    if(pvpGameState.enemyShieldHp > 0) { pvpGameState.enemyShieldHp -= 40; logPvp(`Швырнул голову в Бориса!`); if(pvpGameState.enemyShieldHp <= 0) pvpGameState.enemyShieldHp=0; }
+                    if(pvpGameState.enemyBorisHp > 0) { pvpGameState.enemyBorisHp -= 40; logPvp(`Швырнул голову в Бориса!`); if(pvpGameState.enemyBorisHp <= 0) pvpGameState.enemyBorisHp=0; }
+                    else if (pvpGameState.enemyParashnikHp > 0) { pvpGameState.enemyParashnikHp -= 40; logPvp(`Швырнул голову в Парашника!`); if(pvpGameState.enemyParashnikHp <= 0) pvpGameState.enemyParashnikHp=0; }
                     else { pvpGameState.enemyHp -= 40; logPvp(`40 урона!`); }
                     payload.effect='damage'; payload.val=40; 
                 }
                 else if (item.name === 'коала') { pvpGameState.myMp = 100; logPvp(`Энергия 100!`); payload.effect='mp'; payload.val=100; }
                 else if (item.name === 'apostol') { 
-                    if(pvpGameState.enemyShieldHp > 0) { pvpGameState.enemyShieldHp -= 100; logPvp(`Швырнул Apostol в Бориса!`); if(pvpGameState.enemyShieldHp <= 0) pvpGameState.enemyShieldHp=0; }
+                    if(pvpGameState.enemyBorisHp > 0) { pvpGameState.enemyBorisHp -= 100; logPvp(`Швырнул Apostol в Бориса!`); if(pvpGameState.enemyBorisHp <= 0) pvpGameState.enemyBorisHp=0; }
+                    else if (pvpGameState.enemyParashnikHp > 0) { pvpGameState.enemyParashnikHp -= 100; logPvp(`Швырнул Apostol в Парашника!`); if(pvpGameState.enemyParashnikHp <= 0) pvpGameState.enemyParashnikHp=0; }
                     else { pvpGameState.enemyHp -= 100; logPvp(`100 УРОНА!`); }
                     payload.effect='damage'; payload.val=100; 
                 }
                 else if (item.name === 'шприц и лекарство') { pvpGameState.myHp = pvpGameState.myMaxHp; logPvp(`100% лечение!`); payload.effect='heal'; payload.val=999; }
-                else if (item.name === 'boris') { pvpGameState.myShieldHp += 60; logPvp(`Ты поставил Бориса!`); payload.effect='boris'; }
-                else if (item.name === 'парашник') { pvpGameState.enemyPoison = 3; logPvp(`Враг отравлен!`); payload.effect='parashnik'; }
+                else if (item.name === 'boris') { pvpGameState.myBorisHp += 60; logPvp(`Ты поставил Бориса!`); payload.effect='boris'; }
+                else if (item.name === 'парашник') { pvpGameState.enemyParashnikHp += 30; logPvp(`Ты поставил Парашника врагу!`); payload.effect='parashnik'; }
                 else if (item.name === 'Сбриватель хуйни') { 
-                    pvpGameState.enemyShieldHp = 0; pvpGameState.enemyPoison = 0; logPvp(`Ты сбрил всю хуйню врага!`); payload.effect='shaver';
+                    pvpGameState.enemyBorisHp = 0; pvpGameState.enemyParashnikHp = 0; logPvp(`Ты сбрил всю хуйню врага!`); payload.effect='shaver';
                 }
                 else if (item.name === 'Вам не повезло') { logPvp(`Вы нихуя не сделали.`); payload.effect='nothing'; }
 
@@ -1075,15 +1101,14 @@
                 
                 if (pvpGameState.enemyHp <= 0) { endPvpBattle(true); }
                 else {
-                    // Яд на враге
-                    if (pvpGameState.enemyPoison > 0 && item.name !== 'Сбриватель хуйни') {
-                        pvpGameState.enemyHp -= 10; pvpGameState.enemyMp = Math.max(0, pvpGameState.enemyMp - 15); pvpGameState.enemyPoison--;
+                    if (pvpGameState.enemyParashnikHp > 0 && item.name !== 'Сбриватель хуйни') {
+                        pvpGameState.enemyHp -= 10; pvpGameState.enemyMp = Math.max(0, pvpGameState.enemyMp - 15);
                         logPvp(`Враг отравлен парашником! -10 HP.`); updatePvpUI();
                         if(pvpGameState.enemyHp <= 0) { endPvpBattle(true); return; }
                     }
                 }
             };
-            setTimeout(applyEffect, 800); // Ждем анимацию
+            setTimeout(applyEffect, 800); 
         }
 
         async function endPvpBattle(isWin) {
@@ -1115,11 +1140,42 @@
             document.getElementById('pvp-enemy-hp-text').innerText = `${Math.max(0, pvpGameState.enemyHp)}/${pvpGameState.enemyMaxHp}`;
             document.getElementById('pvp-enemy-hp-bar').style.width = (Math.max(0, pvpGameState.enemyHp) / pvpGameState.enemyMaxHp) * 100 + '%';
 
-            // Борис
-            let pShield = document.getElementById('pvp-player-shield');
-            if(pvpGameState.myShieldHp > 0) { pShield.classList.remove('hidden'); pShield.innerText = `Boris: ${pvpGameState.myShieldHp}/60`; } else { pShield.classList.add('hidden'); }
-            let eShield = document.getElementById('pvp-enemy-shield');
-            if(pvpGameState.enemyShieldHp > 0) { eShield.classList.remove('hidden'); eShield.innerText = `Boris: ${pvpGameState.enemyShieldHp}/60`; } else { eShield.classList.add('hidden'); }
+            renderPvpDeployedItems();
+        }
+
+        function renderPvpDeployedItems() {
+            let pDep = document.getElementById('pvp-player-deployed');
+            let eDep = document.getElementById('pvp-enemy-deployed');
+            pDep.innerHTML = ''; eDep.innerHTML = '';
+
+            if (pvpGameState.myBorisHp > 0) {
+                pDep.innerHTML += `
+                    <div class="deployed-item">
+                        <img src="img_boris.png" onerror="this.src='https://via.placeholder.com/50?text=B'">
+                        <div class="hp-bar-container"><div class="hp-bar-fill" style="width: ${(pvpGameState.myBorisHp/60)*100}%; background: #00ff00;"></div></div>
+                    </div>`;
+            }
+            if (pvpGameState.myParashnikHp > 0) {
+                pDep.innerHTML += `
+                    <div class="deployed-item">
+                        <img src="img_parashnik.png" onerror="this.src='https://via.placeholder.com/50?text=P'">
+                        <div class="hp-bar-container"><div class="hp-bar-fill" style="width: ${(pvpGameState.myParashnikHp/30)*100}%; background: #a020f0;"></div></div>
+                    </div>`;
+            }
+            if (pvpGameState.enemyBorisHp > 0) {
+                eDep.innerHTML += `
+                    <div class="deployed-item">
+                        <img src="img_boris.png" onerror="this.src='https://via.placeholder.com/50?text=B'">
+                        <div class="hp-bar-container"><div class="hp-bar-fill" style="width: ${(pvpGameState.enemyBorisHp/60)*100}%; background: #00ff00;"></div></div>
+                    </div>`;
+            }
+            if (pvpGameState.enemyParashnikHp > 0) {
+                eDep.innerHTML += `
+                    <div class="deployed-item">
+                        <img src="img_parashnik.png" onerror="this.src='https://via.placeholder.com/50?text=P'">
+                        <div class="hp-bar-container"><div class="hp-bar-fill" style="width: ${(pvpGameState.enemyParashnikHp/30)*100}%; background: #a020f0;"></div></div>
+                    </div>`;
+            }
         }
 
         function setPvpTurn(isPlayer) {
@@ -1148,14 +1204,11 @@
 
         function logPvp(msg) { const log = document.getElementById('pvp-log'); log.innerHTML += `<br>> ${msg}`; log.scrollTop = log.scrollHeight; }
 
-        // Анимация PVP
         function animatePvpItemUse(item, isDamage) {
             const battlefield = document.getElementById('pvp-battlefield-bg');
             const el = document.createElement('img');
             el.src = item.img || 'https://via.placeholder.com/50?text=ITEM'; 
-            el.style.position = 'absolute';
-            el.style.width = '60px'; el.style.height = '60px'; el.style.zIndex = '50';
-            el.style.transition = 'all 0.8s ease-in-out'; 
+            el.style.position = 'absolute'; el.style.width = '60px'; el.style.height = '60px'; el.style.zIndex = '50'; el.style.transition = 'all 0.8s ease-in-out'; 
             
             if (isDamage) {
                 el.style.left = '20%'; el.style.top = '40%'; el.style.transform = 'rotate(-20deg)'; battlefield.appendChild(el);
@@ -1175,7 +1228,7 @@
         // ==========================================
         let rpgChar = null; let rpgEnemy = null; let rpgFloorMain = 1; let rpgFloorSub = 1; 
         let rpgEnergy = 0; let rpgMaxEnergy = 100; let isPlayerTurn = true; let enemyIsCharging = false; let currentCharType = null; let currentBgIndex = -1;
-        let rpgPlayerShield = 0; let rpgEnemyShield = 0; let rpgPlayerPoison = 0; let rpgEnemyPoison = 0;
+        let rpgPlayerBorisHp = 0; let rpgEnemyBorisHp = 0; let rpgPlayerParashnikHp = 0; let rpgEnemyParashnikHp = 0;
 
         function changeBackground() {
             let newIndex; do { newIndex = Math.floor(Math.random() * battleBackgrounds.length); } while (newIndex === currentBgIndex && battleBackgrounds.length > 1);
@@ -1191,7 +1244,7 @@
             
             let u = currentUpgrades[type];
             rpgChar = { name, class: charClass, maxHp: baseHp + (u.hp * 20), hp: baseHp + (u.hp * 20), atk: baseAtk + (u.atk * 5), mpGain, img: imgUrl };
-            rpgFloorMain = 1; rpgFloorSub = 1; rpgEnergy = 0; rpgPlayerShield = 0; rpgPlayerPoison = 0; rpgEnemyShield = 0; rpgEnemyPoison = 0;
+            rpgFloorMain = 1; rpgFloorSub = 1; rpgEnergy = 0; rpgPlayerBorisHp = 0; rpgPlayerParashnikHp = 0; rpgEnemyBorisHp = 0; rpgEnemyParashnikHp = 0;
             
             document.getElementById('rpg-char-select').classList.add('hidden');
             document.getElementById('rpg-battle-screen').classList.remove('hidden');
@@ -1213,7 +1266,7 @@
             let eType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)]; let eHp = Math.floor(baseHp * eType.hpMult);
             rpgEnemy = { name: `${eType.name} (Ур. ${rpgFloorMain}.${rpgFloorSub})`, hp: eHp, maxHp: eHp, atk: Math.floor(baseAtk * eType.atkMult), img: eType.img };
             
-            rpgPlayerShield = 0; rpgPlayerPoison = 0; rpgEnemyShield = 0; rpgEnemyPoison = 0;
+            rpgPlayerBorisHp = 0; rpgPlayerParashnikHp = 0; rpgEnemyBorisHp = 0; rpgEnemyParashnikHp = 0;
 
             document.getElementById('rpg-floor').innerText = `ЭТАЖ ${rpgFloorMain}.${rpgFloorSub}`;
             document.getElementById('rpg-enemy-img').src = rpgEnemy.img;
@@ -1234,10 +1287,42 @@
             document.getElementById('rpg-enemy-hp-text').innerText = `${Math.max(0, rpgEnemy.hp)}/${rpgEnemy.maxHp}`;
             document.getElementById('rpg-enemy-hp-bar').style.width = (Math.max(0, rpgEnemy.hp) / rpgEnemy.maxHp) * 100 + '%';
 
-            let pShield = document.getElementById('rpg-player-shield');
-            if(rpgPlayerShield > 0) { pShield.classList.remove('hidden'); pShield.innerText = `Boris: ${rpgPlayerShield}/60`; } else { pShield.classList.add('hidden'); }
-            let eShield = document.getElementById('rpg-enemy-shield');
-            if(rpgEnemyShield > 0) { eShield.classList.remove('hidden'); eShield.innerText = `Boris: ${rpgEnemyShield}/60`; } else { eShield.classList.add('hidden'); }
+            renderRpgDeployedItems();
+        }
+
+        function renderRpgDeployedItems() {
+            let pDep = document.getElementById('rpg-player-deployed');
+            let eDep = document.getElementById('rpg-enemy-deployed');
+            pDep.innerHTML = ''; eDep.innerHTML = '';
+
+            if (rpgPlayerBorisHp > 0) {
+                pDep.innerHTML += `
+                    <div class="deployed-item">
+                        <img src="img_boris.png" onerror="this.src='https://via.placeholder.com/50?text=B'">
+                        <div class="hp-bar-container"><div class="hp-bar-fill" style="width: ${(rpgPlayerBorisHp/60)*100}%; background: #00ff00;"></div></div>
+                    </div>`;
+            }
+            if (rpgPlayerParashnikHp > 0) {
+                pDep.innerHTML += `
+                    <div class="deployed-item">
+                        <img src="img_parashnik.png" onerror="this.src='https://via.placeholder.com/50?text=P'">
+                        <div class="hp-bar-container"><div class="hp-bar-fill" style="width: ${(rpgPlayerParashnikHp/30)*100}%; background: #a020f0;"></div></div>
+                    </div>`;
+            }
+            if (rpgEnemyBorisHp > 0) {
+                eDep.innerHTML += `
+                    <div class="deployed-item">
+                        <img src="img_boris.png" onerror="this.src='https://via.placeholder.com/50?text=B'">
+                        <div class="hp-bar-container"><div class="hp-bar-fill" style="width: ${(rpgEnemyBorisHp/60)*100}%; background: #00ff00;"></div></div>
+                    </div>`;
+            }
+            if (rpgEnemyParashnikHp > 0) {
+                eDep.innerHTML += `
+                    <div class="deployed-item">
+                        <img src="img_parashnik.png" onerror="this.src='https://via.placeholder.com/50?text=P'">
+                        <div class="hp-bar-container"><div class="hp-bar-fill" style="width: ${(rpgEnemyParashnikHp/30)*100}%; background: #a020f0;"></div></div>
+                    </div>`;
+            }
         }
 
         function checkButtons() {
@@ -1254,8 +1339,10 @@
             isPlayerTurn = false; setTurnIndicator(false); checkButtons(); animateAttack(true);
             let dmg = Math.floor(Math.random() * 10) + rpgChar.atk;
             
-            if(rpgEnemyShield > 0) {
-                rpgEnemyShield -= dmg; addLog(`Ты бьешь Бориса на ${dmg}.`); if(rpgEnemyShield <= 0) { rpgEnemyShield = 0; addLog("Борис разрушен!"); }
+            if(rpgEnemyBorisHp > 0) {
+                rpgEnemyBorisHp -= dmg; addLog(`Ты бьешь Бориса на ${dmg}.`); if(rpgEnemyBorisHp <= 0) { rpgEnemyBorisHp = 0; addLog("Борис разрушен!"); }
+            } else if (rpgEnemyParashnikHp > 0) {
+                rpgEnemyParashnikHp -= dmg; addLog(`Ты бьешь Парашника на ${dmg}.`); if(rpgEnemyParashnikHp <= 0) { rpgEnemyParashnikHp = 0; addLog("Парашник уничтожен!"); }
             } else {
                 rpgEnemy.hp -= dmg; addLog(`${rpgChar.name} бьет на ${dmg} урона.`);
             }
@@ -1279,8 +1366,10 @@
             else if (rpgChar.class === "Друид") { let heal = 70 + (currentUpgrades[currentCharType].hp * 10); rpgChar.hp = Math.min(rpgChar.maxHp, rpgChar.hp + heal); addLog(`Исцеление на ${heal} HP!`); }
 
             if (dmg > 0) {
-                if(rpgEnemyShield > 0) {
-                    rpgEnemyShield -= dmg; addLog(`Ты бьешь Бориса способностью.`); if(rpgEnemyShield <= 0) { rpgEnemyShield = 0; addLog("Борис разрушен!"); }
+                if(rpgEnemyBorisHp > 0) {
+                    rpgEnemyBorisHp -= dmg; addLog(`Ты бьешь Бориса способностью.`); if(rpgEnemyBorisHp <= 0) { rpgEnemyBorisHp = 0; addLog("Борис разрушен!"); }
+                } else if (rpgEnemyParashnikHp > 0) {
+                    rpgEnemyParashnikHp -= dmg; addLog(`Ты бьешь Парашника способностью.`); if(rpgEnemyParashnikHp <= 0) { rpgEnemyParashnikHp = 0; addLog("Парашник уничтожен!"); }
                 } else {
                     rpgEnemy.hp -= dmg; 
                 }
@@ -1298,8 +1387,10 @@
             if (enemyIsCharging) { dmg *= 2; enemyIsCharging = false; addLog(`ЕБАТЬ! Усиленный удар!`); }
             if (isPlayerDefending) { dmg = Math.floor(dmg / 2); addLog(`Защита спасла. Урон: ${dmg}.`); } else { addLog(`Враг бьет на ${dmg}!`); }
             
-            if(rpgPlayerShield > 0) {
-                rpgPlayerShield -= dmg; addLog(`Атака ушла в Бориса.`); if(rpgPlayerShield <= 0) { rpgPlayerShield = 0; addLog("Твой Борис разрушен!"); }
+            if(rpgPlayerBorisHp > 0) {
+                rpgPlayerBorisHp -= dmg; addLog(`Атака ушла в Бориса.`); if(rpgPlayerBorisHp <= 0) { rpgPlayerBorisHp = 0; addLog("Твой Борис разрушен!"); }
+            } else if (rpgPlayerParashnikHp > 0) {
+                rpgPlayerParashnikHp -= dmg; addLog(`Атака ушла в Парашника.`); if(rpgPlayerParashnikHp <= 0) { rpgPlayerParashnikHp = 0; addLog("Твой Парашник уничтожен!"); }
             } else {
                 rpgChar.hp -= dmg; 
             }
@@ -1308,9 +1399,8 @@
             if (rpgChar.hp <= 0) { 
                 addLog(`Ты сдох...`); isPlayerTurn = false; checkButtons(); document.getElementById('battle-music').pause(); setTimeout(() => { document.getElementById('rpg-char-select').classList.remove('hidden'); document.getElementById('rpg-battle-screen').classList.add('hidden'); renderCharStats(); updateUI(); }, 3000); 
             } else { 
-                // Яд на игроке
-                if(rpgPlayerPoison > 0) {
-                    rpgChar.hp -= 10; rpgEnergy = Math.max(0, rpgEnergy - 15); rpgPlayerPoison--;
+                if(rpgPlayerParashnikHp > 0) {
+                    rpgChar.hp -= 10; rpgEnergy = Math.max(0, rpgEnergy - 15);
                     addLog(`Тебя отравил парашник! -10 HP.`);
                     updateRpgUI();
                     if(rpgChar.hp <= 0) { addLog(`Ты сдох от яда...`); isPlayerTurn = false; checkButtons(); document.getElementById('battle-music').pause(); setTimeout(() => { document.getElementById('rpg-char-select').classList.remove('hidden'); document.getElementById('rpg-battle-screen').classList.add('hidden'); renderCharStats(); updateUI(); }, 3000); return; }
@@ -1566,143 +1656,3 @@
             }
             document.getElementById('rpg-item-modal').classList.remove('hidden');
         }
-        function closeItemMenu() { document.getElementById('rpg-item-modal').classList.add('hidden'); }
-        
-        async function useItemInBattle(itemName) {
-            if (!isPlayerTurn) return;
-            const itemIndex = currentInventory.findIndex(i => i.name === itemName);
-            if (itemIndex === -1) return;
-            const item = currentInventory[itemIndex];
-            
-            isPlayerTurn = false; setTurnIndicator(false); checkButtons();
-            
-            // ВОЗВРАЩАЕМ АНИМАЦИЮ
-            let isDamaging = (item.name === 'голова барана' || item.name === 'apostol' || item.name === 'Сбриватель хуйни');
-            animateItemUse(item, isDamaging);
-
-            try {
-                const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'consume_item', username: currentUser, data: { item_id: item.id } } });
-                if (!error && data.success) { currentInventory = data.newInventory; currentItemPoints = data.newItemPoints; updateUI(); } 
-                else { addLog("Ошибка при использовании."); isPlayerTurn = true; checkButtons(); return; }
-            } catch(e) { addLog("Фатальная ошибка сервера."); isPlayerTurn = true; checkButtons(); return; }
-
-            const applyEffect = () => {
-                if (item.name === 'хуйня') { rpgChar.hp = Math.min(rpgChar.maxHp, rpgChar.hp + 20); addLog(`Выпил ${item.name}. +20 HP.`); }
-                else if (item.name === 'картофель') { rpgChar.atk += 10; addLog(`Съел ${item.name}. Атака +10!`); }
-                else if (item.name === 'голова барана') { 
-                    if(rpgEnemyShield > 0) { rpgEnemyShield -= 40; addLog(`Швырнул голову в Бориса!`); if(rpgEnemyShield <= 0) { rpgEnemyShield=0; addLog("Борис разрушен!"); } }
-                    else { rpgEnemy.hp -= 40; addLog(`Швырнул ${item.name}. 40 урона!`); }
-                }
-                else if (item.name === 'коала') { rpgEnergy = 100; addLog(`Использовал ${item.name}. Энергия 100!`); }
-                else if (item.name === 'apostol') { 
-                    if(rpgEnemyShield > 0) { rpgEnemyShield -= 100; addLog(`Швырнул Apostol в Бориса!`); if(rpgEnemyShield <= 0) { rpgEnemyShield=0; addLog("Борис разрушен!"); } }
-                    else { rpgEnemy.hp -= 100; addLog(`ПРИЗВАН APOSTOL! 100 УРОНА!`); }
-                }
-                else if (item.name === 'шприц и лекарство') { rpgChar.hp = rpgChar.maxHp; addLog(`100% лечение!`); }
-                else if (item.name === 'boris') { rpgPlayerShield += 60; addLog(`Ты поставил Бориса!`); }
-                else if (item.name === 'парашник') { rpgEnemyPoison = 3; addLog(`Враг отравлен!`); }
-                else if (item.name === 'Сбриватель хуйни') { rpgEnemyShield = 0; rpgEnemyPoison = 0; addLog(`Ты сбрил всю хуйню врага!`); }
-                else if (item.name === 'Вам не повезло') { addLog(`Вы нихуя не сделали.`); }
-
-                updateRpgUI(); 
-                if (rpgEnemy.hp <= 0) winRpg(); else {
-                    // Яд на враге
-                    if (rpgEnemyPoison > 0 && item.name !== 'Сбриватель хуйни') {
-                        rpgEnemy.hp -= 10; rpgEnemy.mp = Math.max(0, (rpgEnemy.mp||0) - 15); rpgEnemyPoison--;
-                        addLog(`Враг отравлен парашником! -10 HP.`); updateRpgUI();
-                        if(rpgEnemy.hp <= 0) { winRpg(); return; }
-                    }
-                    setTimeout(enemyTurn, 800); 
-                }
-            };
-            setTimeout(applyEffect, 800);
-            closeItemMenu();
-        }
-
-        // Анимация ОФФЛАЙН РПГ
-        function animateItemUse(item, isDamage) {
-            const battlefield = document.getElementById('battlefield-bg');
-            const el = document.createElement('img');
-            el.src = item.img || 'https://via.placeholder.com/50?text=ITEM'; 
-            el.style.position = 'absolute'; el.style.width = '60px'; el.style.height = '60px'; el.style.zIndex = '50'; el.style.transition = 'all 0.8s ease-in-out'; 
-            
-            if (isDamage) {
-                el.style.left = '20%'; el.style.top = '40%'; el.style.transform = 'rotate(-20deg)'; battlefield.appendChild(el);
-                void el.offsetWidth; 
-                el.style.left = '75%'; el.style.top = '30%'; el.style.transform = 'scale(1.2) rotate(360deg)'; 
-                setTimeout(() => { el.remove(); }, 800);
-            } else {
-                el.style.left = '25%'; el.style.top = '30%'; el.style.transform = 'rotate(0deg)'; battlefield.appendChild(el);
-                void el.offsetWidth;
-                el.style.top = '60%'; el.style.opacity = '0'; el.style.transform = 'scale(0.8) rotate(15deg)';
-                setTimeout(() => { el.remove(); }, 800);
-            }
-        }
-
-        // ИГРА В ПИДОРОВ
-        const pads = document.querySelectorAll('.pad'); const statusText = document.getElementById('status'); const restartBtn = document.getElementById('restart-btn');
-        const AudioContext = window.AudioContext || window.webkitAudioContext; const audioCtx = new AudioContext();
-        const frequencies = { '1': 200, '2': 300, '3': 400, '4': 500 }; 
-        let gameSequence = [], playerSequence = [], level = 1, maxPads = 1, isPlayingSequence = false, canClick = false, gameStarted = false;
-
-        function playSound(id) {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-            osc.type = 'square'; osc.frequency.setValueAtTime(frequencies[id], audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.2, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-            osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.3);
-            const pad = document.querySelector(`.pad[data-id="${id}"]`);
-            if(pad) { pad.classList.add('active'); setTimeout(() => pad.classList.remove('active'), 300); }
-        }
-        function resetGame() {
-            gameSequence = []; level = 1; maxPads = 1; gameStarted = false; restartBtn.classList.add('hidden');
-            statusText.textContent = "привет ножми"; statusText.style.color = "#00FF00"; pads.forEach(p => p.classList.add('disabled')); updateActivePads();
-        }
-        function startGame() {
-            gameStarted = true; gameSequence = []; level = 1; maxPads = 1;
-            restartBtn.classList.add('hidden'); updateActivePads(); nextRound();
-        }
-        function updateActivePads() { pads.forEach(p => { const id = parseInt(p.dataset.id); if (id <= maxPads) p.classList.remove('disabled'); else p.classList.add('disabled'); }); }
-        function nextRound() {
-            playerSequence = []; statusText.textContent = "ЗАПОМИНАЙТЕ...";
-            if (level > 1 && level % 2 === 0 && maxPads < 4) { maxPads++; updateActivePads(); }
-            const randomId = Math.floor(Math.random() * maxPads) + 1; gameSequence.push(randomId.toString()); setTimeout(playSequence, 500);
-        }
-        function playSequence() {
-            isPlayingSequence = true; canClick = false;
-            gameSequence.forEach((id, index) => {
-                setTimeout(() => {
-                    playSound(id);
-                    if (index === gameSequence.length - 1) { setTimeout(() => { isPlayingSequence = false; canClick = true; statusText.textContent = "ВАШ ХОД!"; }, 400); }
-                }, index * 600);
-            });
-        }
-        async function handlePadClick(e) {
-            if (!canClick || isPlayingSequence || !gameStarted) return;
-            const id = e.currentTarget.dataset.id; playSound(id); playerSequence.push(id);
-            const currentStep = playerSequence.length - 1;
-            if (playerSequence[currentStep] !== gameSequence[currentStep]) {
-                canClick = false; gameStarted = false; statusText.textContent = "ОШИБКА!"; statusText.style.color = "#FF0000";
-                let currentScore = level - 1;
-                try {
-                    const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'score', username: currentUser, data: { score: currentScore } } });
-                    if (error) { statusText.textContent += ` (Ошибка сети)`; }
-                    else if (data.error) { statusText.textContent += ` (${data.error})`; }
-                    else {
-                        currentCoins = data.newCoins; if (currentScore > currentHighScore) currentHighScore = currentScore; updateUI();
-                        if (data.earned > 0) { statusText.textContent += ` (+${data.earned} монет)`; }
-                        else { statusText.textContent += ` (Ничего)`; }
-                    }
-                } catch(e) { statusText.textContent += ` (Сбой)`; }
-                const osc = audioCtx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 1);
-                osc.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 1); restartBtn.classList.remove('hidden'); return;
-            }
-            if (playerSequence.length === gameSequence.length) { canClick = false; level++; statusText.textContent = `УРОВЕНЬ ${level} ПРОЙДЕН!`; setTimeout(nextRound, 1500); }
-        }
-
-        pads.forEach(pad => pad.addEventListener('click', handlePadClick));
-        restartBtn.addEventListener('click', startGame);
-        statusText.addEventListener('click', () => { if (!gameStarted) startGame(); });
-    </script>
-</body>
-</html>
