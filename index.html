@@ -155,11 +155,17 @@
             0% { opacity: 1; }
             100% { opacity: 0; }
         }
+
+        /* ЧАТ */
+        #chat-box {
+            height: 300px; overflow-y: auto; background: #fff; border: 3px inset #999; padding: 10px; text-align: left; margin-bottom: 10px; font-family: "Courier New", Courier, monospace; font-size: 14px;
+        }
+        .chat-msg { margin-bottom: 5px; }
+        .chat-msg .nick { font-weight: bold; color: #000080; }
     </style>
 </head>
 <body>
 
-    <!-- Фоновая музыка -->
     <audio id="battle-music" src="ambient.mp3" loop onerror="console.log('Нет музыки')"></audio>
 
     <div id="auth-screen" class="panel">
@@ -170,7 +176,7 @@
         <button onclick="register()">Зарегаться</button>
         <button onclick="login()">Войти</button>
         <p id="auth-msg"></p>
-        <div class="version-text" style="margin-top: 15px;">версия игры beta 4.3</div>
+        <div class="version-text" style="margin-top: 15px;">версия игры beta 4.5</div>
     </div>
 
     <div id="main-screen" class="hidden">
@@ -190,6 +196,7 @@
             <button onclick="switchTab('inventory')">Инвентарь</button>
             <button onclick="switchTab('market')">Рынок</button>
             <button onclick="switchTab('leaderboard')">Зал славы</button>
+            <button onclick="switchTab('chat')">Чат</button>
             <button onclick="switchTab('howto')">Как играть</button>
         </div>
 
@@ -369,6 +376,14 @@
             <div id="market-list" style="max-height: 400px; overflow-y: auto;"></div>
         </div>
 
+        <!-- НОВАЯ ВКЛАДКА ЧАТ -->
+        <div id="tab-chat" class="panel hidden">
+            <h2>Общий Чат</h2>
+            <div id="chat-box"></div>
+            <input type="text" id="chat-input" placeholder="Напиши что-нибудь..." onkeypress="if(event.key === 'Enter') sendMessage()">
+            <button onclick="sendMessage()">Отправить</button>
+        </div>
+
         <div id="tab-leaderboard" class="panel hidden">
             <h2>зал славы</h2>
             <table class="leaderboard-table">
@@ -392,7 +407,7 @@
                 привет представляем вашему вниманию новомую игру pepen40 games . У вас наверняка возник вопрос что это за хуйня как в это играть? смотрите нужно нажимать на пидорасов поочередно в соответствии с тем с какой последовательностью каждый из них пищит. Ну там пропищал apostol 2 раза потом амжан желтый 3 раза . Значит надо нажать на apostol 3 раза и потом амжан желтый 3 раза. Также тут представлены кейсы как в ксго . Покупаете вам выпадает всякая хуйня которая в соответствии со своей редкостью выводит вас в топ в Leaderboard на определенный уровень. За хуйню вам маленько дадут баллов за apostol - дохуя. Вы также можете продавать эти хуйни которые выбили. Да да нахуй не ослышались продавать. На торговой площадке. И зарабатывать за это бабки нахуй
             </div>
             <br><br><br>
-            <div class="version-text">версия игры beta 4.3</div>
+            <div class="version-text">версия игры beta 4.5</div>
         </div>
     </div>
 
@@ -426,14 +441,14 @@
                 <option value="mee">Мээ (Друид)</option>
             </select>
             
-            <div style="display:flex; gap:5px;">
-                <input type="text" id="pvp-room-name" placeholder="Название комнаты" style="width:70%; margin:0;">
-                <button onclick="createPvpRoom()" style="width:30%; margin:0; background:#90ee90;">Создать</button>
+            <div style="display:flex; gap:5px; margin-bottom: 15px;">
+                <input type="text" id="pvp-room-name" placeholder="Название комнаты (если создаешь)" style="width:100%; margin:0;">
+                <button onclick="createPvpRoom()" style="width:100%; margin:0; background:#90ee90;">Создать комнату</button>
             </div>
 
-            <h4>Доступные комнаты:</h4>
-            <div id="pvp-room-list" style="max-height:200px; overflow-y:auto; border: 2px inset #fff; padding:5px; background:#ddd;">
-                <p style="text-align:center;">Загрузка комнат...</p>
+            <h4>Онлайн игроки (Вызови на бой):</h4>
+            <div id="pvp-online-list" style="max-height:200px; overflow-y:auto; border: 2px inset #fff; padding:5px; background:#ddd;">
+                <p style="text-align:center;">Загрузка игроков...</p>
             </div>
             
             <button onclick="closePvpLobby()" style="width: 100%; margin-top: 15px; background: #ffcccb;">Закрыть</button>
@@ -468,9 +483,6 @@
         const EDGE_FUNCTION_NAME = 'award-coins'; 
         const battleBackgrounds = ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png', 'bg6.png'];
 
-        // ==========================================
-        // БАЗА ЗНАНИЙ О ПРЕДМЕТАХ
-        // ==========================================
         const itemDatabase = {
             "хуйня": { desc: "На самом деле это не хуйня а аппарат жизнеобеспечения. подключи ее в разьем и тебе начислится 20 хп", chance: "30-40%" },
             "картофель": { desc: "когда то давно влад пошел мыть картошку но так как леха занял все ведра головами рыб ,окурками, говном, щинячьими цоботами, цокольной хуйней, пастой, дрыном, рырями и прочим хламом ему пришлось мыть ее в ванне , но случилось так что он о ней забыл она проросла и синтезировала в себе ебанутый допинг который придает сил. Используй и получишь +10 к Аттаке!", chance: "25%" },
@@ -497,32 +509,24 @@
         let onlineChannel = null;
         let lobbyChannel = null;
         let roomChannel = null;
+        let chatChannel = null;
         let myRoomId = null;
         let pvpRooms = {};
+        let onlinePlayers = [];
 
-        // ==========================================
-        // ЗВУКИ И ЭФФЕКТЫ (С ПРЕДЗАГРУЗКОЙ)
-        // ==========================================
         const soundCache = {};
         function preloadSounds() {
-            const sounds = {
-                'attack': 'attack.mp4',
-                'protection': 'protection.mp4',
-                'heal': 'heal.mp4',
-                'harmful': 'harmful.mp4',
-                'thing': 'thing.mp4'
-            };
+            const sounds = { 'attack': 'attack.mp4', 'protection': 'protection.mp4', 'heal': 'heal.mp4', 'harmful': 'harmful.mp4', 'thing': 'thing.mp4' };
             for (let key in sounds) {
                 let audio = new Audio(sounds[key]);
                 audio.preload = 'auto';
-                audio.volume = 0.75; // 75% громкости (на 35% громче музыки на 30%)
+                audio.volume = 0.75; 
                 soundCache[key] = audio;
             }
         }
 
         function playSoundEffect(type) {
             if (soundCache[type]) {
-                // Клонируем аудио, чтобы можно было проигрывать несколько раз подряд без задержек
                 let clone = soundCache[type].cloneNode();
                 clone.volume = 0.75;
                 clone.play().catch(e => console.log("Звук заблокирован браузером:", e));
@@ -539,7 +543,10 @@
         function initOnlineCounter() {
             onlineChannel = supabaseClient.channel('online-users', { config: { presence: { key: currentUser } } });
             onlineChannel.on('presence', { event: 'sync' }, () => {
-                document.getElementById('ui-online').innerText = Object.keys(onlineChannel.presenceState()).length;
+                const state = onlineChannel.presenceState();
+                onlinePlayers = Object.keys(state);
+                document.getElementById('ui-online').innerText = onlinePlayers.length;
+                if(!document.getElementById('pvp-lobby-modal').classList.contains('hidden')){ renderPvpRooms(); }
             }).subscribe(async (status) => {
                 if (status === 'SUBSCRIBED') await onlineChannel.track({ online_at: new Date().toISOString() });
             });
@@ -561,6 +568,31 @@
             lobbyChannel.subscribe(async (status) => {
                 if (status === 'SUBSCRIBED') { await lobbyChannel.track({ online: true }); }
             });
+        }
+
+        function initChat() {
+            if(chatChannel) supabaseClient.removeChannel(chatChannel);
+            chatChannel = supabaseClient.channel('global-chat', { config: { broadcast: { self: true } } });
+            chatChannel.on('broadcast', { event: 'new_message' }, (payload) => {
+                addChatMessage(payload.payload.nick, payload.payload.text);
+            }).subscribe();
+        }
+
+        function addChatMessage(nick, text) {
+            const box = document.getElementById('chat-box');
+            const msg = document.createElement('div');
+            msg.className = 'chat-msg';
+            msg.innerHTML = `<span class="nick">${nick}:</span> ${text}`;
+            box.appendChild(msg);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+            chatChannel.send({ type: 'broadcast', event: 'new_message', payload: { nick: currentUser, text: text } });
+            input.value = '';
         }
 
         function getImgTag(imgName) {
@@ -614,9 +646,10 @@
                 document.getElementById('auth-screen').classList.add('hidden');
                 document.getElementById('main-screen').classList.remove('hidden');
                 
-                preloadSounds(); // ПРЕДЗАГРУЖАЕМ ЗВУКИ ПРИ ВХОДЕ
+                preloadSounds(); 
                 initOnlineCounter();
                 initLobby();
+                initChat();
                 updateUI();
                 resetGame();
                 renderCharStats();
@@ -655,7 +688,7 @@
         }
 
         function switchTab(tab) {
-            ['game', 'rpg', 'cases', 'inventory', 'market', 'leaderboard', 'howto'].forEach(t => document.getElementById('tab-' + t).classList.add('hidden'));
+            ['game', 'rpg', 'cases', 'inventory', 'market', 'leaderboard', 'chat', 'howto'].forEach(t => document.getElementById('tab-' + t).classList.add('hidden'));
             document.getElementById('tab-' + tab).classList.remove('hidden');
             const bgMusic = document.getElementById('battle-music');
             if (tab !== 'rpg') { bgMusic.pause(); bgMusic.currentTime = 0; }
@@ -676,9 +709,6 @@
             } catch(e) { alert("Фатальная ошибка: " + e.message); }
         }
 
-        // ==========================================
-        // ИНФО И СОДЕРЖИМОЕ КЕЙСА
-        // ==========================================
         function openItemInfo(itemName) {
             const db = itemDatabase[itemName] || { desc: "Описание отсутствует.", chance: "???" };
             let rarity = "Мусор"; let img = "";
@@ -743,10 +773,6 @@
 
         function closeCaseContents() { document.getElementById('case-contents-modal').classList.add('hidden'); }
 
-
-        // ==========================================
-        // PVP ЛОГИКА
-        // ==========================================
         let currentPvpChar = null;
         let isPvpHost = false;
         let pvpGameState = { myHp: 0, enemyHp: 0, myMaxHp: 0, enemyMaxHp: 0, myMp: 0, enemyMp: 0, isMyTurn: false, myBorisHp: 0, enemyBorisHp: 0, myParashnikHp: 0, enemyParashnikHp: 0, myDefending: false, enemyDefending: false, myItemUsed: false };
@@ -759,29 +785,32 @@
         function closePvpLobby() { document.getElementById('pvp-lobby-modal').classList.add('hidden'); }
 
         function renderPvpRooms() {
-            const list = document.getElementById('pvp-room-list');
-            const rooms = Object.values(pvpRooms).filter(r => r.hostName !== currentUser);
-            if (rooms.length === 0) { list.innerHTML = '<p style="text-align:center;">Пока нет комнат. Создай свою!</p>'; return; }
+            const list = document.getElementById('pvp-online-list');
+            if (onlinePlayers.length === 0) { list.innerHTML = '<p style="text-align:center;">Нет онлайн игроков.</p>'; return; }
+            
             list.innerHTML = '';
-            rooms.forEach(room => {
+            onlinePlayers.forEach(player => {
+                if (player === currentUser) return;
+                
                 const div = document.createElement('div');
                 div.className = 'pvp-room-item';
                 div.innerHTML = `
                     <div>
-                        <b>Комната: ${room.roomName}</b><br>
-                        <small>Хост: ${room.hostName} (${room.charName}) | PTS: ${room.hostPts}</small><br>
-                        <small>HP: ${room.hp} | ATK: ${room.atk}</small>
+                        <b>${player}</b>
+                        ${pvpRooms[player] ? '<span style="color:green; font-size:12px;"> (Ждет боя)</span>' : ''}
                     </div>
-                    <button onclick="joinPvpRoom('${room.roomId}')" style="margin:0; background:#90ee90;">Присоединиться</button>
+                    <div style="display:flex; gap:5px;">
+                        <button onclick="viewProfile('${player}')" style="margin:0; font-size:14px; background:#87CEEB;">Профиль</button>
+                        <button onclick="challengePlayer('${player}')" style="margin:0; font-size:14px; background:#ffcccb;">Вызвать на бой</button>
+                    </div>
                 `;
                 list.appendChild(div);
             });
         }
 
         async function createPvpRoom() {
-            const roomName = document.getElementById('pvp-room-name').value.trim();
+            const roomName = document.getElementById('pvp-room-name').value.trim() || "Комната " + currentUser;
             const charType = document.getElementById('pvp-char-select').value;
-            if (!roomName) { alert("Введи название комнаты!"); return; }
 
             let baseHp = charType === 'ashab' ? 150 : (charType === 'apostol' ? 80 : 110);
             let baseAtk = charType === 'ashab' ? 20 : (charType === 'apostol' ? 30 : 18);
@@ -823,10 +852,67 @@
             bgMusic.currentTime = 0; bgMusic.volume = 0.3; bgMusic.play().catch(e => console.log("Audio blocked"));
         }
 
-        async function joinPvpRoom(roomId) {
-            const room = pvpRooms[roomId];
-            if(!room) return;
+        async function challengePlayer(targetUser) {
+            const charType = document.getElementById('pvp-char-select').value;
+            let baseHp = charType === 'ashab' ? 150 : (charType === 'apostol' ? 80 : 110);
+            let baseAtk = charType === 'ashab' ? 20 : (charType === 'apostol' ? 30 : 18);
+            let hp = baseHp + (currentUpgrades[charType].hp * 20);
+            let atk = baseAtk + (currentUpgrades[charType].atk * 5);
+            let charName = charType === 'ashab' ? "Ашаб" : (charType === 'apostol' ? "Апостол" : "Мээ");
+
+            myRoomId = 'room_' + Math.random().toString(36).substr(2, 9);
+            isPvpHost = true;
+            currentPvpChar = charType;
+
+            if(lobbyChannel) await lobbyChannel.track({ room: { roomId: myRoomId, roomName: "Вызов от " + currentUser, hostName: currentUser, hostPts: currentPvpPts, charName, hp, atk } });
             
+            if(onlineChannel) {
+                onlineChannel.send({
+                    type: 'broadcast',
+                    event: 'challenge',
+                    payload: { target: targetUser, host: currentUser, roomId: myRoomId }
+                });
+            }
+
+            closePvpLobby();
+            alert("Вызов отправлен игроку " + targetUser + "! Ожидаем ответа...");
+
+            if(roomChannel) supabaseClient.removeChannel(roomChannel);
+            roomChannel = supabaseClient.channel(myRoomId, { config: { broadcast: { self: false } } });
+            
+            roomChannel.on('broadcast', { event: 'join_request' }, (payload) => {
+                const guest = payload.payload;
+                startPvpBattle(guest.charName, guest.hp, guest.atk, guest.username);
+                roomChannel.send({ type: 'broadcast', event: 'start_game', payload: { charName: charName, hp, atk, username: currentUser } });
+            });
+
+            roomChannel.on('broadcast', { event: 'enemy_action' }, (payload) => { handlePvpEnemyAction(payload.payload); });
+            roomChannel.subscribe();
+
+            switchTab('rpg');
+            document.getElementById('rpg-char-select').classList.add('hidden');
+            document.getElementById('pvp-battle-screen').classList.remove('hidden');
+            document.getElementById('pvp-player-img').src = `IMG_${3544 + (charType==='apostol'?0:charType==='ashab'?1:2)}.jpeg`;
+            document.getElementById('pvp-player-name').innerText = "Ты (" + charName + ")";
+            document.getElementById('pvp-log').innerHTML = "Ожидаем соперника...";
+            document.getElementById('pvp-turn-indicator').innerText = "ОЖИДАНИЕ";
+            document.getElementById('pvp-turn-indicator').className = "turn-indicator";
+            disablePvpButtons();
+        }
+
+        function listenForChallenges() {
+            if(!onlineChannel) return;
+            onlineChannel.on('broadcast', { event: 'challenge' }, (payload) => {
+                const data = payload.payload;
+                if (data.target === currentUser) {
+                    if (confirm(`Тебе бросил вызов игрок ${data.host}! Принять бой?`)) {
+                        joinPvpRoom(data.roomId);
+                    }
+                }
+            });
+        }
+
+        async function joinPvpRoom(roomId) {
             const charType = document.getElementById('pvp-char-select').value;
             isPvpHost = false;
             currentPvpChar = charType;
@@ -1081,7 +1167,7 @@
             if (itemIndex === -1) return;
             const item = currentInventory[itemIndex];
 
-            pvpGameState.myItemUsed = true; // Предмет использован
+            pvpGameState.myItemUsed = true; 
             disablePvpButtons(); 
             closeItemMenu();
             
@@ -1131,7 +1217,7 @@
                         logPvp(`Враг отравлен парашником! -10 HP.`); updatePvpUI();
                         if(pvpGameState.enemyHp <= 0) { endPvpBattle(true); return; }
                     }
-                    enablePvpButtons(); // Ход НЕ переходит, мы можем еще атаковать/защищаться
+                    enablePvpButtons(); 
                 }
             };
             setTimeout(applyEffect, 800); 
@@ -1207,7 +1293,7 @@
             let skill = document.getElementById('pvp-skill-btn');
             let item = document.getElementById('pvp-item-btn');
             if (atk) atk.disabled = false;
-            if (def) def.disabled = pvpGameState.myMp < 20; // Тратит энергию
+            if (def) def.disabled = pvpGameState.myMp < 20; 
             if (item) item.disabled = pvpGameState.myItemUsed;
             if (skill) skill.disabled = pvpGameState.myMp < 100;
         }
@@ -1232,9 +1318,6 @@
             }
         }
 
-        // ==========================================
-        // ОФФЛАЙН РПГ (ОСТАЛЬНОЕ)
-        // ==========================================
         let rpgChar = null; let rpgEnemy = null; let rpgFloorMain = 1; let rpgFloorSub = 1; 
         let rpgEnergy = 0; let rpgMaxEnergy = 100; let isPlayerTurn = true; let enemyIsCharging = false; let currentCharType = null; let currentBgIndex = -1;
         let rpgPlayerBorisHp = 0; let rpgEnemyBorisHp = 0; let rpgPlayerParashnikHp = 0; let rpgEnemyParashnikHp = 0;
@@ -1386,28 +1469,23 @@
         function enemyTurn(isPlayerDefending = false) {
             setTurnIndicator(false); animateAttack(false);
             
-            // ИИ: Шанс использовать предмет
-            let itemChance = Math.min(0.35, 0.05 + (rpgFloorMain * 0.03)); // 5% lvl 1, растет до 35%
+            let itemChance = Math.min(0.35, 0.05 + (rpgFloorMain * 0.03)); 
             
             if (Math.random() < itemChance) {
                 let itemRoll = Math.random();
                 if (itemRoll < 0.4 && rpgEnemy.hp < rpgEnemy.maxHp - 20) {
-                    // Лечение
                     rpgEnemy.hp = Math.min(rpgEnemy.maxHp, rpgEnemy.hp + 20);
                     addLog(`Враг юзает хуйнью и лечится на 20 HP!`);
                     playSoundEffect('heal');
                 } else if (itemRoll < 0.6 && rpgEnemyBorisHp <= 0) {
-                    // Борис
                     rpgEnemyBorisHp = 60;
                     addLog(`Враг ставит Бориса!`);
                     playSoundEffect('thing');
                 } else if (itemRoll < 0.8 && rpgPlayerParashnikHp <= 0) {
-                    // Парашник
                     rpgPlayerParashnikHp = 30;
                     addLog(`Враг ставит Парашника!`);
                     playSoundEffect('thing');
                 } else {
-                    // Урон от предмета (Голова барана)
                     playSoundEffect('harmful');
                     flashRedScreen();
                     let dmg = 40;
@@ -1425,7 +1503,6 @@
                 return;
             }
             
-            // Обычная атака
             let dmg = Math.floor(Math.random() * 10) + rpgEnemy.atk;
             
             if (!isPlayerDefending && Math.random() < 0.3 && !enemyIsCharging) {
@@ -1475,7 +1552,6 @@
             setTimeout(() => { addLog(`=== ЭТАЖ ${rpgFloorMain}.${rpgFloorSub} ===`); spawnEnemy(); }, 2000);
         }
 
-        // ОСТАЛЬНЫЕ ФУНКЦИИ
         async function openCase(price) {
             const resBox = document.getElementById('case-result'); resBox.innerHTML = "Крутим...";
             try {
@@ -1786,7 +1862,6 @@
             }
         }
 
-        // ИГРА В ПИДОРОВ
         const pads = document.querySelectorAll('.pad'); const statusText = document.getElementById('status'); const restartBtn = document.getElementById('restart-btn');
         const AudioContext = window.AudioContext || window.webkitAudioContext; const audioCtx = new AudioContext();
         const frequencies = { '1': 200, '2': 300, '3': 400, '4': 500 }; 
