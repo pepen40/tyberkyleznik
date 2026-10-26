@@ -4,18 +4,52 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const EDGE_FUNCTION_NAME = 'award-coins'; 
 const battleBackgrounds = ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png', 'bg6.png'];
 
-// === ПРЕДЗАГРУЗКА РЕСУРСОВ ===
-function preloadAssets() {
-    const images = [
-        'IMG_3544.jpeg', 'IMG_3545.jpeg', 'IMG_3546.jpeg', 'IMG_3547.jpeg',
-        'img_huynya.png', 'img_kartofel.png', 'img_baran.png', 'img_koala.png',
-        'img_apostol.png', 'img_parashnik.png', 'img_boris.png', 'img_syringe.png',
-        'img_shaver.png', 'enemy_pidor.png', 'enemy_chuvak.png', 'enemy_beduin.png',
-        'bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png', 'bg6.png'
-    ];
-    images.forEach(src => { const img = new Image(); img.src = src; });
+// === ЗАГРУЗКА РЕСУРСОВ ===
+function loadAssets() {
+    return new Promise((resolve) => {
+        const images = [
+            'IMG_3544.jpeg', 'IMG_3545.jpeg', 'IMG_3546.jpeg', 'IMG_3547.jpeg',
+            'img_huynya.png', 'img_kartofel.png', 'img_baran.png', 'img_koala.png',
+            'img_apostol.png', 'img_parashnik.png', 'img_boris.png', 'img_syringe.png',
+            'img_shaver.png', 'enemy_pidor.png', 'enemy_chuvak.png', 'enemy_beduin.png',
+            'bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png', 'bg6.png'
+        ];
+        const sounds = ['attack.mp4', 'protection.mp4', 'heal.mp4', 'harmful.mp4', 'thing.mp4', 'ambient.mp3'];
+        const total = images.length + sounds.length;
+        let loaded = 0;
+
+        const updateProgress = () => {
+            loaded++;
+            const percent = Math.round((loaded / total) * 100);
+            const progressBar = document.getElementById('load-progress');
+            const loadText = document.getElementById('load-text');
+            if (progressBar) progressBar.style.width = percent + '%';
+            if (loadText) loadText.innerText = percent + '%';
+            if (loaded === total) resolve();
+        };
+
+        images.forEach(src => {
+            const img = new Image();
+            img.onload = updateProgress;
+            img.onerror = updateProgress;
+            img.src = src;
+        });
+
+        sounds.forEach(src => {
+            const audio = new Audio();
+            audio.oncanplaythrough = updateProgress;
+            audio.onerror = updateProgress;
+            audio.src = src;
+            audio.load();
+        });
+    });
 }
-window.addEventListener('load', preloadAssets);
+
+window.addEventListener('load', async () => {
+    await loadAssets();
+    document.getElementById('loading-screen').classList.add('hidden');
+    document.getElementById('auth-screen').classList.remove('hidden');
+});
 
 const itemDatabase = {
     "хуйня": { desc: "На самом деле это не хуйня а аппарат жизнеобеспечения. подключи ее в разьем и тебе начислится 20 хп", chance: "30-40%" },
@@ -879,6 +913,7 @@ let rpgChar = null; let rpgEnemy = null; let rpgFloorMain = 1; let rpgFloorSub =
 let rpgMana = 0; let rpgMaxMana = 100; let isPlayerTurn = true; let enemyIsCharging = false; let currentCharType = null; let currentBgIndex = -1;
 let rpgPlayerBorisHp = 0; let rpgEnemyBorisHp = 0; let rpgPlayerParashnikHp = 0; let rpgEnemyParashnikHp = 0;
 let rpgItemUsed = false; let rpgPlayerDefending = false; let rpgEnemyStunned = false;
+let enemyTurnTimeout = null;
 
 function changeBackground() {
     let newIndex; do { newIndex = Math.floor(Math.random() * battleBackgrounds.length); } while (newIndex === currentBgIndex && battleBackgrounds.length > 1);
@@ -886,6 +921,7 @@ function changeBackground() {
 }
 
 function selectChar(type) {
+    if (enemyTurnTimeout) clearTimeout(enemyTurnTimeout);
     currentCharType = type;
     let baseHp = 0, baseAtk = 0, mpGain = 0, name = "", charClass = "", imgUrl = "";
     if (type === 'ashab') { baseHp = 150; baseAtk = 20; mpGain = 20; name = "Ashab"; charClass = "Берсерк"; imgUrl = "IMG_3545.jpeg"; }
@@ -904,11 +940,14 @@ function selectChar(type) {
 }
 
 function fleeOfflineBattle() {
-    if (!confirm("Съебаться с поля боя?")) return;
+    if (!confirm("Съебаться с поля боя? Весь прогресс текущего этажа будет потерян.")) return;
+    if (enemyTurnTimeout) clearTimeout(enemyTurnTimeout);
     document.getElementById('battle-music').pause();
     document.getElementById('rpg-battle-screen').classList.add('hidden');
     document.getElementById('rpg-char-select').classList.remove('hidden');
     rpgChar = null; rpgEnemy = null; rpgFloorMain = 1; rpgFloorSub = 1; rpgMana = 0;
+    rpgPlayerBorisHp = 0; rpgPlayerParashnikHp = 0; rpgEnemyBorisHp = 0; rpgEnemyParashnikHp = 0;
+    rpgItemUsed = false; rpgPlayerDefending = false; rpgEnemyStunned = false; isPlayerTurn = false;
     renderCharStats(); updateUI();
 }
 
@@ -991,7 +1030,7 @@ function rpgAttack() {
     }
     rpgMana = Math.min(rpgMaxMana, rpgMana + rpgChar.mpGain);
     updateRpgUI();
-    if (rpgEnemy.hp <= 0) winRpg(); else setTimeout(enemyTurn, 800);
+    if (rpgEnemy.hp <= 0) winRpg(); else enemyTurnTimeout = setTimeout(enemyTurn, 800);
 }
 function rpgDefend() {
     if (!isPlayerTurn || rpgChar.hp <= 0 || rpgEnemy.hp <= 0) return;
@@ -999,7 +1038,7 @@ function rpgDefend() {
     playSoundEffect('protection');
     rpgMana -= 40;
     isPlayerTurn = false; rpgItemUsed = false; rpgPlayerDefending = true; rpgEnemyStunned = true; setTurnIndicator(false); checkButtons();
-    addLog(`${rpgChar.name} в защите (-40 маны). Враг споткнется на след. ход!`); updateRpgUI(); setTimeout(() => enemyTurn(true), 800);
+    addLog(`${rpgChar.name} в защите (-40 маны). Враг споткнется на след. ход!`); updateRpgUI(); enemyTurnTimeout = setTimeout(() => enemyTurn(true), 800);
 }
 function rpgSkill() {
     if (!isPlayerTurn || rpgMana < 100 || rpgChar.hp <= 0 || rpgEnemy.hp <= 0) return;
@@ -1018,7 +1057,7 @@ function rpgSkill() {
             rpgEnemy.hp -= dmg; 
         }
     }
-    updateRpgUI(); if (rpgEnemy.hp <= 0) winRpg(); else setTimeout(enemyTurn, 800);
+    updateRpgUI(); if (rpgEnemy.hp <= 0) winRpg(); else enemyTurnTimeout = setTimeout(enemyTurn, 800);
 }
 
 function enemyTurn(isPlayerDefending = false) {
@@ -1059,7 +1098,7 @@ function enemyTurn(isPlayerDefending = false) {
         if (rpgChar.hp <= 0) { 
             addLog(`Ты сдох...`); isPlayerTurn = false; checkButtons(); document.getElementById('battle-music').pause(); setTimeout(() => { document.getElementById('rpg-char-select').classList.remove('hidden'); document.getElementById('rpg-battle-screen').classList.add('hidden'); renderCharStats(); updateUI(); }, 3000); 
         } else {
-            setTimeout(() => { isPlayerTurn = true; setTurnIndicator(true); checkButtons(); }, 800);
+            enemyTurnTimeout = setTimeout(() => { isPlayerTurn = true; setTurnIndicator(true); checkButtons(); }, 800);
         }
         return;
     }
@@ -1119,7 +1158,7 @@ async function winRpg() {
         rpgFloorSub++;
         if (rpgFloorSub > 5) { rpgFloorSub = 1; rpgFloorMain++; changeBackground(); }
         rpgMana = Math.min(rpgMaxMana, rpgMana + 30);
-        setTimeout(() => { addLog(`=== ЭТАЖ ${rpgFloorMain}.${rpgFloorSub} ===`); spawnEnemy(); }, 2000);
+        enemyTurnTimeout = setTimeout(() => { addLog(`=== ЭТАЖ ${rpgFloorMain}.${rpgFloorSub} ===`); spawnEnemy(); }, 2000);
     }
 }
 
