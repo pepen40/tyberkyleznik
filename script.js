@@ -40,7 +40,8 @@ let pendingChallengeHost = null;
 
 const soundCache = {};
 function preloadSounds() {
-    const sounds = { 'attack': 'attack.mp4', 'protection': 'protection.mp4', 'heal': 'heal.mp4', 'harmful': 'harmful.mp4', 'thing': 'thing.mp4', 'shaver': 'shaver.mp4' };
+    // Добавил звук crit.mp4 на будущее. Если его нет - просто не сыграет.
+    const sounds = { 'attack': 'attack.mp4', 'protection': 'protection.mp4', 'heal': 'heal.mp4', 'harmful': 'harmful.mp4', 'thing': 'thing.mp4', 'shaver': 'shaver.mp4', 'crit': 'crit.mp4' };
     for (let key in sounds) {
         let audio = new Audio(sounds[key]);
         audio.preload = 'auto';
@@ -49,19 +50,25 @@ function preloadSounds() {
     }
 }
 
-// ТУТ ДВОЙНОЙ ЗВУК ДЛЯ ШЕЙВЕРА
 function playSoundEffect(type) {
     if (soundCache[type]) {
         let clone1 = soundCache[type].cloneNode();
         clone1.volume = 1.0; 
         clone1.play().catch(e => console.log("Звук заблокирован:", e));
 
-        if (type === 'shaver') {
+        if (type === 'shaver' || type === 'crit') {
             let clone2 = soundCache[type].cloneNode();
             clone2.volume = 1.0; 
             clone2.play().catch(e => console.log("Звук заблокирован:", e));
         }
     }
+}
+
+// ТРЯСКА ЭКРАНА
+function triggerScreenShake() {
+    const body = document.querySelector('.panel:not(.hidden)') || document.body;
+    body.classList.add('shake');
+    setTimeout(() => { body.classList.remove('shake'); }, 300);
 }
 
 function flashRedScreen() {
@@ -534,6 +541,11 @@ function startPvpBattle(enemyName, enemyHp, enemyAtk, enemyUsername, enemyCharTy
 
 function handlePvpEnemyAction(payload) {
     if (pvpGameState.myHp <= 0) return; 
+    
+    // ТРЯСКА И ВСПЫШКА ПРИ ПОЛУЧЕНИИ УРОНА
+    triggerScreenShake();
+    flashRedScreen();
+
     if (payload.type === 'attack') {
         playSoundEffect('attack');
         let dmg = payload.dmg;
@@ -555,7 +567,7 @@ function handlePvpEnemyAction(payload) {
         logPvp(`Враг встает в защиту.`);
         pvpGameState.enemyDefending = true;
     } else if (payload.type === 'skill') {
-        playSoundEffect('attack');
+        playSoundEffect('crit'); // УЛЬТА ЗВУЧИТ КАК КРИТ
         let dmg = payload.dmg;
         if (pvpGameState.myDefending) { dmg = Math.floor(dmg * 0.5); pvpGameState.myDefending = false; logPvp(`Ты блокировал способность, получив ${dmg} урона (50% срезано).`); }
         else if (pvpGameState.myBorisHp > 0) {
@@ -575,7 +587,6 @@ function handlePvpEnemyAction(payload) {
         }
         else if (payload.effect === 'damage') { 
             playSoundEffect('harmful');
-            flashRedScreen();
             let dmg = payload.val;
             if (pvpGameState.myDefending) { dmg = Math.floor(dmg * 0.35); pvpGameState.myDefending = false; logPvp(`Ты блокировал предмет, получив ${dmg} урона (65% срезано).`); }
             if (pvpGameState.myBorisHp > 0) { pvpGameState.myBorisHp -= dmg; logPvp(`Враг швыряет предмет в Бориса! Урон: ${dmg}`); if(pvpGameState.myBorisHp <= 0) { logPvp("Борис разрушен!"); pvpGameState.myBorisHp = 0; } }
@@ -610,6 +621,7 @@ function pvpAttack() {
     if (!pvpGameState.isMyTurn) return;
     playSoundEffect('attack');
     pvpGameState.isMyTurn = false; pvpGameState.myItemUsed = false; disablePvpButtons(); setPvpTurn(false);
+    triggerScreenShake(); // ТРЯСКА ПРИ УДАРЕ
     let dmg = Math.floor(Math.random() * 10) + pvpGameState.myAtk;
     if (pvpGameState.enemyDefending) { dmg = Math.floor(dmg * 0.2); pvpGameState.enemyDefending = false; logPvp(`Враг заблокировал атаку, он получил ${dmg} урона (80% срезано).`); }
     else if (pvpGameState.enemyBorisHp > 0) {
@@ -653,8 +665,9 @@ function pvpDefend() {
 
 function pvpSkill() {
     if (!pvpGameState.isMyTurn || pvpGameState.myMp < 100) return;
-    playSoundEffect('attack');
+    playSoundEffect('crit'); // УЛЬТА ЗВУЧИТ КАК КРИТ
     pvpGameState.isMyTurn = false; pvpGameState.myMp = 0; pvpGameState.myItemUsed = false; disablePvpButtons(); setPvpTurn(false);
+    triggerScreenShake(); // ТРЯСКА ПРИ УЛЬТЕ
     let dmg = 0;
     let charType = currentPvpChar;
     if (charType === 'ashab') dmg = 60 + (currentUpgrades[charType].atk * 10);
@@ -999,6 +1012,7 @@ function rpgAttack() {
     if (!isPlayerTurn || rpgChar.hp <= 0 || rpgEnemy.hp <= 0) return;
     playSoundEffect('attack');
     isPlayerTurn = false; rpgItemUsed = false; setTurnIndicator(false); checkButtons(); animateAttack(true);
+    triggerScreenShake(); // ТРЯСКА ПРИ УДАРЕ
     let dmg = Math.floor(Math.random() * 10) + rpgChar.atk;
     if(rpgEnemyBorisHp > 0) {
         rpgEnemyBorisHp -= dmg; addLog(`Ты бьешь Бориса на ${dmg}.`); if(rpgEnemyBorisHp <= 0) { rpgEnemyBorisHp = 0; addLog("Борис разрушен!"); }
@@ -1021,8 +1035,9 @@ function rpgDefend() {
 }
 function rpgSkill() {
     if (!isPlayerTurn || rpgMana < 100 || rpgChar.hp <= 0 || rpgEnemy.hp <= 0) return;
-    playSoundEffect('attack');
+    playSoundEffect('crit'); // УЛЬТА ЗВУЧИТ КАК КРИТ
     isPlayerTurn = false; rpgMana = 0; rpgItemUsed = false; setTurnIndicator(false); checkButtons(); animateAttack(true);
+    triggerScreenShake(); // ТРЯСКА ПРИ УЛЬТЕ
     let dmg = 0;
     if (rpgChar.class === "Берсерк") { dmg = 60 + (currentUpgrades[currentCharType].atk * 10); addLog(`Сокрушающий удар на ${dmg}!`); }
     else if (rpgChar.class === "Чернокнижник") { dmg = Math.floor(Math.random() * 30) + 70 + (currentUpgrades[currentCharType].atk * 10); addLog(`Тёмный ритуал. Урон: ${dmg}!`); }
@@ -1048,6 +1063,9 @@ function enemyTurn(isPlayerDefending = false) {
     }
     
     setTurnIndicator(false); animateAttack(false);
+    triggerScreenShake(); // ТРЯСКА ПРИ УДАРЕ ВРАГА
+    flashRedScreen();
+
     let itemChance = Math.min(0.35, 0.05 + (rpgFloorMain * 0.03)); 
     
     if (Math.random() < itemChance && !isPlayerDefending) {
@@ -1066,7 +1084,6 @@ function enemyTurn(isPlayerDefending = false) {
             playSoundEffect('thing');
         } else {
             playSoundEffect('harmful');
-            flashRedScreen();
             let dmg = 40;
             if (isPlayerDefending) { dmg = Math.floor(dmg * 0.35); addLog(`Ты заблокировал предмет, получив ${dmg} (65% срезано).`); }
             if (rpgPlayerBorisHp > 0) { rpgPlayerBorisHp -= dmg; addLog(`Враг швырнул голову барана в Бориса!`); if(rpgPlayerBorisHp<=0){rpgPlayerBorisHp=0; addLog("Твой Борис разрушен!");} }
@@ -1088,7 +1105,7 @@ function enemyTurn(isPlayerDefending = false) {
     if (!isPlayerDefending && Math.random() < 0.3 && !enemyIsCharging) {
         enemyIsCharging = true; addLog(`${rpgEnemy.name} копит силы...`); isPlayerTurn = true; setTurnIndicator(true); checkButtons(); return;
     }
-    if (enemyIsCharging) { dmg *= 2; enemyIsCharging = false; isUlt = true; addLog(`ЕБАТЬ! Усиленный удар!`); }
+    if (enemyIsCharging) { dmg *= 2; enemyIsCharging = false; isUlt = true; addLog(`ЕБАТЬ! Усиленный удар!`); playSoundEffect('crit'); }
     
     if (isPlayerDefending) {
         if (isUlt) { dmg = Math.floor(dmg * 0.5); addLog(`Защита срезала ульту на 50%. Урон: ${dmg}.`); }
