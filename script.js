@@ -6,23 +6,29 @@ const battleBackgrounds = ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png'
 
 // === АВТОЛОГИН И ПОГОДА ===
 window.addEventListener('load', () => {
-    // Автологин
-    const savedUser = localStorage.getItem('pepen_user');
-    if (savedUser) {
-        document.getElementById('auth-screen').classList.add('hidden');
-        document.getElementById('main-screen').classList.remove('hidden');
-        document.getElementById('username').value = savedUser;
-        login(); 
-    } else {
-        document.getElementById('auth-screen').classList.remove('hidden');
-        document.getElementById('main-screen').classList.add('hidden');
-    }
-
     // Загрузка настроек погоды
     const isWeatherOn = localStorage.getItem('pepen_weather') === 'true';
     const wt = document.getElementById('weather-toggle');
     if (wt) wt.checked = isWeatherOn;
     if (isWeatherOn) document.getElementById('weather-widget').classList.remove('hidden');
+
+    // АВТОЛОГИН С ПАРОЛЕМ
+    const savedUser = localStorage.getItem('pepen_user');
+    const savedPass = localStorage.getItem('pepen_pass');
+
+    if (savedUser && savedPass) {
+        // Скрываем экран логина сразу
+        document.getElementById('auth-screen').classList.add('hidden');
+        document.getElementById('main-screen').classList.remove('hidden');
+        
+        // Подставляем данные и логинимся
+        document.getElementById('username').value = savedUser;
+        document.getElementById('password').value = savedPass;
+        login(true); 
+    } else {
+        document.getElementById('auth-screen').classList.remove('hidden');
+        document.getElementById('main-screen').classList.add('hidden');
+    }
 });
 
 function toggleWeather() {
@@ -38,6 +44,7 @@ function toggleWeather() {
 function logout() {
     if (!confirm("Выйти с аккаунта?")) return;
     localStorage.removeItem('pepen_user');
+    localStorage.removeItem('pepen_pass'); // Удаляем и пароль
     location.reload();
 }
 
@@ -205,12 +212,30 @@ async function register() {
     else { document.getElementById('auth-msg').style.color = "green"; document.getElementById('auth-msg').textContent = "Успех! Жми Войти."; }
 }
 
-async function login() {
+// ИЗМЕНЕНА ФУНКЦИЯ LOGIN
+async function login(isAutoLogin = false) {
     const u = document.getElementById('username').value.trim();
     const p = document.getElementById('password').value;
     if (!u || !p) return;
+    
+    if (!isAutoLogin) {
+        document.getElementById('auth-msg').textContent = "Загрузка...";
+    }
+
     const { data, error } = await supabaseClient.from('players').select('*').eq('username', u).eq('password', p).single();
-    if (error || !data) { document.getElementById('auth-msg').textContent = "Неверный ник или пароль."; }
+    
+    if (error || !data) { 
+        if (isAutoLogin) {
+            // Если автологин не удался (пароль сменили, например), показываем экран логина
+            localStorage.removeItem('pepen_user');
+            localStorage.removeItem('pepen_pass');
+            document.getElementById('auth-screen').classList.remove('hidden');
+            document.getElementById('main-screen').classList.add('hidden');
+            document.getElementById('auth-msg').textContent = "Сессия истекла, войди заново.";
+        } else {
+            document.getElementById('auth-msg').textContent = "Неверный ник или пароль."; 
+        }
+    }
     else {
         currentUser = data.username;
         currentHighScore = data.max_score || 0;
@@ -222,17 +247,31 @@ async function login() {
         currentMaxFloors = data.rpg_max_floors || {"ashab":0,"apostol":0,"mee":0};
         await supabaseClient.from('players').update({ last_online: new Date().toISOString() }).eq('username', u);
         
+        // СОХРАНЯЕМ И НИК И ПАРОЛЬ
         localStorage.setItem('pepen_user', currentUser);
+        localStorage.setItem('pepen_pass', p);
 
         document.getElementById('auth-screen').classList.add('hidden');
         document.getElementById('main-screen').classList.remove('hidden');
-        preloadSounds(); 
-        initOnlineCounter();
-        initLobby();
-        updateUI();
-        resetGame();
-        renderCharStats();
-        switchTab('game');
+        
+        if (!isAutoLogin) {
+            preloadSounds(); 
+            initOnlineCounter();
+            initLobby();
+            updateUI();
+            resetGame();
+            renderCharStats();
+            switchTab('game');
+        } else {
+            // Если автологин, тоже инициализируем всё, но без лишних телодвижений
+            preloadSounds(); 
+            initOnlineCounter();
+            initLobby();
+            updateUI();
+            resetGame();
+            renderCharStats();
+            switchTab('game');
+        }
     }
 }
 
