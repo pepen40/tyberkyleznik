@@ -822,7 +822,7 @@ async function pvpUseItem(itemName) {
             enablePvpButtons(); 
         }
     };
-    setTimeout(applyEffect, 4000); // ЖДЕМ 4 СЕКУНДЫ ПОКА ЛЕТИТ
+    setTimeout(applyEffect, 2600); // ЖДЕМ 2.6 СЕКУНДЫ ПОКА ЛЕТИТ
 }
 
 async function endPvpBattle(isWin) {
@@ -908,24 +908,20 @@ function animatePvpItemUse(item, isDamage) {
     const el = document.createElement('img');
     el.src = item.img || 'https://via.placeholder.com/50?text=ITEM'; 
     el.style.position = 'absolute'; el.style.width = '80px'; el.style.height = '80px'; el.style.zIndex = '50'; 
-    el.style.transition = 'all 4s cubic-bezier(0.25, 0.1, 0.25, 1)'; // ЗАМЕДЛЕНО НА 4 СЕКУНДЫ
+    el.style.transition = 'all 2.6s cubic-bezier(0.25, 0.1, 0.25, 1)'; // 2.6 СЕКУНДЫ
     
     if (isDamage) {
         el.style.left = '20%'; el.style.top = '40%'; el.style.transform = 'rotate(-20deg) scale(1)'; battlefield.appendChild(el);
         void el.offsetWidth; 
-        // Летит медленно, крутится
         el.style.left = '75%'; el.style.top = '30%'; el.style.transform = 'scale(1.5) rotate(720deg)'; 
-        setTimeout(() => { 
-            el.remove(); 
-        }, 4000);
+        setTimeout(() => { el.remove(); }, 2600);
     } else {
         el.style.left = '25%'; el.style.top = '30%'; el.style.transform = 'rotate(0deg) scale(1)'; battlefield.appendChild(el);
         void el.offsetWidth;
         el.style.top = '60%'; el.style.opacity = '0'; el.style.transform = 'scale(0.8) rotate(15deg)';
-        setTimeout(() => { 
-            el.remove(); 
-        }, 4000);
+        setTimeout(() => { el.remove(); }, 2600);
     }
+}
 }
 
 let rpgChar = null; let rpgEnemy = null; let rpgFloorMain = 1; let rpgFloorSub = 1; 
@@ -1461,7 +1457,7 @@ async function useItemInBattle(itemName) {
             checkButtons(); 
         }
     };
-    setTimeout(applyEffect, 4000); // ЖДЕМ 4 СЕКУНДЫ ПОКА ЛЕТИТ
+    setTimeout(applyEffect, 2600); // ЖДЕМ 2.6 СЕКУНДЫ ПОКА ЛЕТИТ
     closeItemMenu();
 }
 
@@ -1470,24 +1466,20 @@ function animateItemUse(item, isDamage) {
     const el = document.createElement('img');
     el.src = item.img || 'https://via.placeholder.com/50?text=ITEM'; 
     el.style.position = 'absolute'; el.style.width = '80px'; el.style.height = '80px'; el.style.zIndex = '50'; 
-    el.style.transition = 'all 4s cubic-bezier(0.25, 0.1, 0.25, 1)'; // ЗАМЕДЛЕНО НА 4 СЕКУНДЫ
+    el.style.transition = 'all 2.6s cubic-bezier(0.25, 0.1, 0.25, 1)'; // 2.6 СЕКУНДЫ
     
     if (isDamage) {
         el.style.left = '20%'; el.style.top = '40%'; el.style.transform = 'rotate(-20deg) scale(1)'; battlefield.appendChild(el);
         void el.offsetWidth; 
-        // Летит медленно, крутится
         el.style.left = '75%'; el.style.top = '30%'; el.style.transform = 'scale(1.5) rotate(720deg)'; 
-        setTimeout(() => { 
-            el.remove(); 
-        }, 4000);
+        setTimeout(() => { el.remove(); }, 2600);
     } else {
         el.style.left = '25%'; el.style.top = '30%'; el.style.transform = 'rotate(0deg) scale(1)'; battlefield.appendChild(el);
         void el.offsetWidth;
         el.style.top = '60%'; el.style.opacity = '0'; el.style.transform = 'scale(0.8) rotate(15deg)';
-        setTimeout(() => { 
-            el.remove(); 
-        }, 4000);
+        setTimeout(() => { el.remove(); }, 2600);
     }
+}
 }
 
 const pads = document.querySelectorAll('.pad'); const statusText = document.getElementById('status'); const restartBtn = document.getElementById('restart-btn');
