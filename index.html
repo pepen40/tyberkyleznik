@@ -159,6 +159,7 @@
 </head>
 <body>
 
+    <!-- Фоновая музыка -->
     <audio id="battle-music" src="ambient.mp3" loop onerror="console.log('Нет музыки')"></audio>
 
     <div id="auth-screen" class="panel">
@@ -169,7 +170,7 @@
         <button onclick="register()">Зарегаться</button>
         <button onclick="login()">Войти</button>
         <p id="auth-msg"></p>
-        <div class="version-text" style="margin-top: 15px;">версия игры beta 4.2</div>
+        <div class="version-text" style="margin-top: 15px;">версия игры beta 4.3</div>
     </div>
 
     <div id="main-screen" class="hidden">
@@ -391,7 +392,7 @@
                 привет представляем вашему вниманию новомую игру pepen40 games . У вас наверняка возник вопрос что это за хуйня как в это играть? смотрите нужно нажимать на пидорасов поочередно в соответствии с тем с какой последовательностью каждый из них пищит. Ну там пропищал apostol 2 раза потом амжан желтый 3 раза . Значит надо нажать на apostol 3 раза и потом амжан желтый 3 раза. Также тут представлены кейсы как в ксго . Покупаете вам выпадает всякая хуйня которая в соответствии со своей редкостью выводит вас в топ в Leaderboard на определенный уровень. За хуйню вам маленько дадут баллов за apostol - дохуя. Вы также можете продавать эти хуйни которые выбили. Да да нахуй не ослышались продавать. На торговой площадке. И зарабатывать за это бабки нахуй
             </div>
             <br><br><br>
-            <div class="version-text">версия игры beta 4.2</div>
+            <div class="version-text">версия игры beta 4.3</div>
         </div>
     </div>
 
@@ -500,20 +501,31 @@
         let pvpRooms = {};
 
         // ==========================================
-        // ЗВУКИ И ЭФФЕКТЫ
+        // ЗВУКИ И ЭФФЕКТЫ (С ПРЕДЗАГРУЗКОЙ)
         // ==========================================
+        const soundCache = {};
+        function preloadSounds() {
+            const sounds = {
+                'attack': 'attack.mp4',
+                'protection': 'protection.mp4',
+                'heal': 'heal.mp4',
+                'harmful': 'harmful.mp4',
+                'thing': 'thing.mp4'
+            };
+            for (let key in sounds) {
+                let audio = new Audio(sounds[key]);
+                audio.preload = 'auto';
+                audio.volume = 0.75; // 75% громкости (на 35% громче музыки на 30%)
+                soundCache[key] = audio;
+            }
+        }
+
         function playSoundEffect(type) {
-            let filename = '';
-            if (type === 'attack') filename = 'attack.mp4';
-            if (type === 'protection') filename = 'protection.mp4';
-            if (type === 'heal') filename = 'heal.mp4';
-            if (type === 'harmful') filename = 'harmful.mp4';
-            if (type === 'thing') filename = 'thing.mp4';
-            
-            if (filename) {
-                const audio = new Audio(filename);
-                audio.volume = 0.5;
-                audio.play().catch(e => console.log("Звук не найден или заблокирован: " + filename));
+            if (soundCache[type]) {
+                // Клонируем аудио, чтобы можно было проигрывать несколько раз подряд без задержек
+                let clone = soundCache[type].cloneNode();
+                clone.volume = 0.75;
+                clone.play().catch(e => console.log("Звук заблокирован браузером:", e));
             }
         }
 
@@ -602,6 +614,7 @@
                 document.getElementById('auth-screen').classList.add('hidden');
                 document.getElementById('main-screen').classList.remove('hidden');
                 
+                preloadSounds(); // ПРЕДЗАГРУЖАЕМ ЗВУКИ ПРИ ВХОДЕ
                 initOnlineCounter();
                 initLobby();
                 updateUI();
@@ -807,7 +820,7 @@
             disablePvpButtons();
 
             const bgMusic = document.getElementById('battle-music');
-            bgMusic.currentTime = 0; bgMusic.volume = 0.5; bgMusic.play().catch(e => console.log("Audio blocked"));
+            bgMusic.currentTime = 0; bgMusic.volume = 0.3; bgMusic.play().catch(e => console.log("Audio blocked"));
         }
 
         async function joinPvpRoom(roomId) {
@@ -868,7 +881,7 @@
             else { setPvpTurn(false); disablePvpButtons(); }
 
             const bgMusic = document.getElementById('battle-music');
-            if (bgMusic.paused) { bgMusic.currentTime = 0; bgMusic.volume = 0.5; bgMusic.play().catch(e => console.log("Audio blocked")); }
+            if (bgMusic.paused) { bgMusic.currentTime = 0; bgMusic.volume = 0.3; bgMusic.play().catch(e => console.log("Audio blocked")); }
         }
 
         function handlePvpEnemyAction(payload) {
@@ -1249,7 +1262,7 @@
             document.getElementById('rpg-player-img').src = rpgChar.img;
             
             const bgMusic = document.getElementById('battle-music');
-            bgMusic.currentTime = 0; bgMusic.volume = 0.5; bgMusic.play().catch(e => console.log("Audio blocked"));
+            bgMusic.currentTime = 0; bgMusic.volume = 0.3; bgMusic.play().catch(e => console.log("Audio blocked"));
             changeBackground(); spawnEnemy();
         }
 
@@ -1395,11 +1408,12 @@
                     playSoundEffect('thing');
                 } else {
                     // Урон от предмета (Голова барана)
-                    playSoundEffect('thing');
+                    playSoundEffect('harmful');
+                    flashRedScreen();
                     let dmg = 40;
                     if (rpgPlayerBorisHp > 0) { rpgPlayerBorisHp -= dmg; addLog(`Враг швырнул голову барана в Бориса!`); if(rpgPlayerBorisHp<=0){rpgPlayerBorisHp=0; addLog("Твой Борис разрушен!");} }
                     else if (rpgPlayerParashnikHp > 0) { rpgPlayerParashnikHp -= dmg; addLog(`Враг швырнул голову барана в Парашника!`); if(rpgPlayerParashnikHp<=0){rpgPlayerParashnikHp=0; addLog("Твой Парашник уничтожен!");} }
-                    else { rpgChar.hp -= dmg; addLog(`Враг швырнул голову барана на ${dmg} урона!`); playSoundEffect('harmful'); flashRedScreen(); }
+                    else { rpgChar.hp -= dmg; addLog(`Враг швырнул голову барана на ${dmg} урона!`); }
                 }
                 
                 updateRpgUI();
