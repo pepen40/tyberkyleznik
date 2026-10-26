@@ -143,6 +143,11 @@
             width: 100%; height: 6px; background: #333; border: 1px solid #000; margin-top: 2px; border-radius: 3px; overflow: hidden;
         }
         .deployed-item .hp-bar-fill { height: 100%; background: #00ff00; transition: width 0.3s; }
+
+        /* ЧАТ */
+        .chat-container { display: flex; gap: 5px; margin-bottom: 10px; }
+        .chat-input { flex-grow: 1; font-family: "Courier New", Courier, monospace; font-size: 14px; padding: 5px; border: 2px inset #fff; }
+        .chat-send-btn { margin-top: 0; padding: 5px 10px; font-size: 14px; background-color: #90ee90; }
     </style>
 </head>
 <body>
@@ -157,7 +162,7 @@
         <button onclick="register()">Зарегаться</button>
         <button onclick="login()">Войти</button>
         <p id="auth-msg"></p>
-        <div class="version-text" style="margin-top: 15px;">версия игры beta 4.4</div>
+        <div class="version-text" style="margin-top: 15px;">версия игры beta 4.6</div>
     </div>
 
     <div id="main-screen" class="hidden">
@@ -313,6 +318,12 @@
                 </div>
                 
                 <div class="rpg-log" id="pvp-log">Ожидание соперника...</div>
+
+                <!-- ЧАТ -->
+                <div class="chat-container" id="pvp-chat-container" style="display:none;">
+                    <input type="text" id="pvp-chat-input" class="chat-input" placeholder="Напиши что-нибудь..." onkeypress="if(event.key === 'Enter') sendPvpChat()">
+                    <button class="chat-send-btn" onclick="sendPvpChat()">Отправить</button>
+                </div>
                 
                 <div class="rpg-actions" style="display:flex; flex-wrap:wrap; gap:5px;">
                     <button class="btn-atk" style="width:48%;" id="pvp-atk-btn" onclick="pvpAttack()" disabled>Атака</button>
@@ -381,7 +392,7 @@
                 привет представляем вашему вниманию новомую игру pepen40 games . У вас наверняка возник вопрос что это за хуйня как в это играть? смотрите нужно нажимать на пидорасов поочередно в соответствии с тем с какой последовательностью каждый из них пищит. Ну там пропищал apostol 2 раза потом амжан желтый 3 раза . Значит надо нажать на apostol 3 раза и потом амжан желтый 3 раза. Также тут представлены кейсы как в ксго . Покупаете вам выпадает всякая хуйня которая в соответствии со своей редкостью выводит вас в топ в Leaderboard на определенный уровень. За хуйню вам маленько дадут баллов за apostol - дохуя. Вы также можете продавать эти хуйни которые выбили. Да да нахуй не ослышались продавать. На торговой площадке. И зарабатывать за это бабки нахуй
             </div>
             <br><br><br>
-            <div class="version-text">версия игры beta 4.4</div>
+            <div class="version-text">версия игры beta 4.6</div>
         </div>
     </div>
 
@@ -458,7 +469,7 @@
         const battleBackgrounds = ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png', 'bg6.png'];
 
         // ==========================================
-        // БАЗА ЗНАНИЙ О ПРЕДМЕТАХ (ОБНОВЛЕННЫЕ ТЕКСТЫ)
+        // БАЗА ЗНАНИЙ О ПРЕДМЕТАХ
         // ==========================================
         const itemDatabase = {
             "хуйня": { desc: "На самом деле это не хуйня а аппарат жизнеобеспечения. подключи ее в разьем и тебе начислится 20 хп", chance: "30-40%" },
@@ -728,7 +739,7 @@
         // ==========================================
         let currentPvpChar = null;
         let isPvpHost = false;
-        let pvpGameState = { myHp: 0, enemyHp: 0, myMaxHp: 0, enemyMaxHp: 0, myMp: 0, enemyMp: 0, isMyTurn: false, myBorisHp: 0, enemyBorisHp: 0, myParashnikHp: 0, enemyParashnikHp: 0 };
+        let pvpGameState = { myHp: 0, enemyHp: 0, myMaxHp: 0, enemyMaxHp: 0, myMp: 0, enemyMp: 0, isMyTurn: false, myBorisHp: 0, enemyBorisHp: 0, myParashnikHp: 0, enemyParashnikHp: 0, enemyUsername: "", enemyChar: "" };
         
         function openPvpLobby() {
             document.getElementById('pvp-lobby-modal').classList.remove('hidden');
@@ -781,11 +792,12 @@
             
             roomChannel.on('broadcast', { event: 'join_request' }, (payload) => {
                 const guest = payload.payload;
-                startPvpBattle(guest.charName, guest.hp, guest.atk, guest.username);
-                roomChannel.send({ type: 'broadcast', event: 'start_game', payload: { charName: charName, hp, atk, username: currentUser } });
+                startPvpBattle(guest.charName, guest.hp, guest.atk, guest.username, guest.charType);
+                roomChannel.send({ type: 'broadcast', event: 'start_game', payload: { charName: charName, hp, atk, username: currentUser, charType: charType } });
             });
 
             roomChannel.on('broadcast', { event: 'enemy_action' }, (payload) => { handlePvpEnemyAction(payload.payload); });
+            roomChannel.on('broadcast', { event: 'chat_msg' }, (payload) => { logPvp(`<span style="color:cyan;">[${payload.username}]:</span> ${payload.text}`); });
             roomChannel.on('broadcast', { event: 'leave' }, () => { if (pvpGameState.myHp > 0) alert("Соперник покинул комнату."); leavePvpRoom(false); });
             roomChannel.subscribe();
 
@@ -793,10 +805,11 @@
             document.getElementById('rpg-char-select').classList.add('hidden');
             document.getElementById('pvp-battle-screen').classList.remove('hidden');
             document.getElementById('pvp-player-img').src = `IMG_${3544 + (charType==='apostol'?0:charType==='ashab'?1:2)}.jpeg`;
-            document.getElementById('pvp-player-name').innerText = "Ты (" + charName + ")";
+            document.getElementById('pvp-player-name').innerHTML = `<b>${currentUser}</b> (${charName})`;
             document.getElementById('pvp-log').innerHTML = "Ожидаем соперника...";
             document.getElementById('pvp-turn-indicator').innerText = "ОЖИДАНИЕ";
             document.getElementById('pvp-turn-indicator').className = "turn-indicator";
+            document.getElementById('pvp-chat-container').style.display = 'flex';
             disablePvpButtons();
 
             const bgMusic = document.getElementById('battle-music');
@@ -823,10 +836,11 @@
             document.getElementById('rpg-char-select').classList.add('hidden');
             document.getElementById('pvp-battle-screen').classList.remove('hidden');
             document.getElementById('pvp-player-img').src = `IMG_${3544 + (charType==='apostol'?0:charType==='ashab'?1:2)}.jpeg`;
-            document.getElementById('pvp-player-name').innerText = "Ты (" + charName + ")";
+            document.getElementById('pvp-player-name').innerHTML = `<b>${currentUser}</b> (${charName})`;
             document.getElementById('pvp-log').innerHTML = "Подключаемся к бою...";
             document.getElementById('pvp-turn-indicator').innerText = "ОЖИДАНИЕ";
             document.getElementById('pvp-turn-indicator').className = "turn-indicator";
+            document.getElementById('pvp-chat-container').style.display = 'flex';
             disablePvpButtons();
 
             if(roomChannel) supabaseClient.removeChannel(roomChannel);
@@ -834,27 +848,33 @@
 
             roomChannel.on('broadcast', { event: 'start_game' }, (payload) => {
                 const host = payload.payload;
-                startPvpBattle(host.charName, host.hp, host.atk, host.username);
+                startPvpBattle(host.charName, host.hp, host.atk, host.username, host.charType);
                 setPvpTurn(false);
             });
             roomChannel.on('broadcast', { event: 'enemy_action' }, (payload) => { handlePvpEnemyAction(payload.payload); });
+            roomChannel.on('broadcast', { event: 'chat_msg' }, (payload) => { logPvp(`<span style="color:cyan;">[${payload.username}]:</span> ${payload.text}`); });
 
             roomChannel.subscribe((status) => {
-                if (status === 'SUBSCRIBED') { roomChannel.send({ type: 'broadcast', event: 'join_request', payload: { username: currentUser, charName, hp, atk } }); }
+                if (status === 'SUBSCRIBED') { roomChannel.send({ type: 'broadcast', event: 'join_request', payload: { username: currentUser, charName, hp, atk, charType } }); }
             });
         }
 
-        function startPvpBattle(enemyName, enemyHp, enemyAtk, enemyUsername) {
+        function startPvpBattle(enemyName, enemyHp, enemyAtk, enemyUsername, enemyCharType) {
             const charType = currentPvpChar;
             let baseHp = charType === 'ashab' ? 150 : (charType === 'apostol' ? 80 : 110);
             let baseAtk = charType === 'ashab' ? 20 : (charType === 'apostol' ? 30 : 18);
             let hp = baseHp + (currentUpgrades[charType].hp * 20);
             let atk = baseAtk + (currentUpgrades[charType].atk * 5);
 
-            pvpGameState = { myHp: hp, myMaxHp: hp, myAtk: atk, myMp: 0, enemyHp: enemyHp, enemyMaxHp: enemyHp, enemyName: enemyName, enemyMp: 0, isMyTurn: isPvpHost, myBorisHp: 0, enemyBorisHp: 0, myParashnikHp: 0, enemyParashnikHp: 0 };
+            pvpGameState = { myHp: hp, myMaxHp: hp, myAtk: atk, myMp: 0, enemyHp: enemyHp, enemyMaxHp: enemyHp, enemyName: enemyName, enemyMp: 0, isMyTurn: isPvpHost, myBorisHp: 0, enemyBorisHp: 0, myParashnikHp: 0, enemyParashnikHp: 0, enemyUsername: enemyUsername, enemyChar: enemyName };
 
-            document.getElementById('pvp-enemy-name').innerText = enemyName;
-            document.getElementById('pvp-enemy-img').src = "https://via.placeholder.com/100?text=ENEMY"; 
+            // Устанавливаем аватарку врага
+            let enemyImgIndex = 2; // по дефолту Мээ
+            if (enemyCharType === 'apostol') enemyImgIndex = 0;
+            if (enemyCharType === 'ashab') enemyImgIndex = 1;
+            document.getElementById('pvp-enemy-img').src = `IMG_${3544 + enemyImgIndex}.jpeg`;
+
+            document.getElementById('pvp-enemy-name').innerHTML = `<b>${enemyUsername}</b> (${enemyName})`; 
             updatePvpUI(); logPvp(`Бой начался против ${enemyName}!`);
             
             if (isPvpHost) { setPvpTurn(true); enablePvpButtons(); } 
@@ -912,15 +932,13 @@
                 else if (payload.effect === 'atk') { logPvp(`Враг юзает бафф на атаку!`); }
                 else if (payload.effect === 'boris') { pvpGameState.enemyBorisHp += 100; logPvp(`Враг поставил Бориса!`); }
                 else if (payload.effect === 'parashnik') { 
-                    // Враг ставит парашник на ИГРОКА
                     pvpGameState.myParashnikHp = 30; 
                     logPvp(`Враг поставил Парашника на тебя!`); 
                 }
                 else if (payload.effect === 'shaver') { 
-                    pvpGameState.enemyBorisHp = 0; 
-                    // Враг сбривает ПАРАШНИК, который стоит на нем
-                    pvpGameState.enemyParashnikHp = 0;
-                    logPvp(`Враг сбрил всю хуйню!`);
+                    // Враг убирает свою хуйню с нас
+                    pvpGameState.myParashnikHp = 0;
+                    logPvp(`Враг сбрил твоего Парашника!`);
                 }
             }
 
@@ -930,7 +948,7 @@
                 if (pvpGameState.myParashnikHp > 0) {
                     pvpGameState.myHp -= 10;
                     pvpGameState.myMp = Math.max(0, pvpGameState.myMp - 15);
-                    pvpGameState.myParashnikHp--; // Уменьшаем заряд парашника
+                    pvpGameState.myParashnikHp--;
                     logPvp(`Тебя отравил парашник! -10 HP, -15 энергии.`);
                     updatePvpUI();
                     if(pvpGameState.myHp <= 0) { endPvpBattle(false); return; }
@@ -949,7 +967,7 @@
             if (pvpGameState.enemyBorisHp > 0) {
                 pvpGameState.enemyBorisHp -= dmg;
                 logPvp(`Ты бьешь Бориса на ${dmg}. Осталось ${Math.max(0, pvpGameState.enemyBorisHp)} HP.`);
-                pvpGameState.myHp -= 5; // Контрудар Бориса по тебе
+                pvpGameState.myHp -= 5; 
                 logPvp(`Борис врага отражает 5 урона!`);
                 if(pvpGameState.enemyBorisHp <= 0) { logPvp("Борис врага разрушен!"); pvpGameState.enemyBorisHp = 0; }
             } else {
@@ -1011,6 +1029,16 @@
             if (pvpGameState.enemyHp <= 0) { endPvpBattle(true); }
         }
 
+        function sendPvpChat() {
+            const input = document.getElementById('pvp-chat-input');
+            const text = input.value.trim();
+            if(!text || !roomChannel) return;
+            
+            roomChannel.send({ type: 'broadcast', event: 'chat_msg', payload: { username: currentUser, text: text } });
+            logPvp(`<span style="color:cyan;">[Ты]:</span> ${text}`);
+            input.value = '';
+        }
+
         function openPvpItemMenu() {
             if (!pvpGameState.isMyTurn) return;
             const list = document.getElementById('rpg-item-list');
@@ -1031,7 +1059,7 @@
                     if(item.name === 'парашник') effectText = "Отравление (30 урона)";
                     if(item.name === 'boris') effectText = "Щит на 100 HP + контрудар";
                     if(item.name === 'шприц и лекарство') effectText = "100% лечение";
-                    if(item.name === 'Сбриватель хуйни') effectText = "Убирает щиты + 15 урона";
+                    if(item.name === 'Сбриватель хуйни') effectText = "Убирает хуйню врага + 15 урона";
 
                     const div = document.createElement('div'); div.className = 'inv-card';
                     if (item.qty > 1) div.innerHTML += `<div class="qty-badge">x${item.qty}</div>`;
@@ -1093,8 +1121,10 @@
                 }
                 else if (item.name === 'Сбриватель хуйни') { 
                     let dmg = 0;
-                    if(pvpGameState.enemyBorisHp > 0 || pvpGameState.enemyParashnikHp > 0) dmg = 15;
-                    pvpGameState.enemyBorisHp = 0; pvpGameState.enemyParashnikHp = 0; 
+                    // Сбриваем только то, что поставил враг на нас и на себя
+                    if(pvpGameState.enemyBorisHp > 0 || pvpGameState.myParashnikHp > 0) dmg = 15;
+                    pvpGameState.enemyBorisHp = 0; 
+                    pvpGameState.myParashnikHp = 0; 
                     pvpGameState.enemyHp -= dmg;
                     logPvp(`Ты сбрил всю хуйню врага!${dmg>0?' (+15 урона)':''}`); payload.effect='shaver';
                 }
@@ -1133,6 +1163,7 @@
             document.getElementById('rpg-char-select').classList.remove('hidden');
             disablePvpButtons();
             document.getElementById('battle-music').pause();
+            document.getElementById('pvp-chat-container').style.display = 'none';
             myRoomId = null;
         }
 
@@ -1167,7 +1198,6 @@
                         <div class="hp-bar-container"><div class="hp-bar-fill" style="width: ${(pvpGameState.enemyBorisHp/100)*100}%; background: #00ff00;"></div></div>
                     </div>`;
             }
-            // Парашник - это НЕ щит, его полоска означает оставшиеся ходы отравления
             if (pvpGameState.enemyParashnikHp > 0) {
                 eDep.innerHTML += `
                     <div class="deployed-item">
@@ -1216,7 +1246,14 @@
             el.src = item.img || 'https://via.placeholder.com/50?text=ITEM'; 
             el.style.position = 'absolute'; el.style.width = '60px'; el.style.height = '60px'; el.style.zIndex = '50'; el.style.transition = 'all 0.8s ease-in-out'; 
             
-            if (isDamage) {
+            if (item.name === 'Сбриватель хуйни') {
+                el.style.left = '20%'; el.style.top = '50%'; battlefield.appendChild(el);
+                void el.offsetWidth; 
+                el.style.left = '75%'; el.style.top = '50%'; 
+                el.style.transform = 'rotate(360deg)'; 
+                el.style.transition = 'all 1s linear'; 
+                setTimeout(() => { el.remove(); }, 1000);
+            } else if (isDamage) {
                 el.style.left = '20%'; el.style.top = '40%'; el.style.transform = 'rotate(-20deg)'; battlefield.appendChild(el);
                 void el.offsetWidth; 
                 el.style.left = '75%'; el.style.top = '30%'; el.style.transform = 'scale(1.2) rotate(360deg)'; 
@@ -1406,7 +1443,6 @@
                 addLog(`Ты сдох...`); isPlayerTurn = false; checkButtons(); document.getElementById('battle-music').pause(); setTimeout(() => { document.getElementById('rpg-char-select').classList.remove('hidden'); document.getElementById('rpg-battle-screen').classList.add('hidden'); renderCharStats(); updateUI(); }, 3000); 
             } else { 
                 if(rpgEnemyParashnikHp > 0) {
-                    // Парашник игрока на враге
                     rpgEnemy.hp -= 10; rpgEnemy.mp = Math.max(0, (rpgEnemy.mp||0) - 15);
                     rpgEnemyParashnikHp--;
                     addLog(`Враг отравлен твоим парашником! -10 HP.`);
@@ -1646,7 +1682,7 @@
                     if(item.name === 'парашник') effectText = "Отравление (30 урона)";
                     if(item.name === 'boris') effectText = "Щит на 100 HP + контрудар";
                     if(item.name === 'шприц и лекарство') effectText = "100% лечение";
-                    if(item.name === 'Сбриватель хуйни') effectText = "Убирает щиты + 15 урона";
+                    if(item.name === 'Сбриватель хуйни') effectText = "Убирает хуйню врага + 15 урона";
 
                     const div = document.createElement('div'); div.className = 'inv-card';
                     if (item.qty > 1) div.innerHTML += `<div class="qty-badge">x${item.qty}</div>`;
@@ -1704,8 +1740,11 @@
                 }
                 else if (item.name === 'Сбриватель хуйни') { 
                     let dmg = 0;
-                    if(rpgEnemyBorisHp > 0 || rpgEnemyParashnikHp > 0) dmg = 15;
-                    rpgEnemyBorisHp = 0; rpgEnemyParashnikHp = 0; rpgEnemy.hp -= dmg;
+                    // Сбриваем только Бориса врага и Парашника, который стоит на нас
+                    if(rpgEnemyBorisHp > 0 || rpgPlayerParashnikHp > 0) dmg = 15;
+                    rpgEnemyBorisHp = 0; 
+                    rpgPlayerParashnikHp = 0;
+                    rpgEnemy.hp -= dmg;
                     addLog(`Ты сбрил всю хуйню врага!${dmg>0?' (+15 урона)':''}`);
                 }
                 else if (item.name === 'Вам не повезло') { addLog(`Вы нихуя не сделали.`); }
@@ -1731,7 +1770,14 @@
             el.src = item.img || 'https://via.placeholder.com/50?text=ITEM'; 
             el.style.position = 'absolute'; el.style.width = '60px'; el.style.height = '60px'; el.style.zIndex = '50'; el.style.transition = 'all 0.8s ease-in-out'; 
             
-            if (isDamage) {
+            if (item.name === 'Сбриватель хуйни') {
+                el.style.left = '20%'; el.style.top = '50%'; battlefield.appendChild(el);
+                void el.offsetWidth; 
+                el.style.left = '75%'; el.style.top = '50%'; 
+                el.style.transform = 'rotate(360deg)'; 
+                el.style.transition = 'all 1s linear'; 
+                setTimeout(() => { el.remove(); }, 1000);
+            } else if (isDamage) {
                 el.style.left = '20%'; el.style.top = '40%'; el.style.transform = 'rotate(-20deg)'; battlefield.appendChild(el);
                 void el.offsetWidth; 
                 el.style.left = '75%'; el.style.top = '30%'; el.style.transform = 'scale(1.2) rotate(360deg)'; 
