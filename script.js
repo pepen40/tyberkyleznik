@@ -9,15 +9,19 @@ window.addEventListener('load', () => {
     // Автологин
     const savedUser = localStorage.getItem('pepen_user');
     if (savedUser) {
+        document.getElementById('auth-screen').classList.add('hidden');
+        document.getElementById('main-screen').classList.remove('hidden');
         document.getElementById('username').value = savedUser;
         login(); 
     } else {
         document.getElementById('auth-screen').classList.remove('hidden');
+        document.getElementById('main-screen').classList.add('hidden');
     }
 
     // Загрузка настроек погоды
     const isWeatherOn = localStorage.getItem('pepen_weather') === 'true';
-    document.getElementById('weather-toggle').checked = isWeatherOn;
+    const wt = document.getElementById('weather-toggle');
+    if (wt) wt.checked = isWeatherOn;
     if (isWeatherOn) document.getElementById('weather-widget').classList.remove('hidden');
 });
 
