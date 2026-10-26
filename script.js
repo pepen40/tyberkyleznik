@@ -770,8 +770,12 @@ async function pvpUseItem(itemName) {
     disablePvpButtons(); 
     closeItemMenu();
     
-    // ЗВУК СРАЗУ ПРИ НАЖАТИИ
-    playSoundEffect('thing');
+    // ЗВУК УДАРА/ШВЫРКА СРАЗУ ПРИ НАЖАТИИ
+    if (item.name === 'голова барана' || item.name === 'apostol' || item.name === 'Сбриватель хуйни') {
+        playSoundEffect('harmful');
+    } else {
+        playSoundEffect('thing');
+    }
     
     let isDamaging = (item.name === 'голова барана' || item.name === 'apostol' || item.name === 'Сбриватель хуйни');
     animatePvpItemUse(item, isDamaging);
@@ -785,7 +789,6 @@ async function pvpUseItem(itemName) {
         if (item.name === 'хуйня') { pvpGameState.myHp = Math.min(pvpGameState.myMaxHp, pvpGameState.myHp + 20); logPvp(`+20 HP`); payload.effect='heal'; payload.val=20; playSoundEffect('heal'); }
         else if (item.name === 'картофель') { pvpGameState.myAtk += 10; logPvp(`Атака +10!`); payload.effect='atk'; payload.val=10; }
         else if (item.name === 'голова барана') { 
-            playSoundEffect('harmful'); // ЗВУК УДАРА ПРИ ПОПАДАНИИ
             let dmg = 40;
             if (pvpGameState.enemyDefending) { dmg = Math.floor(dmg * 0.35); pvpGameState.enemyDefending = false; logPvp(`Враг заблокировал голову, получив ${dmg} (65% срезано).`); }
             if(pvpGameState.enemyBorisHp > 0) { pvpGameState.enemyBorisHp -= dmg; logPvp(`Швырнул голову в Бориса!`); if(pvpGameState.enemyBorisHp <= 0) pvpGameState.enemyBorisHp=0; }
@@ -795,7 +798,6 @@ async function pvpUseItem(itemName) {
         }
         else if (item.name === 'коала') { pvpGameState.myMp = 100; logPvp(`Мана 100!`); payload.effect='mp'; payload.val=100; }
         else if (item.name === 'apostol') { 
-            playSoundEffect('harmful'); // ЗВУК УДАРА ПРИ ПОПАДАНИИ
             let dmg = 100;
             if (pvpGameState.enemyDefending) { dmg = Math.floor(dmg * 0.35); pvpGameState.enemyDefending = false; logPvp(`Враг заблокировал Apostol, получив ${dmg} (65% срезано).`); }
             if(pvpGameState.enemyBorisHp > 0) { pvpGameState.enemyBorisHp -= dmg; logPvp(`Швырнул Apostol в Бориса!`); if(pvpGameState.enemyBorisHp <= 0) pvpGameState.enemyBorisHp=0; }
@@ -921,7 +923,6 @@ function animatePvpItemUse(item, isDamage) {
         el.style.top = '60%'; el.style.opacity = '0'; el.style.transform = 'scale(0.8) rotate(15deg)';
         setTimeout(() => { el.remove(); }, 2600);
     }
-}
 }
 
 let rpgChar = null; let rpgEnemy = null; let rpgFloorMain = 1; let rpgFloorSub = 1; 
@@ -1412,8 +1413,12 @@ async function useItemInBattle(itemName) {
     const item = currentInventory[itemIndex];
     isPlayerTurn = false; rpgItemUsed = true; setTurnIndicator(false); checkButtons();
     
-    // ЗВУК СРАЗУ ПРИ НАЖАТИИ
-    playSoundEffect('thing');
+    // ЗВУК УДАРА/ШВЫРКА СРАЗУ ПРИ НАЖАТИИ
+    if (item.name === 'голова барана' || item.name === 'apostol' || item.name === 'Сбриватель хуйни') {
+        playSoundEffect('harmful');
+    } else {
+        playSoundEffect('thing');
+    }
     
     let isDamaging = (item.name === 'голова барана' || item.name === 'apostol' || item.name === 'Сбриватель хуйни');
     animateItemUse(item, isDamaging);
@@ -1426,7 +1431,6 @@ async function useItemInBattle(itemName) {
         if (item.name === 'хуйня') { rpgChar.hp = Math.min(rpgChar.maxHp, rpgChar.hp + 20); addLog(`Выпил ${item.name}. +20 HP.`); playSoundEffect('heal'); }
         else if (item.name === 'картофель') { rpgChar.atk += 10; addLog(`Съел ${item.name}. Атака +10!`); }
         else if (item.name === 'голова барана') { 
-            playSoundEffect('harmful'); // ЗВУК УДАРА ПРИ ПОПАДАНИИ
             let dmg = 40;
             if (rpgEnemyBorisHp > 0) { rpgEnemyBorisHp -= dmg; addLog(`Швырнул голову в Бориса!`); if(rpgEnemyBorisHp <= 0) { rpgEnemyBorisHp=0; addLog("Борис разрушен!"); } }
             else if(rpgEnemyParashnikHp > 0) { rpgEnemyParashnikHp -= dmg; addLog(`Швырнул голову в Парашника!`); if(rpgEnemyParashnikHp <= 0) { rpgEnemyParashnikHp=0; addLog("Парашник уничтожен!"); } }
@@ -1434,7 +1438,6 @@ async function useItemInBattle(itemName) {
         }
         else if (item.name === 'коала') { rpgMana = 100; addLog(`Использовал ${item.name}. Мана 100!`); }
         else if (item.name === 'apostol') { 
-            playSoundEffect('harmful'); // ЗВУК УДАРА ПРИ ПОПАДАНИИ
             let dmg = 100;
             if(rpgEnemyBorisHp > 0) { rpgEnemyBorisHp -= dmg; addLog(`Швырнул Apostol в Бориса!`); if(rpgEnemyBorisHp <= 0) { rpgEnemyBorisHp=0; addLog("Борис разрушен!"); } }
             else if(rpgEnemyParashnikHp > 0) { rpgEnemyParashnikHp -= dmg; addLog(`Швырнул Apostol в Парашника!`); if(rpgEnemyParashnikHp <= 0) { rpgEnemyParashnikHp=0; addLog("Парашник уничтожен!"); } }
@@ -1479,7 +1482,6 @@ function animateItemUse(item, isDamage) {
         el.style.top = '60%'; el.style.opacity = '0'; el.style.transform = 'scale(0.8) rotate(15deg)';
         setTimeout(() => { el.remove(); }, 2600);
     }
-}
 }
 
 const pads = document.querySelectorAll('.pad'); const statusText = document.getElementById('status'); const restartBtn = document.getElementById('restart-btn');
