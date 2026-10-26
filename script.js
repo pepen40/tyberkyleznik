@@ -1538,3 +1538,27 @@ async function handlePadClick(e) {
 pads.forEach(pad => pad.addEventListener('click', handlePadClick));
 restartBtn.addEventListener('click', startGame);
 statusText.addEventListener('click', () => { if (!gameStarted) startGame(); });
+
+let pendingFactorId = null;
+
+async function enable2FA() {
+    const { data, error } = await supabaseClient.auth.mfa.enroll({
+        factorType: 'totp',
+        friendlyName: 'FreeOTP ' + Date.now()
+    });
+    if (error) { alert(error.message); return; }
+    pendingFactorId = data.id;
+    document.getElementById('mfa-qr').src = data.totp.qr_code;
+    document.getElementById('mfa-secret').textContent = data.totp.secret;
+    document.getElementById('mfa-setup').classList.remove('hidden');
+}
+
+async function confirm2FA() {
+    const code = document.getElementById('mfa-code').value.trim();
+    const { error } = await supabaseClient.auth.mfa.challengeAndVerify({
+        factorId: pendingFactorId, code
+    });
+    if (error) { alert('алё нахуй ты чё прислал блядь'); return; }
+    alert('2FA включена!');
+}
+
