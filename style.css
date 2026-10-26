@@ -110,3 +110,10 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
 .pvp-chat-input-row { display:flex; gap:5px; margin-bottom:10px; }
 .pvp-chat-input-row input { margin:0; flex-grow:1; font-family:'Courier New', monospace; font-size:14px; border:2px inset #fff; padding:5px; }
 .pvp-chat-input-row button { margin:0; font-size:14px; background:#90ee90; }
+
+/* ЗАГРУЗКА */
+#loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #008080; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
+#loading-screen h2 { font-size: 30px; color: #fff; text-shadow: 2px 2px 0 #000; margin-bottom: 20px; animation: rainbow-colors 1.5s infinite step-end; }
+.progress-bar-container { width: 80%; max-width: 400px; height: 30px; background: #000; border: 4px inset #fff; box-shadow: 5px 5px 0 rgba(0,0,0,0.5); }
+.progress-bar-fill { height: 100%; background: #00ff00; width: 0%; transition: width 0.1s; }
+#load-text { font-size: 24px; font-weight: bold; color: #fff; font-family: monospace; margin-top: 10px; text-shadow: 1px 1px 0 #000; }
