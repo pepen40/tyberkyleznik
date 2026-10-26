@@ -4,6 +4,39 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const EDGE_FUNCTION_NAME = 'award-coins'; 
 const battleBackgrounds = ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png', 'bg6.png'];
 
+// === АВТОЛОГИН И ПОГОДА ===
+window.addEventListener('load', () => {
+    // Автологин
+    const savedUser = localStorage.getItem('pepen_user');
+    if (savedUser) {
+        document.getElementById('username').value = savedUser;
+        login(); 
+    } else {
+        document.getElementById('auth-screen').classList.remove('hidden');
+    }
+
+    // Загрузка настроек погоды
+    const isWeatherOn = localStorage.getItem('pepen_weather') === 'true';
+    document.getElementById('weather-toggle').checked = isWeatherOn;
+    if (isWeatherOn) document.getElementById('weather-widget').classList.remove('hidden');
+});
+
+function toggleWeather() {
+    const isChecked = document.getElementById('weather-toggle').checked;
+    localStorage.setItem('pepen_weather', isChecked);
+    if (isChecked) {
+        document.getElementById('weather-widget').classList.remove('hidden');
+    } else {
+        document.getElementById('weather-widget').classList.add('hidden');
+    }
+}
+
+function logout() {
+    if (!confirm("Выйти с аккаунта?")) return;
+    localStorage.removeItem('pepen_user');
+    location.reload();
+}
+
 const itemDatabase = {
     "хуйня": { desc: "На самом деле это не хуйня а аппарат жизнеобеспечения. подключи ее в разьем и тебе начислится 20 хп", chance: "30-40%" },
     "картофель": { desc: "когда то давно влад пошел мыть картошку но так как леха занял все ведра головами рыб ,окурками, говном, щинячьими цоботами, цокольной хуйней, пастой, дрыном, рырями и прочим хламом ему пришлось мыть ее в ванне , но случилось так что он о ней забыл она проросла и синтезировала в себе ебанутый допинг который придает сил. Используй и получишь +10 к Аттаке!", chance: "25%" },
@@ -40,7 +73,6 @@ let pendingChallengeHost = null;
 
 const soundCache = {};
 function preloadSounds() {
-    // Добавил звук crit.mp4 на будущее. Если его нет - просто не сыграет.
     const sounds = { 'attack': 'attack.mp4', 'protection': 'protection.mp4', 'heal': 'heal.mp4', 'harmful': 'harmful.mp4', 'thing': 'thing.mp4', 'shaver': 'shaver.mp4', 'crit': 'crit.mp4' };
     for (let key in sounds) {
         let audio = new Audio(sounds[key]);
@@ -64,7 +96,6 @@ function playSoundEffect(type) {
     }
 }
 
-// ТРЯСКА ЭКРАНА
 function triggerScreenShake() {
     const body = document.querySelector('.panel:not(.hidden)') || document.body;
     body.classList.add('shake');
@@ -186,6 +217,9 @@ async function login() {
         currentUpgrades = data.rpg_upgrades || {"ashab":{"hp":0,"atk":0},"apostol":{"hp":0,"atk":0},"mee":{"hp":0,"atk":0}};
         currentMaxFloors = data.rpg_max_floors || {"ashab":0,"apostol":0,"mee":0};
         await supabaseClient.from('players').update({ last_online: new Date().toISOString() }).eq('username', u);
+        
+        localStorage.setItem('pepen_user', currentUser);
+
         document.getElementById('auth-screen').classList.add('hidden');
         document.getElementById('main-screen').classList.remove('hidden');
         preloadSounds(); 
@@ -542,7 +576,6 @@ function startPvpBattle(enemyName, enemyHp, enemyAtk, enemyUsername, enemyCharTy
 function handlePvpEnemyAction(payload) {
     if (pvpGameState.myHp <= 0) return; 
     
-    // ТРЯСКА И ВСПЫШКА ПРИ ПОЛУЧЕНИИ УРОНА
     triggerScreenShake();
     flashRedScreen();
 
@@ -567,7 +600,7 @@ function handlePvpEnemyAction(payload) {
         logPvp(`Враг встает в защиту.`);
         pvpGameState.enemyDefending = true;
     } else if (payload.type === 'skill') {
-        playSoundEffect('crit'); // УЛЬТА ЗВУЧИТ КАК КРИТ
+        playSoundEffect('crit');
         let dmg = payload.dmg;
         if (pvpGameState.myDefending) { dmg = Math.floor(dmg * 0.5); pvpGameState.myDefending = false; logPvp(`Ты блокировал способность, получив ${dmg} урона (50% срезано).`); }
         else if (pvpGameState.myBorisHp > 0) {
@@ -621,7 +654,7 @@ function pvpAttack() {
     if (!pvpGameState.isMyTurn) return;
     playSoundEffect('attack');
     pvpGameState.isMyTurn = false; pvpGameState.myItemUsed = false; disablePvpButtons(); setPvpTurn(false);
-    triggerScreenShake(); // ТРЯСКА ПРИ УДАРЕ
+    triggerScreenShake(); 
     let dmg = Math.floor(Math.random() * 10) + pvpGameState.myAtk;
     if (pvpGameState.enemyDefending) { dmg = Math.floor(dmg * 0.2); pvpGameState.enemyDefending = false; logPvp(`Враг заблокировал атаку, он получил ${dmg} урона (80% срезано).`); }
     else if (pvpGameState.enemyBorisHp > 0) {
@@ -665,9 +698,9 @@ function pvpDefend() {
 
 function pvpSkill() {
     if (!pvpGameState.isMyTurn || pvpGameState.myMp < 100) return;
-    playSoundEffect('crit'); // УЛЬТА ЗВУЧИТ КАК КРИТ
+    playSoundEffect('crit');
     pvpGameState.isMyTurn = false; pvpGameState.myMp = 0; pvpGameState.myItemUsed = false; disablePvpButtons(); setPvpTurn(false);
-    triggerScreenShake(); // ТРЯСКА ПРИ УЛЬТЕ
+    triggerScreenShake(); 
     let dmg = 0;
     let charType = currentPvpChar;
     if (charType === 'ashab') dmg = 60 + (currentUpgrades[charType].atk * 10);
@@ -790,7 +823,7 @@ async function pvpUseItem(itemName) {
             enablePvpButtons(); 
         }
     };
-    setTimeout(applyEffect, 2600); // ЖДЕМ 2.6 СЕКУНДЫ ПОКА ЛЕТИТ
+    setTimeout(applyEffect, 2600); 
 }
 
 async function endPvpBattle(isWin) {
@@ -1012,7 +1045,7 @@ function rpgAttack() {
     if (!isPlayerTurn || rpgChar.hp <= 0 || rpgEnemy.hp <= 0) return;
     playSoundEffect('attack');
     isPlayerTurn = false; rpgItemUsed = false; setTurnIndicator(false); checkButtons(); animateAttack(true);
-    triggerScreenShake(); // ТРЯСКА ПРИ УДАРЕ
+    triggerScreenShake();
     let dmg = Math.floor(Math.random() * 10) + rpgChar.atk;
     if(rpgEnemyBorisHp > 0) {
         rpgEnemyBorisHp -= dmg; addLog(`Ты бьешь Бориса на ${dmg}.`); if(rpgEnemyBorisHp <= 0) { rpgEnemyBorisHp = 0; addLog("Борис разрушен!"); }
@@ -1035,9 +1068,9 @@ function rpgDefend() {
 }
 function rpgSkill() {
     if (!isPlayerTurn || rpgMana < 100 || rpgChar.hp <= 0 || rpgEnemy.hp <= 0) return;
-    playSoundEffect('crit'); // УЛЬТА ЗВУЧИТ КАК КРИТ
+    playSoundEffect('crit');
     isPlayerTurn = false; rpgMana = 0; rpgItemUsed = false; setTurnIndicator(false); checkButtons(); animateAttack(true);
-    triggerScreenShake(); // ТРЯСКА ПРИ УЛЬТЕ
+    triggerScreenShake();
     let dmg = 0;
     if (rpgChar.class === "Берсерк") { dmg = 60 + (currentUpgrades[currentCharType].atk * 10); addLog(`Сокрушающий удар на ${dmg}!`); }
     else if (rpgChar.class === "Чернокнижник") { dmg = Math.floor(Math.random() * 30) + 70 + (currentUpgrades[currentCharType].atk * 10); addLog(`Тёмный ритуал. Урон: ${dmg}!`); }
@@ -1063,7 +1096,7 @@ function enemyTurn(isPlayerDefending = false) {
     }
     
     setTurnIndicator(false); animateAttack(false);
-    triggerScreenShake(); // ТРЯСКА ПРИ УДАРЕ ВРАГА
+    triggerScreenShake();
     flashRedScreen();
 
     let itemChance = Math.min(0.35, 0.05 + (rpgFloorMain * 0.03)); 
@@ -1538,70 +1571,3 @@ async function handlePadClick(e) {
 pads.forEach(pad => pad.addEventListener('click', handlePadClick));
 restartBtn.addEventListener('click', startGame);
 statusText.addEventListener('click', () => { if (!gameStarted) startGame(); });
-
-let pendingFactorId = null;
-
-async function enable2FA() {
-    const { data, error } = await supabaseClient.auth.mfa.enroll({
-        factorType: 'totp',
-        friendlyName: 'FreeOTP ' + Date.now()
-    });
-    if (error) { alert(error.message); return; }
-    pendingFactorId = data.id;
-    document.getElementById('mfa-qr').src = data.totp.qr_code;
-    document.getElementById('mfa-secret').textContent = data.totp.secret;
-    document.getElementById('mfa-setup').classList.remove('hidden');
-}
-
-async function confirm2FA() {
-    const code = document.getElementById('mfa-code').value.trim();
-    const { error } = await supabaseClient.auth.mfa.challengeAndVerify({
-        factorId: pendingFactorId, code
-    });
-    if (error) { alert('алё нахуй ты чё прислал блядь'); return; }
-    alert('2FA включена!');
-}
-// ===== Виджет "Кнопки": шеринг + сворачивание =====
-(function () {
-    const widget = document.getElementById('btn-widget');
-    if (!widget) return;
-
-    function getShareData() {
-        const url = location.href.split('#')[0]; // можно вписать свой адрес: 'https://твой-сайт.ru/'
-        return { url: url, title: document.title };
-    }
-
-    const builders = {
-        vk:     d => 'https://vk.com/share.php?url=' + encodeURIComponent(d.url) + '&title=' + encodeURIComponent(d.title),
-        ok:     d => 'https://connect.ok.ru/offer?url=' + encodeURIComponent(d.url) + '&title=' + encodeURIComponent(d.title),
-        mailru: d => 'https://connect.mail.ru/share?url=' + encodeURIComponent(d.url) + '&title=' + encodeURIComponent(d.title),
-        tg:     d => 'https://t.me/share/url?url=' + encodeURIComponent(d.url) + '&text=' + encodeURIComponent(d.title)
-    };
-
-    widget.querySelectorAll('.bw-share a[data-net]').forEach(a => {
-        a.addEventListener('click', e => {
-            e.preventDefault();
-            const build = builders[a.dataset.net];
-            if (!build) return;
-            const link = build(getShareData());
-            const w = 640, h = 480;
-            const left = Math.round(screen.width / 2 - w / 2);
-            const top = Math.round(screen.height / 2 - h / 2);
-            const popup = window.open(link, '_blank', 'width=' + w + ',height=' + h + ',left=' + left + ',top=' + top + ',resizable=yes,scrollbars=yes');
-            if (!popup) window.open(link, '_blank');
-        });
-    });
-
-    const KEY = 'btnWidgetCollapsed';
-    function setCollapsed(v) {
-        widget.classList.toggle('collapsed', v);
-        try { localStorage.setItem(KEY, v ? '1' : '0'); } catch (e) {}
-    }
-    try { if (localStorage.getItem(KEY) === '1') widget.classList.add('collapsed'); } catch (e) {}
-
-    widget.querySelector('.bw-close').addEventListener('click', e => { e.stopPropagation(); setCollapsed(true); });
-    widget.querySelector('.bw-header').addEventListener('click', () => {
-        if (widget.classList.contains('collapsed')) setCollapsed(false);
-    });
-})();
-
