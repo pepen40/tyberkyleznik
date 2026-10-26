@@ -99,7 +99,7 @@ function preloadSounds() {
     for (let key in sounds) {
         let audio = new Audio(sounds[key]);
         audio.preload = 'auto';
-        audio.volume = 0.75; 
+        audio.volume = 1.0; // ГРОМКОСТЬ НА МАКСИМУМ
         soundCache[key] = audio;
     }
 }
@@ -107,7 +107,7 @@ function preloadSounds() {
 function playSoundEffect(type) {
     if (soundCache[type]) {
         let clone = soundCache[type].cloneNode();
-        clone.volume = 0.75;
+        clone.volume = 1.0; // ГРОМКОСТЬ НА МАКСИМУМ
         clone.play().catch(e => console.log("Звук заблокирован:", e));
     }
 }
@@ -781,7 +781,7 @@ async function pvpUseItem(itemName) {
         if (item.name === 'хуйня') { pvpGameState.myHp = Math.min(pvpGameState.myMaxHp, pvpGameState.myHp + 20); logPvp(`+20 HP`); payload.effect='heal'; payload.val=20; playSoundEffect('heal'); }
         else if (item.name === 'картофель') { pvpGameState.myAtk += 10; logPvp(`Атака +10!`); payload.effect='atk'; payload.val=10; playSoundEffect('thing'); }
         else if (item.name === 'голова барана') { 
-            playSoundEffect('thing');
+            playSoundEffect('harmful'); // ЗВУК УДАРА ПРИ ПОПАДАНИИ
             let dmg = 40;
             if (pvpGameState.enemyDefending) { dmg = Math.floor(dmg * 0.35); pvpGameState.enemyDefending = false; logPvp(`Враг заблокировал голову, получив ${dmg} (65% срезано).`); }
             if(pvpGameState.enemyBorisHp > 0) { pvpGameState.enemyBorisHp -= dmg; logPvp(`Швырнул голову в Бориса!`); if(pvpGameState.enemyBorisHp <= 0) pvpGameState.enemyBorisHp=0; }
@@ -791,7 +791,7 @@ async function pvpUseItem(itemName) {
         }
         else if (item.name === 'коала') { pvpGameState.myMp = 100; logPvp(`Мана 100!`); payload.effect='mp'; payload.val=100; playSoundEffect('thing'); }
         else if (item.name === 'apostol') { 
-            playSoundEffect('thing');
+            playSoundEffect('harmful'); // ЗВУК УДАРА ПРИ ПОПАДАНИИ
             let dmg = 100;
             if (pvpGameState.enemyDefending) { dmg = Math.floor(dmg * 0.35); pvpGameState.enemyDefending = false; logPvp(`Враг заблокировал Apostol, получив ${dmg} (65% срезано).`); }
             if(pvpGameState.enemyBorisHp > 0) { pvpGameState.enemyBorisHp -= dmg; logPvp(`Швырнул Apostol в Бориса!`); if(pvpGameState.enemyBorisHp <= 0) pvpGameState.enemyBorisHp=0; }
@@ -818,7 +818,7 @@ async function pvpUseItem(itemName) {
             enablePvpButtons(); 
         }
     };
-    setTimeout(applyEffect, 800); 
+    setTimeout(applyEffect, 2300); // ЖДЕМ 2.3 СЕКУНДЫ ПОКА ЛЕТИТ
 }
 
 async function endPvpBattle(isWin) {
@@ -903,17 +903,26 @@ function animatePvpItemUse(item, isDamage) {
     const battlefield = document.getElementById('pvp-battlefield-bg');
     const el = document.createElement('img');
     el.src = item.img || 'https://via.placeholder.com/50?text=ITEM'; 
-    el.style.position = 'absolute'; el.style.width = '60px'; el.style.height = '60px'; el.style.zIndex = '50'; el.style.transition = 'all 0.8s ease-in-out'; 
+    el.style.position = 'absolute'; el.style.width = '80px'; el.style.height = '80px'; el.style.zIndex = '50'; 
+    el.style.transition = 'all 2.3s cubic-bezier(0.25, 0.1, 0.25, 1)'; // ЗАМЕДЛЕНО НА 65%
+    
     if (isDamage) {
-        el.style.left = '20%'; el.style.top = '40%'; el.style.transform = 'rotate(-20deg)'; battlefield.appendChild(el);
+        el.style.left = '20%'; el.style.top = '40%'; el.style.transform = 'rotate(-20deg) scale(1)'; battlefield.appendChild(el);
         void el.offsetWidth; 
-        el.style.left = '75%'; el.style.top = '30%'; el.style.transform = 'scale(1.2) rotate(360deg)'; 
-        setTimeout(() => { el.remove(); }, 800);
+        // Летит медленно, крутится
+        el.style.left = '75%'; el.style.top = '30%'; el.style.transform = 'scale(1.5) rotate(720deg)'; 
+        setTimeout(() => { 
+            el.remove(); 
+            playSoundEffect('thing'); // ЗВУК ШВЫРКА ПРИ ПОПАДАНИИ
+        }, 2300);
     } else {
-        el.style.left = '25%'; el.style.top = '30%'; el.style.transform = 'rotate(0deg)'; battlefield.appendChild(el);
+        el.style.left = '25%'; el.style.top = '30%'; el.style.transform = 'rotate(0deg) scale(1)'; battlefield.appendChild(el);
         void el.offsetWidth;
         el.style.top = '60%'; el.style.opacity = '0'; el.style.transform = 'scale(0.8) rotate(15deg)';
-        setTimeout(() => { el.remove(); }, 800);
+        setTimeout(() => { 
+            el.remove(); 
+            playSoundEffect('thing');
+        }, 2300);
     }
 }
 
@@ -1415,7 +1424,7 @@ async function useItemInBattle(itemName) {
         if (item.name === 'хуйня') { rpgChar.hp = Math.min(rpgChar.maxHp, rpgChar.hp + 20); addLog(`Выпил ${item.name}. +20 HP.`); playSoundEffect('heal'); }
         else if (item.name === 'картофель') { rpgChar.atk += 10; addLog(`Съел ${item.name}. Атака +10!`); playSoundEffect('thing'); }
         else if (item.name === 'голова барана') { 
-            playSoundEffect('thing');
+            playSoundEffect('harmful'); // ЗВУК УДАРА ПРИ ПОПАДАНИИ
             let dmg = 40;
             if (rpgEnemyBorisHp > 0) { rpgEnemyBorisHp -= dmg; addLog(`Швырнул голову в Бориса!`); if(rpgEnemyBorisHp <= 0) { rpgEnemyBorisHp=0; addLog("Борис разрушен!"); } }
             else if(rpgEnemyParashnikHp > 0) { rpgEnemyParashnikHp -= dmg; addLog(`Швырнул голову в Парашника!`); if(rpgEnemyParashnikHp <= 0) { rpgEnemyParashnikHp=0; addLog("Парашник уничтожен!"); } }
@@ -1423,7 +1432,7 @@ async function useItemInBattle(itemName) {
         }
         else if (item.name === 'коала') { rpgMana = 100; addLog(`Использовал ${item.name}. Мана 100!`); playSoundEffect('thing'); }
         else if (item.name === 'apostol') { 
-            playSoundEffect('thing');
+            playSoundEffect('harmful'); // ЗВУК УДАРА ПРИ ПОПАДАНИИ
             let dmg = 100;
             if(rpgEnemyBorisHp > 0) { rpgEnemyBorisHp -= dmg; addLog(`Швырнул Apostol в Бориса!`); if(rpgEnemyBorisHp <= 0) { rpgEnemyBorisHp=0; addLog("Борис разрушен!"); } }
             else if(rpgEnemyParashnikHp > 0) { rpgEnemyParashnikHp -= dmg; addLog(`Швырнул Apostol в Парашника!`); if(rpgEnemyParashnikHp <= 0) { rpgEnemyParashnikHp=0; addLog("Парашник уничтожен!"); } }
@@ -1446,7 +1455,7 @@ async function useItemInBattle(itemName) {
             checkButtons(); 
         }
     };
-    setTimeout(applyEffect, 800);
+    setTimeout(applyEffect, 2300); // ЖДЕМ 2.3 СЕКУНДЫ ПОКА ЛЕТИТ
     closeItemMenu();
 }
 
@@ -1454,17 +1463,26 @@ function animateItemUse(item, isDamage) {
     const battlefield = document.getElementById('battlefield-bg');
     const el = document.createElement('img');
     el.src = item.img || 'https://via.placeholder.com/50?text=ITEM'; 
-    el.style.position = 'absolute'; el.style.width = '60px'; el.style.height = '60px'; el.style.zIndex = '50'; el.style.transition = 'all 0.8s ease-in-out'; 
+    el.style.position = 'absolute'; el.style.width = '80px'; el.style.height = '80px'; el.style.zIndex = '50'; 
+    el.style.transition = 'all 2.3s cubic-bezier(0.25, 0.1, 0.25, 1)'; // ЗАМЕДЛЕНО НА 65%
+    
     if (isDamage) {
-        el.style.left = '20%'; el.style.top = '40%'; el.style.transform = 'rotate(-20deg)'; battlefield.appendChild(el);
+        el.style.left = '20%'; el.style.top = '40%'; el.style.transform = 'rotate(-20deg) scale(1)'; battlefield.appendChild(el);
         void el.offsetWidth; 
-        el.style.left = '75%'; el.style.top = '30%'; el.style.transform = 'scale(1.2) rotate(360deg)'; 
-        setTimeout(() => { el.remove(); }, 800);
+        // Летит медленно, крутится
+        el.style.left = '75%'; el.style.top = '30%'; el.style.transform = 'scale(1.5) rotate(720deg)'; 
+        setTimeout(() => { 
+            el.remove(); 
+            playSoundEffect('thing'); // ЗВУК ШВЫРКА ПРИ ПОПАДАНИИ
+        }, 2300);
     } else {
-        el.style.left = '25%'; el.style.top = '30%'; el.style.transform = 'rotate(0deg)'; battlefield.appendChild(el);
+        el.style.left = '25%'; el.style.top = '30%'; el.style.transform = 'rotate(0deg) scale(1)'; battlefield.appendChild(el);
         void el.offsetWidth;
         el.style.top = '60%'; el.style.opacity = '0'; el.style.transform = 'scale(0.8) rotate(15deg)';
-        setTimeout(() => { el.remove(); }, 800);
+        setTimeout(() => { 
+            el.remove(); 
+            playSoundEffect('thing');
+        }, 2300);
     }
 }
 
