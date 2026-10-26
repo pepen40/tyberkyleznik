@@ -196,4 +196,14 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
   animation-iteration-count: 1;
 }
 
-
+/* ВИДЖЕТ ПОГОДЫ */
+#weather-widget {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 999;
+    border: 2px outset #fff;
+    background: #c0c0c0;
+    padding: 5px;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+}
