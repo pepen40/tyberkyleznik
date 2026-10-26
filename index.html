@@ -18,15 +18,21 @@
 
     <audio id="battle-music" src="ambient.mp3" loop onerror="console.log('Нет музыки')"></audio>
 
-    <div id="auth-screen" class="panel hidden">
+<div id="auth-screen" class="panel">
         <h1>добро пожаловать</h1>
         <input type="text" id="username" placeholder="Твой ник">
         <input type="password" id="password" placeholder="Пароль">
         <br>
         <button onclick="register()">Зарегаться</button>
         <button onclick="login()">Войти</button>
+        
+        <!-- КНОПКА ГОСУСЛУГ -->
+        <div class="gosuslugi-container">
+            <img src="gosyslygi.png" alt="Вход через Госуслуги" class="gosuslugi-btn" onclick="window.open('https://www.gosuslugi.ru', '_blank')">
+        </div>
+
         <p id="auth-msg"></p>
-        <div class="version-text" style="margin-top: 15px;">версия игры beta 5.0</div>
+        <div class="version-text" style="margin-top: 15px;">версия игры beta 5.2</div>
     </div>
 
     <div id="main-screen" class="hidden">
