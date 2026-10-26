@@ -8,160 +8,92 @@
         body { background-color: #008080; color: #000; font-family: "Times New Roman", Times, serif; text-align: center; margin: 0; padding: 20px; }
         h1 { font-size: 40px; margin-top: 10px; margin-bottom: 20px; animation: rainbow-colors 1.5s infinite step-end; }
         @keyframes rainbow-colors { 0% { color: #FF0000; } 17% { color: #FF7F00; } 33% { color: #FFFF00; } 50% { color: #00FF00; } 67% { color: #0000FF; } 83% { color: #4B0082; } 100% { color: #8B00FF; } }
-        
         .panel { background-color: #c0c0c0; border: 4px outset #ffffff; padding: 20px; width: 90%; max-width: 600px; margin: 0 auto; text-align: center; }
-        
         input[type="text"], input[type="password"] { font-family: "Courier New", Courier, monospace; font-size: 18px; padding: 5px; margin: 5px 0; border: 3px inset #ffffff; width: 80%; background-color: #fff; }
         button { font-family: "Courier New", Courier, monospace; font-size: 18px; font-weight: bold; background-color: #c0c0c0; border: 4px outset #ffffff; padding: 5px 15px; margin-top: 10px; cursor: pointer; }
         button:active { border: 4px inset #ffffff; }
         button:disabled { opacity: 0.5; cursor: not-allowed; border: 4px inset #ffffff; }
         .hidden { display: none !important; }
-
         #status { font-size: 24px; font-weight: bold; color: #00FF00; background-color: #000080; border: 3px inset #c0c0c0; padding: 10px; margin-bottom: 20px; cursor: pointer; }
-        
         table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
         .pad { width: 100px; height: 100px; background-color: #c0c0c0; border: 5px outset #ffffff; cursor: pointer; }
         .pad:active { border: 5px inset #ffffff; }
         .pad.active { background-color: #FF0000; border: 5px inset #ffffff; }
         .pad img { width: 100%; height: 100%; object-fit: cover; }
         .pad.disabled { opacity: 0.2; pointer-events: none; }
-
         .nav-bar { margin-bottom: 20px; background-color: #000080; padding: 10px; border: 3px outset #ffffff; }
         .nav-bar button { margin: 5px; background-color: #c0c0c0; font-size: 16px; }
-        
         .inv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; margin-top: 10px; }
         .inv-card { position: relative; background: #fff; border: 3px solid #000; padding: 10px 5px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; align-items: center; min-height: 130px; }
         .inv-card-img { width: 50px; height: 50px; object-fit: cover; margin-bottom: 5px; }
         .inv-card-name { font-size: 12px; font-weight: bold; line-height: 1.2; margin-bottom: 5px; }
         .inv-card-buttons button { font-size: 12px; padding: 2px 5px; margin-top: 5px; width: 100%; }
-        
         .qty-badge { position: absolute; top: 5px; right: 5px; background: rgba(0, 0, 0, 0.8); color: #fff; padding: 2px 6px; border-radius: 4px; border: 1px solid #fff; font-size: 12px; font-weight: bold; z-index: 10; }
-
         .shop-item { background-color: #fff; border: 2px solid #000; padding: 10px; margin: 10px 0; display: flex; justify-content: space-between; align-items: center; text-align: left;}
         .item-img { width: 40px; height: 40px; object-fit: cover; vertical-align: middle; margin-right: 10px; border: 1px solid #999; background: #eee; }
-
         .rarity-Обычное { color: gray; }
         .rarity-Редкое { color: blue; }
         .rarity-Эпическое { color: purple; }
         .rarity-Сверхредкое { color: #FF4500; }
         .rarity-Легендарное { color: #D4AF37; animation: legendary-blink 1s infinite linear; }
         @keyframes legendary-blink { 0% { color: red; text-shadow: 0 0 5px red; } 20% { color: orange; text-shadow: 0 0 5px orange; } 40% { color: yellow; text-shadow: 0 0 5px yellow; } 60% { color: lime; text-shadow: 0 0 5px lime; } 80% { color: cyan; text-shadow: 0 0 5px cyan; } 100% { color: magenta; text-shadow: 0 0 5px magenta; } }
-        
         .leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 20px; background-color: #fff; border: 3px inset #ffffff; }
         .leaderboard-table th, .leaderboard-table td { border: 1px solid #000; padding: 5px; font-size: 16px; }
         .leaderboard-table th { background-color: #000080; color: #fff; font-size: 14px;}
-
         #auth-msg { color: red; font-weight: bold; height: 20px; }
         .top-info { font-size: 16px; font-weight: bold; margin-bottom: 15px; background: #000; color: #0f0; padding: 5px; font-family: monospace; display: flex; justify-content: space-around; flex-wrap: wrap; gap: 5px; }
         .top-info span { margin: 0 2px; }
-
         #profile-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 100; }
         .modal-content { background: #c0c0c0; border: 4px outset #fff; padding: 20px; width: 90%; max-width: 500px; text-align: left; }
         .modal-content h3 { margin-top: 0; text-align: center;}
-        
         .howto-text { text-align: left; font-size: 18px; line-height: 1.5; background: #fff; border: 2px inset #fff; padding: 15px; margin-top: 10px;}
         .version-text { text-align: center; font-weight: bold; margin-top: 30px; font-size: 16px; color: #000080; }
-
-        /* Стили для РПГ */
         .rpg-char-card { background: #fff; border: 3px solid #000; padding: 10px; margin: 10px 0; display: flex; gap: 15px; text-align: left; }
         .char-avatar { width: 80px; height: 80px; object-fit: cover; border: 2px solid #000; background: #ddd; }
         .char-info { flex-grow: 1; }
         .char-info h3 { margin: 0 0 5px 0; font-size: 18px; }
         .upgrade-block { margin-top: 10px; background: #e0e0e0; padding: 5px; border: 1px solid #999; font-size: 12px; }
         .upgrade-block button { padding: 2px 5px; font-size: 12px; margin: 2px; }
-        
-        .battlefield {
-            position: relative; height: 300px; background-color: #2c3e50; 
-            background-image: url('bg1.png'); 
-            background-size: cover; background-position: center;
-            border: 4px inset #fff; margin-bottom: 15px; display: flex; justify-content: space-between; padding: 10px; overflow: hidden;
-            transition: background-image 0.5s ease-in-out;
-        }
+        .battlefield { position: relative; height: 300px; background-color: #2c3e50; background-image: url('bg1.png'); background-size: cover; background-position: center; border: 4px inset #fff; margin-bottom: 15px; display: flex; justify-content: space-between; padding: 10px; overflow: hidden; transition: background-image 0.5s ease-in-out; }
         .combatant { width: 45%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; position: relative; }
-        
         .combatant-stats { position: absolute; top: 0; width: 100%; background: rgba(0,0,0,0.7); padding: 5px; border: 1px solid #fff; color: #fff; font-size: 12px; text-align: left; z-index: 10;}
         .bar-container { width: 100%; height: 10px; background: #555; border: 1px solid #000; margin-top: 3px; position: relative; }
         .bar-fill { height: 100%; transition: width 0.3s; }
         .hp-fill { background: #f00; }
         .mp-fill { background: #8a2be2; }
-        
         .char-sprite { max-width: 100px; max-height: 120px; object-fit: contain; transition: transform 0.1s, filter 0.2s; z-index: 5;}
-        
-        /* ОКАНТОВКА */
         #rpg-player-img, #pvp-player-img { filter: drop-shadow(2px 0 0 #00ff00) drop-shadow(-2px 0 0 #00ff00) drop-shadow(0 2px 0 #00ff00) drop-shadow(0 -2px 0 #00ff00); }
         #rpg-enemy-img, #pvp-enemy-img { filter: drop-shadow(2px 0 0 #ff0000) drop-shadow(-2px 0 0 #ff0000) drop-shadow(0 2px 0 #ff0000) drop-shadow(0 -2px 0 #ff0000); }
-
         .attack-anim-player { transform: translateX(20px); }
         .attack-anim-enemy { transform: translateX(-20px); }
-
         .rpg-log { height: 120px; overflow-y: auto; background: #000; color: #0f0; font-family: monospace; text-align: left; padding: 10px; border: 2px inset #fff; font-size: 12px; margin-bottom: 10px; }
-        
         .turn-indicator { padding: 5px; font-size: 20px; font-weight: bold; text-align: center; border: 2px solid #000; margin-bottom: 10px; text-transform: uppercase; }
         .turn-player { background-color: #00ff00; color: #000; }
         .turn-enemy { background-color: #ff0000; color: #fff; }
-
         .rpg-actions button { margin: 5px 0; padding: 10px; font-size: 14px; }
         .btn-atk { background-color: #ffcccb; }
         .btn-def { background-color: #add8e6; }
         .btn-skill { background-color: #90ee90; }
         .btn-item { background-color: #ffd700; }
-
         #rpg-item-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; justify-content: center; align-items: center; z-index: 200; }
         .item-modal-content { background: #c0c0c0; border: 4px outset #fff; padding: 20px; width: 95%; max-width: 500px; text-align: left; }
-
-        /* PVP стили */
         #pvp-lobby-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 150; }
         .pvp-room-item { background: #fff; border: 2px solid #000; padding: 10px; margin: 5px 0; display: flex; justify-content: space-between; align-items: center; text-align: left; }
-
-        /* СТИЛИ ДЛЯ КНОПКИ ПОДРОБНЕЕ И СОДЕРЖИМОГО */
-        .info-btn { 
-            background: #87CEEB; color: #000; border: 2px outset #fff; 
-            padding: 2px 5px; font-size: 12px; cursor: pointer; 
-            width: 100%; border-radius: 5px; margin-top: 2px; 
-            font-family: "Courier New", Courier, monospace; font-weight: bold;
-        }
+        .info-btn { background: #87CEEB; color: #000; border: 2px outset #fff; padding: 2px 5px; font-size: 12px; cursor: pointer; width: 100%; border-radius: 5px; margin-top: 2px; font-family: "Courier New", Courier, monospace; font-weight: bold; }
         .info-btn:active { border: 2px inset #fff; }
         .case-item-row { background: #fff; border: 2px solid #000; padding: 10px; margin-bottom: 5px; display: flex; align-items: center; justify-content: space-between; text-align: left; }
         .case-item-left { display: flex; align-items: center; gap: 10px; }
         .case-item-desc { font-size: 12px; color: #333; margin-top: 3px; }
-
-        /* ВИЗУАЛ РАЗМЕЩЕННЫХ ПРЕДМЕТОВ (BORIS, ПАРАШНИК) */
-        .deployed-items-container {
-            position: absolute; bottom: 60px; display: flex; gap: 10px; z-index: 20;
-        }
+        .deployed-items-container { position: absolute; bottom: 60px; display: flex; gap: 10px; z-index: 20; }
         .deployed-items-container.left { left: 10%; }
         .deployed-items-container.right { right: 10%; }
-
-        .deployed-item {
-            display: flex; flex-direction: column; align-items: center; width: 60px;
-            animation: dropIn 0.3s ease-out;
-        }
+        .deployed-item { display: flex; flex-direction: column; align-items: center; width: 60px; animation: dropIn 0.3s ease-out; }
         @keyframes dropIn { 0% { transform: translateY(-50px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
-        
         .deployed-item img { width: 50px; height: 50px; object-fit: contain; filter: drop-shadow(0 0 5px #fff); }
-        .deployed-item .hp-bar-container {
-            width: 100%; height: 6px; background: #333; border: 1px solid #000; margin-top: 2px; border-radius: 3px; overflow: hidden;
-        }
+        .deployed-item .hp-bar-container { width: 100%; height: 6px; background: #333; border: 1px solid #000; margin-top: 2px; border-radius: 3px; overflow: hidden; }
         .deployed-item .hp-bar-fill { height: 100%; background: #00ff00; transition: width 0.3s; }
-        
-        /* Красная вспышка */
-        .damage-flash {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background-color: rgba(255, 0, 0, 0.4);
-            z-index: 9999; pointer-events: none;
-            animation: flashFade 0.4s ease-out forwards;
-        }
-        @keyframes flashFade {
-            0% { opacity: 1; }
-            100% { opacity: 0; }
-        }
-
-        /* ЧАТ PVP */
-        #pvp-chat-box {
-            height: 100px; overflow-y: auto; background: #fff; border: 2px inset #999; padding: 5px; text-align: left; margin-bottom: 5px; font-family: "Courier New", Courier, monospace; font-size: 12px;
-        }
-        .pvp-chat-msg { margin-bottom: 3px; }
-        .pvp-chat-msg .nick { font-weight: bold; color: #000080; }
+        .damage-flash { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(255, 0, 0, 0.4); z-index: 9999; pointer-events: none; animation: flashFade 0.4s ease-out forwards; }
+        @keyframes flashFade { 0% { opacity: 1; } 100% { opacity: 0; } }
     </style>
 </head>
 <body>
@@ -176,7 +108,7 @@
         <button onclick="register()">Зарегаться</button>
         <button onclick="login()">Войти</button>
         <p id="auth-msg"></p>
-        <div class="version-text" style="margin-top: 15px;">версия игры beta 4.6</div>
+        <div class="version-text" style="margin-top: 15px;">версия игры beta 4.7</div>
     </div>
 
     <div id="main-screen" class="hidden">
@@ -263,7 +195,6 @@
                 </div>
             </div>
 
-            <!-- ОФФЛАЙН БОЙ -->
             <div id="rpg-battle-screen" class="hidden">
                 <div id="rpg-turn-indicator" class="turn-indicator turn-player">ВАШ ХОД</div>
                 <h3 id="rpg-floor" style="margin: 0 0 10px 0; color: #000080;">ЭТАЖ 1.1</h3>
@@ -271,7 +202,6 @@
                 <div class="battlefield" id="battlefield-bg">
                     <div class="deployed-items-container left" id="rpg-player-deployed"></div>
                     <div class="deployed-items-container right" id="rpg-enemy-deployed"></div>
-
                     <div class="combatant">
                         <div class="combatant-stats">
                             <b id="rpg-player-name">Игрок</b><br>
@@ -302,7 +232,6 @@
                 </div>
             </div>
             
-            <!-- PVP БОЙ -->
             <div id="pvp-battle-screen" class="hidden">
                 <div id="pvp-turn-indicator" class="turn-indicator">ОЖИДАНИЕ</div>
                 <h3 style="margin: 0 0 10px 0; color: #000080;">PVP БОЙ</h3>
@@ -310,7 +239,6 @@
                 <div class="battlefield" id="pvp-battlefield-bg">
                     <div class="deployed-items-container left" id="pvp-player-deployed"></div>
                     <div class="deployed-items-container right" id="pvp-enemy-deployed"></div>
-
                     <div class="combatant">
                         <div class="combatant-stats">
                             <b id="pvp-player-name">Ты</b><br>
@@ -332,6 +260,10 @@
                 </div>
                 
                 <div class="rpg-log" id="pvp-log">Ожидание соперника...</div>
+                <div style="display:flex; gap:5px; margin-bottom:10px;">
+                    <input type="text" id="pvp-chat-input" placeholder="Напиши в чат боя..." style="margin:0; flex-grow:1; font-family:'Courier New', monospace; font-size:14px; border:2px inset #fff; padding:5px;" onkeypress="if(event.key === 'Enter') sendPvpMessage()">
+                    <button onclick="sendPvpMessage()" style="margin:0; font-size:14px; background:#90ee90;">Отправить</button>
+                </div>
                 
                 <div class="rpg-actions" style="display:flex; flex-wrap:wrap; gap:5px;">
                     <button class="btn-atk" style="width:48%;" id="pvp-atk-btn" onclick="pvpAttack()" disabled>Атака</button>
@@ -340,20 +272,11 @@
                     <button class="btn-item" style="width:100%;" id="pvp-item-btn" onclick="openPvpItemMenu()" disabled>🎒 Использовать предмет</button>
                     <button class="btn-def" style="width:100%; background:#ffcccb;" id="pvp-leave-btn" onclick="leavePvpRoom()">Выйти</button>
                 </div>
-
-                <!-- PVP ЧАТ -->
-                <h4 style="margin: 15px 0 5px 0; color: #000080;">💬 Чат боя</h4>
-                <div id="pvp-chat-box"></div>
-                <div style="display:flex; gap:5px;">
-                    <input type="text" id="pvp-chat-input" placeholder="Напиши сопернику..." style="margin:0; flex-grow:1;" onkeypress="if(event.key === 'Enter') sendPvpMessage()">
-                    <button onclick="sendPvpMessage()" style="margin:0; font-size:14px;">Отправить</button>
-                </div>
             </div>
         </div>
 
         <div id="tab-cases" class="panel hidden">
             <h2>Кейсы</h2>
-            
             <div class="shop-item" style="flex-direction: column; text-align: center;">
                 <div style="margin-bottom: 10px;"><b>Стандартный кейс</b><br><small>Шанс выбить Apostol: 3%</small></div>
                 <div>
@@ -361,7 +284,6 @@
                     <button onclick="openCaseContents(250)" style="background-color: #ffd700;">Содержимое</button>
                 </div>
             </div>
-
             <div class="shop-item" style="flex-direction: column; text-align: center; border-color: purple;">
                 <div style="margin-bottom: 10px;"><b style="color: purple;">Премиум Кейс</b><br><small>Шанс выбить Boris: 3%</small></div>
                 <div>
@@ -369,7 +291,6 @@
                     <button onclick="openCaseContents(390)" style="background-color: #ffd700;">Содержимое</button>
                 </div>
             </div>
-
             <div id="case-result" style="color: red; margin-top: 20px; display: flex; flex-direction: column; align-items: center;"></div>
         </div>
 
@@ -406,11 +327,10 @@
                 привет представляем вашему вниманию новомую игру pepen40 games . У вас наверняка возник вопрос что это за хуйня как в это играть? смотрите нужно нажимать на пидорасов поочередно в соответствии с тем с какой последовательностью каждый из них пищит. Ну там пропищал apostol 2 раза потом амжан желтый 3 раза . Значит надо нажать на apostol 3 раза и потом амжан желтый 3 раза. Также тут представлены кейсы как в ксго . Покупаете вам выпадает всякая хуйня которая в соответствии со своей редкостью выводит вас в топ в Leaderboard на определенный уровень. За хуйню вам маленько дадут баллов за apostol - дохуя. Вы также можете продавать эти хуйни которые выбили. Да да нахуй не ослышались продавать. На торговой площадке. И зарабатывать за это бабки нахуй. В РПГ защита теперь жрет 40 маны и режет урон: обычный удар на 80%, ульта на 50%, предметы на 65%. Думай головой, когда жать защиту, а когда бить.
             </div>
             <br><br><br>
-            <div class="version-text">версия игры beta 4.6</div>
+            <div class="version-text">версия игры beta 4.7</div>
         </div>
     </div>
 
-    <!-- Модалка предметов в РПГ -->
     <div id="rpg-item-modal" class="hidden">
         <div class="item-modal-content">
             <h3>Использовать предмет</h3>
@@ -419,7 +339,6 @@
         </div>
     </div>
 
-    <!-- Модалка Профиля -->
     <div id="profile-modal" class="hidden">
         <div class="modal-content">
             <h3 id="prof-name">Игрок</h3>
@@ -429,7 +348,6 @@
         </div>
     </div>
 
-    <!-- PVP Лобби -->
     <div id="pvp-lobby-modal" class="hidden">
         <div class="modal-content" style="max-width: 600px;">
             <h3>⚔️ PVP Лобби</h3>
@@ -439,22 +357,18 @@
                 <option value="apostol">Apostol (Чернокнижник)</option>
                 <option value="mee">Мээ (Друид)</option>
             </select>
-            
             <div style="display:flex; gap:5px; margin-bottom: 15px;">
                 <input type="text" id="pvp-room-name" placeholder="Название комнаты (если создаешь)" style="width:100%; margin:0;">
                 <button onclick="createPvpRoom()" style="width:100%; margin:0; background:#90ee90;">Создать комнату</button>
             </div>
-
             <h4>Онлайн игроки (Вызови на бой):</h4>
             <div id="pvp-online-list" style="max-height:200px; overflow-y:auto; border: 2px inset #fff; padding:5px; background:#ddd;">
                 <p style="text-align:center;">Загрузка игроков...</p>
             </div>
-            
             <button onclick="closePvpLobby()" style="width: 100%; margin-top: 15px; background: #ffcccb;">Закрыть</button>
         </div>
     </div>
 
-    <!-- МОДАЛКА СОДЕРЖИМОГО КЕЙСА -->
     <div id="case-contents-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; justify-content: center; align-items: center; z-index: 250;">
         <div class="modal-content" style="max-width: 500px; width: 95%;">
             <h3 id="case-contents-title">Содержимое Кейса</h3>
@@ -463,7 +377,6 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА ИНФО О ПРЕДМЕТЕ -->
     <div id="item-info-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; justify-content: center; align-items: center; z-index: 300;">
         <div class="modal-content" style="max-width: 400px; width: 90%; text-align: center;">
             <img id="info-img" src="" style="width: 100px; height: 100px; object-fit: contain; margin-bottom: 10px;">
@@ -478,7 +391,6 @@
         const SUPABASE_URL = 'https://zfvinbamwavibnhmfwnz.supabase.co'; 
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpmdmluYmFtd2F2aWJuaG1md256Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4ODE2MjAsImV4cCI6MjEwODQ1NzYyMH0.FT5tlKgLUCrFs0zzY-BGimCmU9qNZmIzMW8LyysMmgE';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        
         const EDGE_FUNCTION_NAME = 'award-coins'; 
         const battleBackgrounds = ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png', 'bg6.png'];
 
@@ -527,7 +439,7 @@
             if (soundCache[type]) {
                 let clone = soundCache[type].cloneNode();
                 clone.volume = 0.75;
-                clone.play().catch(e => console.log("Звук заблокирован браузером:", e));
+                clone.play().catch(e => console.log("Звук заблокирован:", e));
             }
         }
 
@@ -572,28 +484,22 @@
         }
 
         function initPvpChat(roomId) {
-            const chatBox = document.getElementById('pvp-chat-box');
-            chatBox.innerHTML = '';
-            if (!roomChannel) return;
-            roomChannel.on('broadcast', { event: 'chat_message' }, (payload) => {
-                const nick = payload.payload.nick || '???';
-                const text = payload.payload.text || '';
-                addPvpChatMessage(nick, text);
-            });
+            const logBox = document.getElementById('pvp-log');
+            if (logBox) logBox.innerHTML = '';
         }
 
         function addPvpChatMessage(nick, text) {
-            const box = document.getElementById('pvp-chat-box');
-            if (!box) return;
+            const logBox = document.getElementById('pvp-log');
+            if (!logBox) return;
             const msg = document.createElement('div');
-            msg.className = 'pvp-chat-msg';
+            msg.style.color = '#00ffff';
             const nickSpan = document.createElement('span');
-            nickSpan.className = 'nick';
-            nickSpan.textContent = nick + ':';
+            nickSpan.style.fontWeight = 'bold';
+            nickSpan.textContent = '[ЧАТ] ' + nick + ':';
             msg.appendChild(nickSpan);
             msg.appendChild(document.createTextNode(' ' + text));
-            box.appendChild(msg);
-            box.scrollTop = box.scrollHeight;
+            logBox.appendChild(msg);
+            logBox.scrollTop = logBox.scrollHeight;
         }
 
         function sendPvpMessage() {
@@ -602,6 +508,7 @@
             const text = input.value.trim();
             if (!text) return;
             roomChannel.send({ type: 'broadcast', event: 'chat_message', payload: { nick: currentUser, text: text } });
+            addPvpChatMessage(currentUser, text);
             input.value = '';
         }
 
@@ -626,7 +533,6 @@
             if (!/^[a-zA-Zа-яА-Я0-9_]{3,20}$/.test(u)) { document.getElementById('auth-msg').textContent = "Ник: 3-20 символов, буквы/цифры/_"; return; }
             const { data: existing } = await supabaseClient.from('players').select('username').eq('username', u);
             if (existing && existing.length > 0) { document.getElementById('auth-msg').textContent = "Ник занят."; return; }
-            
             const { error } = await supabaseClient.from('players').insert([{ 
                 username: u, password: p, max_score: 0, coins: 200, inventory: [], item_points: 0,
                 rpg_upgrades: {"ashab":{"hp":0,"atk":0},"apostol":{"hp":0,"atk":0},"mee":{"hp":0,"atk":0}},
@@ -651,12 +557,9 @@
                 currentPvpPts = data.pvp_pts || 0;
                 currentUpgrades = data.rpg_upgrades || {"ashab":{"hp":0,"atk":0},"apostol":{"hp":0,"atk":0},"mee":{"hp":0,"atk":0}};
                 currentMaxFloors = data.rpg_max_floors || {"ashab":0,"apostol":0,"mee":0};
-                
                 await supabaseClient.from('players').update({ last_online: new Date().toISOString() }).eq('username', u);
-
                 document.getElementById('auth-screen').classList.add('hidden');
                 document.getElementById('main-screen').classList.remove('hidden');
-                
                 preloadSounds(); 
                 initOnlineCounter();
                 initLobby();
@@ -675,7 +578,6 @@
             if (elItemPoints) elItemPoints.textContent = currentItemPoints;
             let elPvp = document.getElementById('ui-pvp');
             if (elPvp) elPvp.textContent = currentPvpPts;
-            
             ['ashab', 'apostol', 'mee'].forEach(c => {
                 let u = currentUpgrades[c];
                 let elHpLvl = document.getElementById(`lvl-${c}-hp`);
@@ -801,11 +703,9 @@
         function renderPvpRooms() {
             const list = document.getElementById('pvp-online-list');
             if (onlinePlayers.length === 0) { list.innerHTML = '<p style="text-align:center;">Нет онлайн игроков.</p>'; return; }
-            
             list.innerHTML = '';
             onlinePlayers.forEach(player => {
                 if (player === currentUser) return;
-                
                 const div = document.createElement('div');
                 div.className = 'pvp-room-item';
                 div.innerHTML = `
@@ -825,34 +725,30 @@
         async function createPvpRoom() {
             const roomName = document.getElementById('pvp-room-name').value.trim() || "Комната " + currentUser;
             const charType = document.getElementById('pvp-char-select').value;
-
             let baseHp = charType === 'ashab' ? 150 : (charType === 'apostol' ? 80 : 110);
             let baseAtk = charType === 'ashab' ? 20 : (charType === 'apostol' ? 30 : 18);
             let hp = baseHp + (currentUpgrades[charType].hp * 20);
             let atk = baseAtk + (currentUpgrades[charType].atk * 5);
             let charName = charType === 'ashab' ? "Ашаб" : (charType === 'apostol' ? "Апостол" : "Мээ");
-
             myRoomId = 'room_' + Math.random().toString(36).substr(2, 9);
             isPvpHost = true;
             currentPvpChar = charType;
-
             if(lobbyChannel) await lobbyChannel.track({ room: { roomId: myRoomId, roomName, hostName: currentUser, hostPts: currentPvpPts, charName, hp, atk } });
             closePvpLobby();
-
             if(roomChannel) supabaseClient.removeChannel(roomChannel);
             roomChannel = supabaseClient.channel(myRoomId, { config: { broadcast: { self: false } } });
-            
             roomChannel.on('broadcast', { event: 'join_request' }, (payload) => {
                 const guest = payload.payload;
                 startPvpBattle(guest.charName, guest.hp, guest.atk, guest.username);
                 roomChannel.send({ type: 'broadcast', event: 'start_game', payload: { charName: charName, hp, atk, username: currentUser } });
             });
-
             roomChannel.on('broadcast', { event: 'enemy_action' }, (payload) => { handlePvpEnemyAction(payload.payload); });
             roomChannel.on('broadcast', { event: 'leave' }, () => { if (pvpGameState.myHp > 0) alert("Соперник покинул комнату."); leavePvpRoom(false); });
+            roomChannel.on('broadcast', { event: 'chat_message' }, (payload) => {
+                addPvpChatMessage(payload.payload.nick || '???', payload.payload.text || '');
+            });
             roomChannel.subscribe();
             initPvpChat(myRoomId);
-
             switchTab('rpg');
             document.getElementById('rpg-char-select').classList.add('hidden');
             document.getElementById('pvp-battle-screen').classList.remove('hidden');
@@ -862,7 +758,6 @@
             document.getElementById('pvp-turn-indicator').innerText = "ОЖИДАНИЕ";
             document.getElementById('pvp-turn-indicator').className = "turn-indicator";
             disablePvpButtons();
-
             const bgMusic = document.getElementById('battle-music');
             bgMusic.currentTime = 0; bgMusic.volume = 0.3; bgMusic.play().catch(e => console.log("Audio blocked"));
         }
@@ -874,37 +769,28 @@
             let hp = baseHp + (currentUpgrades[charType].hp * 20);
             let atk = baseAtk + (currentUpgrades[charType].atk * 5);
             let charName = charType === 'ashab' ? "Ашаб" : (charType === 'apostol' ? "Апостол" : "Мээ");
-
             myRoomId = 'room_' + Math.random().toString(36).substr(2, 9);
             isPvpHost = true;
             currentPvpChar = charType;
-
             if(lobbyChannel) await lobbyChannel.track({ room: { roomId: myRoomId, roomName: "Вызов от " + currentUser, hostName: currentUser, hostPts: currentPvpPts, charName, hp, atk } });
-            
             if(onlineChannel) {
-                onlineChannel.send({
-                    type: 'broadcast',
-                    event: 'challenge',
-                    payload: { target: targetUser, host: currentUser, roomId: myRoomId }
-                });
+                onlineChannel.send({ type: 'broadcast', event: 'challenge', payload: { target: targetUser, host: currentUser, roomId: myRoomId } });
             }
-
             closePvpLobby();
             alert("Вызов отправлен игроку " + targetUser + "! Ожидаем ответа...");
-
             if(roomChannel) supabaseClient.removeChannel(roomChannel);
             roomChannel = supabaseClient.channel(myRoomId, { config: { broadcast: { self: false } } });
-            
             roomChannel.on('broadcast', { event: 'join_request' }, (payload) => {
                 const guest = payload.payload;
                 startPvpBattle(guest.charName, guest.hp, guest.atk, guest.username);
                 roomChannel.send({ type: 'broadcast', event: 'start_game', payload: { charName: charName, hp, atk, username: currentUser } });
             });
-
             roomChannel.on('broadcast', { event: 'enemy_action' }, (payload) => { handlePvpEnemyAction(payload.payload); });
+            roomChannel.on('broadcast', { event: 'chat_message' }, (payload) => {
+                addPvpChatMessage(payload.payload.nick || '???', payload.payload.text || '');
+            });
             roomChannel.subscribe();
             initPvpChat(myRoomId);
-
             switchTab('rpg');
             document.getElementById('rpg-char-select').classList.add('hidden');
             document.getElementById('pvp-battle-screen').classList.remove('hidden');
@@ -933,13 +819,11 @@
             isPvpHost = false;
             currentPvpChar = charType;
             myRoomId = roomId;
-
             let baseHp = charType === 'ashab' ? 150 : (charType === 'apostol' ? 80 : 110);
             let baseAtk = charType === 'ashab' ? 20 : (charType === 'apostol' ? 30 : 18);
             let hp = baseHp + (currentUpgrades[charType].hp * 20);
             let atk = baseAtk + (currentUpgrades[charType].atk * 5);
             let charName = charType === 'ashab' ? "Ашаб" : (charType === 'apostol' ? "Апостол" : "Мээ");
-
             closePvpLobby();
             switchTab('rpg');
             document.getElementById('rpg-char-select').classList.add('hidden');
@@ -950,21 +834,21 @@
             document.getElementById('pvp-turn-indicator').innerText = "ОЖИДАНИЕ";
             document.getElementById('pvp-turn-indicator').className = "turn-indicator";
             disablePvpButtons();
-
             if(roomChannel) supabaseClient.removeChannel(roomChannel);
             roomChannel = supabaseClient.channel(roomId, { config: { broadcast: { self: false } } });
-
             roomChannel.on('broadcast', { event: 'start_game' }, (payload) => {
                 const host = payload.payload;
                 startPvpBattle(host.charName, host.hp, host.atk, host.username);
                 setPvpTurn(false);
             });
             roomChannel.on('broadcast', { event: 'enemy_action' }, (payload) => { handlePvpEnemyAction(payload.payload); });
-            initPvpChat(roomId);
-
+            roomChannel.on('broadcast', { event: 'chat_message' }, (payload) => {
+                addPvpChatMessage(payload.payload.nick || '???', payload.payload.text || '');
+            });
             roomChannel.subscribe((status) => {
                 if (status === 'SUBSCRIBED') { roomChannel.send({ type: 'broadcast', event: 'join_request', payload: { username: currentUser, charName, hp, atk } }); }
             });
+            initPvpChat(roomId);
         }
 
         function startPvpBattle(enemyName, enemyHp, enemyAtk, enemyUsername) {
@@ -973,23 +857,18 @@
             let baseAtk = charType === 'ashab' ? 20 : (charType === 'apostol' ? 30 : 18);
             let hp = baseHp + (currentUpgrades[charType].hp * 20);
             let atk = baseAtk + (currentUpgrades[charType].atk * 5);
-
             pvpGameState = { myHp: hp, myMaxHp: hp, myAtk: atk, myMp: 0, enemyHp: enemyHp, enemyMaxHp: enemyHp, enemyName: enemyName, enemyMp: 0, isMyTurn: isPvpHost, myBorisHp: 0, enemyBorisHp: 0, myParashnikHp: 0, enemyParashnikHp: 0, myDefending: false, enemyDefending: false, myItemUsed: false };
-
             document.getElementById('pvp-enemy-name').innerText = enemyName;
             document.getElementById('pvp-enemy-img').src = "https://via.placeholder.com/100?text=ENEMY"; 
             updatePvpUI(); logPvp(`Бой начался против ${enemyName}!`);
-            
             if (isPvpHost) { setPvpTurn(true); enablePvpButtons(); } 
             else { setPvpTurn(false); disablePvpButtons(); }
-
             const bgMusic = document.getElementById('battle-music');
             if (bgMusic.paused) { bgMusic.currentTime = 0; bgMusic.volume = 0.3; bgMusic.play().catch(e => console.log("Audio blocked")); }
         }
 
         function handlePvpEnemyAction(payload) {
             if (pvpGameState.myHp <= 0) return; 
-
             if (payload.type === 'attack') {
                 playSoundEffect('attack');
                 let dmg = payload.dmg;
@@ -1042,11 +921,9 @@
                 else if (payload.effect === 'boris') { playSoundEffect('thing'); pvpGameState.enemyBorisHp += 60; logPvp(`Враг поставил Бориса!`); }
                 else if (payload.effect === 'parashnik') { playSoundEffect('thing'); pvpGameState.myParashnikHp += 30; logPvp(`Враг поставил Парашника!`); }
                 else if (payload.effect === 'shaver') { playSoundEffect('thing'); pvpGameState.enemyBorisHp = 0; pvpGameState.myParashnikHp = 0; logPvp(`Враг сбрил твоего Бориса и Парашника!`); }
-
                 updatePvpUI();
                 return; 
             }
-
             updatePvpUI();
             if (pvpGameState.myHp <= 0) { endPvpBattle(false); } 
             else { 
@@ -1069,7 +946,6 @@
             playSoundEffect('attack');
             pvpGameState.isMyTurn = false; pvpGameState.myItemUsed = false; disablePvpButtons(); setPvpTurn(false);
             let dmg = Math.floor(Math.random() * 10) + pvpGameState.myAtk;
-            
             if (pvpGameState.enemyDefending) { dmg = Math.floor(dmg * 0.2); pvpGameState.enemyDefending = false; logPvp(`Враг заблокировал атаку, он получил ${dmg} урона (80% срезано).`); }
             else if (pvpGameState.enemyBorisHp > 0) {
                 pvpGameState.enemyBorisHp -= dmg;
@@ -1083,12 +959,9 @@
                 pvpGameState.enemyHp -= dmg; 
                 logPvp(`Ты бьешь на ${dmg} урона!`);
             }
-
             pvpGameState.myMp = Math.min(100, pvpGameState.myMp + 20);
             updatePvpUI(); 
-            
             if(roomChannel) roomChannel.send({ type: 'broadcast', event: 'enemy_action', payload: { type: 'attack', dmg } });
-            
             if (pvpGameState.enemyHp <= 0) { endPvpBattle(true); }
             else {
                 if (pvpGameState.enemyParashnikHp > 0) {
@@ -1122,7 +995,6 @@
             if (charType === 'ashab') dmg = 60 + (currentUpgrades[charType].atk * 10);
             else if (charType === 'apostol') dmg = Math.floor(Math.random() * 30) + 70 + (currentUpgrades[charType].atk * 10);
             else if (charType === 'mee') { dmg = 0; pvpGameState.myHp = Math.min(pvpGameState.myMaxHp, pvpGameState.myHp + 50); logPvp(`Ты хилишься на 50 HP!`); playSoundEffect('heal'); }
-
             if (dmg > 0) {
                 if (pvpGameState.enemyDefending) { dmg = Math.floor(dmg * 0.5); pvpGameState.enemyDefending = false; logPvp(`Враг заблокировал способность, получив ${dmg} урона (50% срезано).`); }
                 else if (pvpGameState.enemyBorisHp > 0) {
@@ -1135,10 +1007,8 @@
                     pvpGameState.enemyHp -= dmg; logPvp(`Ты ебашишь способностью на ${dmg} урона!`);
                 }
             }
-
             updatePvpUI(); 
             if(roomChannel) roomChannel.send({ type: 'broadcast', event: 'enemy_action', payload: { type: 'skill', dmg } });
-            
             if (pvpGameState.enemyHp <= 0) { endPvpBattle(true); }
         }
 
@@ -1161,7 +1031,6 @@
                     if (item.name === 'boris') effectText = "Щит на 60 HP";
                     if (item.name === 'шприц и лекарство') effectText = "100% лечение";
                     if (item.name === 'Сбриватель хуйни') effectText = "Убирает щиты врага";
-
                     const div = document.createElement('div'); div.className = 'inv-card';
                     if (item.qty > 1) div.innerHTML += `<div class="qty-badge">x${item.qty}</div>`;
                     div.innerHTML += `
@@ -1184,20 +1053,16 @@
             const itemIndex = currentInventory.findIndex(i => i.name === itemName);
             if (itemIndex === -1) return;
             const item = currentInventory[itemIndex];
-
             pvpGameState.myItemUsed = true; 
             disablePvpButtons(); 
             closeItemMenu();
-            
             let isDamaging = (item.name === 'голова барана' || item.name === 'apostol' || item.name === 'Сбриватель хуйни');
             animatePvpItemUse(item, isDamaging);
-
             try {
                 const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'consume_item', username: currentUser, data: { item_id: item.id } } });
                 if (!error && data.success) { currentInventory = data.newInventory; currentItemPoints = data.newItemPoints; updateUI(); } 
                 else { logPvp("Ошибка использования."); pvpGameState.myItemUsed = false; enablePvpButtons(); return; }
             } catch(e) { logPvp("Ошибка сервера."); pvpGameState.myItemUsed = false; enablePvpButtons(); return; }
-
             const applyEffect = () => {
                 let payload = { type: 'item', effect: '', val: 0 };
                 if (item.name === 'хуйня') { pvpGameState.myHp = Math.min(pvpGameState.myMaxHp, pvpGameState.myHp + 20); logPvp(`+20 HP`); payload.effect='heal'; payload.val=20; playSoundEffect('heal'); }
@@ -1228,10 +1093,8 @@
                     pvpGameState.enemyBorisHp = 0; pvpGameState.enemyParashnikHp = 0; logPvp(`Ты сбрил всю хуйню врага!`); payload.effect='shaver'; playSoundEffect('thing');
                 }
                 else if (item.name === 'Вам не повезло') { logPvp(`Вы нихуя не сделали.`); payload.effect='nothing'; }
-
                 updatePvpUI();
                 if(roomChannel) roomChannel.send({ type: 'broadcast', event: 'enemy_action', payload });
-                
                 if (pvpGameState.enemyHp <= 0) { endPvpBattle(true); }
                 else {
                     if (pvpGameState.enemyParashnikHp > 0 && item.name !== 'Сбриватель хуйни') {
@@ -1252,7 +1115,7 @@
             let newPts = isWin ? currentPvpPts + 15 : Math.max(0, currentPvpPts - 15);
             try {
                 const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'pvp_result', username: currentUser, data: { win: isWin } } });
-                if (!error && data.success) { currentPvpPts = data.newPts; updateUI(); }
+                if (!error && data && data.success) { currentPvpPts = data.newPts; updateUI(); }
                 else { currentPvpPts = newPts; updateUI(); }
             } catch(e) { currentPvpPts = newPts; updateUI(); }
             logPvp(isWin ? "ТЫ ПОБЕДИЛ! +15 PTS" : "ТЫ ПРОИГРАЛ! -15 PTS");
@@ -1276,10 +1139,8 @@
             document.getElementById('pvp-player-hp-bar').style.width = (Math.max(0, pvpGameState.myHp) / pvpGameState.myMaxHp) * 100 + '%';
             document.getElementById('pvp-player-mp-text').innerText = `${pvpGameState.myMp}/100`;
             document.getElementById('pvp-player-mp-bar').style.width = pvpGameState.myMp + '%';
-            
             document.getElementById('pvp-enemy-hp-text').innerText = `${Math.max(0, pvpGameState.enemyHp)}/${pvpGameState.enemyMaxHp}`;
             document.getElementById('pvp-enemy-hp-bar').style.width = (Math.max(0, pvpGameState.enemyHp) / pvpGameState.enemyMaxHp) * 100 + '%';
-
             renderPvpDeployedItems();
         }
 
@@ -1287,7 +1148,6 @@
             let pDep = document.getElementById('pvp-player-deployed');
             let eDep = document.getElementById('pvp-enemy-deployed');
             pDep.innerHTML = ''; eDep.innerHTML = '';
-
             if (pvpGameState.myBorisHp > 0) {
                 pDep.innerHTML += `<div class="deployed-item"><img src="img_boris.png" onerror="this.src='https://via.placeholder.com/50?text=B'"><div class="hp-bar-container"><div class="hp-bar-fill" style="width: ${(pvpGameState.myBorisHp/60)*100}%; background: #00ff00;"></div></div></div>`;
             }
@@ -1326,7 +1186,7 @@
             if (skill) skill.disabled = pvpGameState.myMp < 100;
         }
 
-        function logPvp(msg) { const log = document.getElementById('pvp-log'); log.innerHTML += `<br>> ${msg}`; log.scrollTop = log.scrollHeight; }
+        function logPvp(msg) { const log = document.getElementById('pvp-log'); if (!log) return; log.innerHTML += `<br>> ${msg}`; log.scrollTop = log.scrollHeight; }
 
         function animatePvpItemUse(item, isDamage) {
             const battlefield = document.getElementById('pvp-battlefield-bg');
@@ -1362,16 +1222,13 @@
             if (type === 'ashab') { baseHp = 150; baseAtk = 20; mpGain = 20; name = "Ashab"; charClass = "Берсерк"; imgUrl = "IMG_3545.jpeg"; }
             else if (type === 'apostol') { baseHp = 80; baseAtk = 30; mpGain = 35; name = "Apostol"; charClass = "Чернокнижник"; imgUrl = "IMG_3544.jpeg"; }
             else if (type === 'mee') { baseHp = 110; baseAtk = 18; mpGain = 25; name = "Мээ"; charClass = "Друид"; imgUrl = "IMG_3546.jpeg"; }
-            
             let u = currentUpgrades[type];
             rpgChar = { name, class: charClass, maxHp: baseHp + (u.hp * 20), hp: baseHp + (u.hp * 20), atk: baseAtk + (u.atk * 5), mpGain, img: imgUrl };
             rpgFloorMain = 1; rpgFloorSub = 1; rpgMana = 0; rpgPlayerBorisHp = 0; rpgPlayerParashnikHp = 0; rpgEnemyBorisHp = 0; rpgEnemyParashnikHp = 0; rpgItemUsed = false; rpgPlayerDefending = false;
-            
             document.getElementById('rpg-char-select').classList.add('hidden');
             document.getElementById('rpg-battle-screen').classList.remove('hidden');
             document.getElementById('rpg-log').innerHTML = `Ты выбрал ${rpgChar.name}.<br>В БОЙ!<br>`;
             document.getElementById('rpg-player-img').src = rpgChar.img;
-            
             const bgMusic = document.getElementById('battle-music');
             bgMusic.currentTime = 0; bgMusic.volume = 0.3; bgMusic.play().catch(e => console.log("Audio blocked"));
             changeBackground(); spawnEnemy();
@@ -1386,9 +1243,7 @@
             ];
             let eType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)]; let eHp = Math.floor(baseHp * eType.hpMult);
             rpgEnemy = { name: `${eType.name} (Ур. ${rpgFloorMain}.${rpgFloorSub})`, hp: eHp, maxHp: eHp, atk: Math.floor(baseAtk * eType.atkMult), img: eType.img };
-            
             rpgPlayerBorisHp = 0; rpgPlayerParashnikHp = 0; rpgEnemyBorisHp = 0; rpgEnemyParashnikHp = 0; rpgItemUsed = false; rpgPlayerDefending = false;
-
             document.getElementById('rpg-floor').innerText = `ЭТАЖ ${rpgFloorMain}.${rpgFloorSub}`;
             document.getElementById('rpg-enemy-img').src = rpgEnemy.img;
             updateRpgUI(); addLog(`На арене появился ${rpgEnemy.name}!`);
@@ -1407,7 +1262,6 @@
             document.getElementById('rpg-enemy-name').innerText = rpgEnemy.name;
             document.getElementById('rpg-enemy-hp-text').innerText = `${Math.max(0, rpgEnemy.hp)}/${rpgEnemy.maxHp}`;
             document.getElementById('rpg-enemy-hp-bar').style.width = (Math.max(0, rpgEnemy.hp) / rpgEnemy.maxHp) * 100 + '%';
-
             renderRpgDeployedItems();
         }
 
@@ -1415,7 +1269,6 @@
             let pDep = document.getElementById('rpg-player-deployed');
             let eDep = document.getElementById('rpg-enemy-deployed');
             pDep.innerHTML = ''; eDep.innerHTML = '';
-
             if (rpgPlayerBorisHp > 0) {
                 pDep.innerHTML += `<div class="deployed-item"><img src="img_boris.png" onerror="this.src='https://via.placeholder.com/50?text=B'"><div class="hp-bar-container"><div class="hp-bar-fill" style="width: ${(rpgPlayerBorisHp/60)*100}%; background: #00ff00;"></div></div></div>`;
             }
@@ -1451,7 +1304,6 @@
             playSoundEffect('attack');
             isPlayerTurn = false; rpgItemUsed = false; setTurnIndicator(false); checkButtons(); animateAttack(true);
             let dmg = Math.floor(Math.random() * 10) + rpgChar.atk;
-            
             if(rpgEnemyBorisHp > 0) {
                 rpgEnemyBorisHp -= dmg; addLog(`Ты бьешь Бориса на ${dmg}.`); if(rpgEnemyBorisHp <= 0) { rpgEnemyBorisHp = 0; addLog("Борис разрушен!"); }
             } else if (rpgEnemyParashnikHp > 0) {
@@ -1459,7 +1311,6 @@
             } else {
                 rpgEnemy.hp -= dmg; addLog(`${rpgChar.name} бьет на ${dmg} урона.`);
             }
-
             rpgMana = Math.min(rpgMaxMana, rpgMana + rpgChar.mpGain);
             updateRpgUI();
             if (rpgEnemy.hp <= 0) winRpg(); else setTimeout(enemyTurn, 800);
@@ -1480,7 +1331,6 @@
             if (rpgChar.class === "Берсерк") { dmg = 60 + (currentUpgrades[currentCharType].atk * 10); addLog(`Сокрушающий удар на ${dmg}!`); }
             else if (rpgChar.class === "Чернокнижник") { dmg = Math.floor(Math.random() * 30) + 70 + (currentUpgrades[currentCharType].atk * 10); addLog(`Тёмный ритуал. Урон: ${dmg}!`); }
             else if (rpgChar.class === "Друид") { let heal = 70 + (currentUpgrades[currentCharType].hp * 10); rpgChar.hp = Math.min(rpgChar.maxHp, rpgChar.hp + heal); addLog(`Исцеление на ${heal} HP!`); playSoundEffect('heal'); }
-
             if (dmg > 0) {
                 if(rpgEnemyBorisHp > 0) {
                     rpgEnemyBorisHp -= dmg; addLog(`Ты бьешь Бориса способностью.`); if(rpgEnemyBorisHp <= 0) { rpgEnemyBorisHp = 0; addLog("Борис разрушен!"); }
@@ -1490,15 +1340,12 @@
                     rpgEnemy.hp -= dmg; 
                 }
             }
-
             updateRpgUI(); if (rpgEnemy.hp <= 0) winRpg(); else setTimeout(enemyTurn, 800);
         }
         
         function enemyTurn(isPlayerDefending = false) {
             setTurnIndicator(false); animateAttack(false);
-            
             let itemChance = Math.min(0.35, 0.05 + (rpgFloorMain * 0.03)); 
-            
             if (Math.random() < itemChance) {
                 let itemRoll = Math.random();
                 if (itemRoll < 0.4 && rpgEnemy.hp < rpgEnemy.maxHp - 20) {
@@ -1522,7 +1369,6 @@
                     else if (rpgPlayerParashnikHp > 0) { rpgPlayerParashnikHp -= dmg; addLog(`Враг швырнул голову барана в Парашника!`); if(rpgPlayerParashnikHp<=0){rpgPlayerParashnikHp=0; addLog("Твой Парашник уничтожен!");} }
                     else { rpgChar.hp -= dmg; addLog(`Враг швырнул голову барана на ${dmg} урона!`); }
                 }
-                
                 updateRpgUI();
                 if (rpgChar.hp <= 0) { 
                     addLog(`Ты сдох...`); isPlayerTurn = false; checkButtons(); document.getElementById('battle-music').pause(); setTimeout(() => { document.getElementById('rpg-char-select').classList.remove('hidden'); document.getElementById('rpg-battle-screen').classList.add('hidden'); renderCharStats(); updateUI(); }, 3000); 
@@ -1531,15 +1377,12 @@
                 }
                 return;
             }
-            
             let dmg = Math.floor(Math.random() * 10) + rpgEnemy.atk;
             let isUlt = false;
-            
             if (!isPlayerDefending && Math.random() < 0.3 && !enemyIsCharging) {
                 enemyIsCharging = true; addLog(`${rpgEnemy.name} копит силы...`); isPlayerTurn = true; setTurnIndicator(true); checkButtons(); return;
             }
             if (enemyIsCharging) { dmg *= 2; enemyIsCharging = false; isUlt = true; addLog(`ЕБАТЬ! Усиленный удар!`); }
-            
             if (isPlayerDefending) {
                 if (isUlt) { dmg = Math.floor(dmg * 0.5); addLog(`Защита срезала ульту на 50%. Урон: ${dmg}.`); }
                 else { dmg = Math.floor(dmg * 0.2); addLog(`Защита срезала атаку на 80%. Урон: ${dmg}.`); }
@@ -1547,7 +1390,6 @@
                 playSoundEffect('attack');
                 addLog(`Враг бьет на ${dmg}!`);
             }
-            
             if(rpgPlayerBorisHp > 0) {
                 rpgPlayerBorisHp -= dmg; addLog(`Атака ушла в Бориса.`); if(rpgPlayerBorisHp <= 0) { rpgPlayerBorisHp = 0; addLog("Твой Борис разрушен!"); }
             } else if (rpgPlayerParashnikHp > 0) {
@@ -1555,7 +1397,6 @@
             } else {
                 rpgChar.hp -= dmg; 
             }
-            
             rpgPlayerDefending = false;
             updateRpgUI();
             if (rpgChar.hp <= 0) { 
@@ -1567,20 +1408,27 @@
                     updateRpgUI();
                     if(rpgChar.hp <= 0) { addLog(`Ты сдох от яда...`); isPlayerTurn = false; checkButtons(); document.getElementById('battle-music').pause(); setTimeout(() => { document.getElementById('rpg-char-select').classList.remove('hidden'); document.getElementById('rpg-battle-screen').classList.add('hidden'); renderCharStats(); updateUI(); }, 3000); return; }
                 }
-                
                 isPlayerTurn = true; setTurnIndicator(true); checkButtons(); 
             }
         }
         
         async function winRpg() {
             let reward = 15 + (rpgFloorMain * 10);
+            const wonFloorMain = rpgFloorMain;
             try {
-                const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'rpg_win', username: currentUser, data: { floorMain: rpgFloorMain } } });
-                if (!error && data.success) { currentCoins = data.newCoins; updateUI(); addLog(`Победа! +${data.earned} монет.`); }
-            } catch(e) { console.error(e); }
-            rpgFloorSub++; if (rpgFloorSub > 5) { rpgFloorSub = 1; rpgFloorMain++; changeBackground(); }
-            rpgMana = Math.min(rpgMaxMana, rpgMana + 30);
-            setTimeout(() => { addLog(`=== ЭТАЖ ${rpgFloorMain}.${rpgFloorSub} ===`); spawnEnemy(); }, 2000);
+                const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'rpg_win', username: currentUser, data: { floorMain: wonFloorMain } } });
+                if (!error && data && data.success) { currentCoins = data.newCoins; updateUI(); addLog(`Победа! +${data.earned} монет.`); }
+                else if (data && data.error) { addLog(`Сервер: ${data.error}`); }
+            } catch(e) { addLog(`Ошибка сети: ${e.message}`); }
+            finally {
+                try {
+                    await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'update_floor', username: currentUser, data: { charType: currentCharType, floor: wonFloorMain } } });
+                } catch(e) { console.error(e); }
+                rpgFloorSub++;
+                if (rpgFloorSub > 5) { rpgFloorSub = 1; rpgFloorMain++; changeBackground(); }
+                rpgMana = Math.min(rpgMaxMana, rpgMana + 30);
+                setTimeout(() => { addLog(`=== ЭТАЖ ${rpgFloorMain}.${rpgFloorSub} ===`); spawnEnemy(); }, 2000);
+            }
         }
 
         async function openCase(price) {
@@ -1722,17 +1570,14 @@
             const modal = document.getElementById('profile-modal');
             const nameEl = document.getElementById('prof-name'); const statsEl = document.getElementById('prof-stats'); const invEl = document.getElementById('prof-inventory');
             nameEl.textContent = "Профиль: " + username; statsEl.innerHTML = "Загрузка..."; invEl.innerHTML = ''; modal.classList.remove('hidden');
-
             const { data, error } = await supabaseClient.from('players').select('*').eq('username', username).single();
             if (error || !data) { statsEl.textContent = "Ошибка."; return; }
-
             const state = onlineChannel ? onlineChannel.presenceState() : {};
             const isOnline = state[username] !== undefined;
             let onlineStatusHtml = isOnline ? '<span style="color: #00ff00; font-weight: bold;">● ОНЛАЙН</span>' : '<span style="color: #ff0000; font-weight: bold;">● ОФФЛАЙН</span>';
             let createdStr = data.created_at ? new Date(data.created_at).toLocaleString('ru-RU') : 'Неизвестно';
             let lastOnlineStr = data.last_online ? new Date(data.last_online).toLocaleString('ru-RU') : 'Неизвестно';
             let maxF = data.rpg_max_floors || {}; let ups = data.rpg_upgrades || {};
-
             statsEl.innerHTML = `
                 Статус: ${onlineStatusHtml}<br>Зареган: ${createdStr}<br>Был в сети: ${lastOnlineStr}<hr style="margin: 5px 0;">
                 <b>PTS: <span style="color:orange;">${data.pvp_pts || 0}</span></b> | Общий счет: ${(data.max_score || 0) + (data.item_points || 0)}<hr style="margin: 5px 0;">
@@ -1741,12 +1586,10 @@
                 <span style="color: #d32f2f;">Apostol:</span> Этаж ${(maxF.apostol || 0).toFixed(1)} | HP ур.${ups.apostol?.hp || 0} | ATK ур.${ups.apostol?.atk || 0}<br>
                 <span style="color: #d32f2f;">Мээ:</span> Этаж ${(maxF.mee || 0).toFixed(1)} | HP ур.${ups.mee?.hp || 0} | ATK ур.${ups.mee?.atk || 0}
             `;
-
             const { data: marketItems } = await supabaseClient.from('marketplace').select('*').eq('seller', username);
             let inv = data.inventory || [];
             let grouped = {}; inv.forEach(item => { if (!grouped[item.name]) grouped[item.name] = { ...item, qty: 0 }; grouped[item.name].qty++; });
             let processedInv = Object.values(grouped).sort((a, b) => (rarityWeight[b.rarity] || 0) - (rarityWeight[a.rarity] || 0));
-            
             if (processedInv.length === 0 && (!marketItems || marketItems.length === 0)) { invEl.innerHTML = "<p style='grid-column: 1/-1;'>Инвентарь пуст.</p>"; }
             else {
                 processedInv.forEach(item => {
@@ -1798,7 +1641,6 @@
                     if(item.name === 'boris') effectText = "Щит на 60 HP";
                     if(item.name === 'шприц и лекарство') effectText = "100% лечение";
                     if(item.name === 'Сбриватель хуйни') effectText = "Убирает щиты врага";
-
                     const div = document.createElement('div'); div.className = 'inv-card';
                     if (item.qty > 1) div.innerHTML += `<div class="qty-badge">x${item.qty}</div>`;
                     div.innerHTML += `
@@ -1822,18 +1664,14 @@
             const itemIndex = currentInventory.findIndex(i => i.name === itemName);
             if (itemIndex === -1) return;
             const item = currentInventory[itemIndex];
-            
             isPlayerTurn = false; rpgItemUsed = true; setTurnIndicator(false); checkButtons();
-            
             let isDamaging = (item.name === 'голова барана' || item.name === 'apostol' || item.name === 'Сбриватель хуйни');
             animateItemUse(item, isDamaging);
-
             try {
                 const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'consume_item', username: currentUser, data: { item_id: item.id } } });
                 if (!error && data.success) { currentInventory = data.newInventory; currentItemPoints = data.newItemPoints; updateUI(); } 
                 else { addLog("Ошибка при использовании."); isPlayerTurn = true; rpgItemUsed = false; checkButtons(); return; }
             } catch(e) { addLog("Фатальная ошибка сервера."); isPlayerTurn = true; rpgItemUsed = false; checkButtons(); return; }
-
             const applyEffect = () => {
                 if (item.name === 'хуйня') { rpgChar.hp = Math.min(rpgChar.maxHp, rpgChar.hp + 20); addLog(`Выпил ${item.name}. +20 HP.`); playSoundEffect('heal'); }
                 else if (item.name === 'картофель') { rpgChar.atk += 10; addLog(`Съел ${item.name}. Атака +10!`); playSoundEffect('thing'); }
@@ -1857,7 +1695,6 @@
                 else if (item.name === 'парашник') { rpgEnemyParashnikHp += 30; addLog(`Ты поставил Парашника врагу!`); playSoundEffect('thing'); }
                 else if (item.name === 'Сбриватель хуйни') { rpgEnemyBorisHp = 0; rpgEnemyParashnikHp = 0; addLog(`Ты сбрил всю хуйню врага!`); playSoundEffect('thing'); }
                 else if (item.name === 'Вам не повезло') { addLog(`Вы нихуя не сделали.`); }
-
                 updateRpgUI(); 
                 if (rpgEnemy.hp <= 0) winRpg(); else {
                     if (rpgEnemyParashnikHp > 0 && item.name !== 'Сбриватель хуйни') {
@@ -1879,7 +1716,6 @@
             const el = document.createElement('img');
             el.src = item.img || 'https://via.placeholder.com/50?text=ITEM'; 
             el.style.position = 'absolute'; el.style.width = '60px'; el.style.height = '60px'; el.style.zIndex = '50'; el.style.transition = 'all 0.8s ease-in-out'; 
-            
             if (isDamage) {
                 el.style.left = '20%'; el.style.top = '40%'; el.style.transform = 'rotate(-20deg)'; battlefield.appendChild(el);
                 void el.offsetWidth; 
