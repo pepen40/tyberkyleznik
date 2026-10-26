@@ -4,7 +4,7 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const EDGE_FUNCTION_NAME = 'award-coins'; 
 const battleBackgrounds = ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png', 'bg6.png'];
 
-// === ЗАГРУЗКА РЕСУРСОВ ===
+// === ЗАГРУЗКА РЕСУРСОВ (ТОЛЬКО КАРТИНКИ + ТАЙМЕР) ===
 function loadAssets() {
     return new Promise((resolve) => {
         const images = [
@@ -14,8 +14,7 @@ function loadAssets() {
             'img_shaver.png', 'enemy_pidor.png', 'enemy_chuvak.png', 'enemy_beduin.png',
             'bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png', 'bg6.png'
         ];
-        const sounds = ['attack.mp4', 'protection.mp4', 'heal.mp4', 'harmful.mp4', 'thing.mp4', 'ambient.mp3'];
-        const total = images.length + sounds.length;
+        const total = images.length;
         let loaded = 0;
         
         let finished = false;
@@ -24,7 +23,8 @@ function loadAssets() {
             finished = true;
             resolve();
         };
-        setTimeout(finish, 10000);
+        // Жесткий таймер: если через 5 секунд не загрузилось, едем дальше
+        setTimeout(finish, 5000);
 
         const updateProgress = () => {
             loaded++;
@@ -36,19 +36,13 @@ function loadAssets() {
             if (loaded === total) finish();
         };
 
+        if (total === 0) { finish(); return; }
+
         images.forEach(src => {
             const img = new Image();
             img.onload = updateProgress;
             img.onerror = updateProgress;
             img.src = src;
-        });
-
-        sounds.forEach(src => {
-            const audio = new Audio();
-            audio.oncanplaythrough = updateProgress;
-            audio.onerror = updateProgress;
-            audio.src = src;
-            audio.load();
         });
     });
 }
