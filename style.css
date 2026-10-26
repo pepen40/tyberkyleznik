@@ -137,3 +137,42 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
 .gosuslugi-btn:active {
     border: 4px inset #fff;
 }
+/* Стили для телеграм-блока */
+.tg-promo {
+    background-color: #fff;
+    border: 3px inset #999;
+    padding: 10px;
+    margin: 0 auto 20px auto;
+    width: 90%;
+    max-width: 600px;
+    font-family: "Courier New", Courier, monospace;
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+    text-align: center;
+}
+
+.tg-promo a {
+    color: #000080;
+    text-decoration: underline;
+}
+
+.tg-promo a:hover {
+    color: #ff4500;
+}
+
+/* Анимация для стрелочек */
+.arrow-blink {
+    font-size: 16px;
+    font-weight: bold;
+    animation: color-blink 3s infinite alternate; /* 3 секунды - медленно */
+}
+
+@keyframes color-blink {
+    0% { color: #FF0000; opacity: 1; }
+    25% { color: #FF7F00; opacity: 0.5; }
+    50% { color: #FFFF00; opacity: 1; }
+    75% { color: #00FF00; opacity: 0.5; }
+    100% { color: #0000FF; opacity: 1; }
+}
+
