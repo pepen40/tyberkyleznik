@@ -56,10 +56,19 @@ function preloadSounds() {
 
 function playSoundEffect(type) {
     if (soundCache[type]) {
-        let clone = soundCache[type].cloneNode();
-        clone.volume = 1.0; 
-        clone.play().catch(e => console.log("Звук заблокирован:", e));
+        // Запускаем первый экземпляр
+        let clone1 = soundCache[type].cloneNode();
+        clone1.volume = 1.0; 
+        clone1.play().catch(e => console.log("Звук заблокирован:", e));
+
+        // Если это Шейвер, ебашим ВТОРОЙ экземпляр для пущего ора
+        if (type === 'shaver') {
+            let clone2 = soundCache[type].cloneNode();
+            clone2.volume = 1.0; 
+            clone2.play().catch(e => console.log("Звук заблокирован:", e));
+        }
     }
+}
 }
 
 function flashRedScreen() {
