@@ -118,7 +118,7 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
 .progress-bar-fill { height: 100%; background: #00ff00; width: 0%; transition: width 0.1s; }
 #load-text { font-size: 24px; font-weight: bold; color: #fff; font-family: monospace; margin-top: 10px; text-shadow: 1px 1px 0 #000; }
 .gosuslugi-container {
-    margin-top: 20px;
+    margin-top: 40px;
     width: 100%;
     display: flex;
     justify-content: center;
