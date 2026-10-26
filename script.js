@@ -1561,4 +1561,47 @@ async function confirm2FA() {
     if (error) { alert('алё нахуй ты чё прислал блядь'); return; }
     alert('2FA включена!');
 }
+// ===== Виджет "Кнопки": шеринг + сворачивание =====
+(function () {
+    const widget = document.getElementById('btn-widget');
+    if (!widget) return;
+
+    function getShareData() {
+        const url = location.href.split('#')[0]; // можно вписать свой адрес: 'https://твой-сайт.ru/'
+        return { url: url, title: document.title };
+    }
+
+    const builders = {
+        vk:     d => 'https://vk.com/share.php?url=' + encodeURIComponent(d.url) + '&title=' + encodeURIComponent(d.title),
+        ok:     d => 'https://connect.ok.ru/offer?url=' + encodeURIComponent(d.url) + '&title=' + encodeURIComponent(d.title),
+        mailru: d => 'https://connect.mail.ru/share?url=' + encodeURIComponent(d.url) + '&title=' + encodeURIComponent(d.title),
+        tg:     d => 'https://t.me/share/url?url=' + encodeURIComponent(d.url) + '&text=' + encodeURIComponent(d.title)
+    };
+
+    widget.querySelectorAll('.bw-share a[data-net]').forEach(a => {
+        a.addEventListener('click', e => {
+            e.preventDefault();
+            const build = builders[a.dataset.net];
+            if (!build) return;
+            const link = build(getShareData());
+            const w = 640, h = 480;
+            const left = Math.round(screen.width / 2 - w / 2);
+            const top = Math.round(screen.height / 2 - h / 2);
+            const popup = window.open(link, '_blank', 'width=' + w + ',height=' + h + ',left=' + left + ',top=' + top + ',resizable=yes,scrollbars=yes');
+            if (!popup) window.open(link, '_blank');
+        });
+    });
+
+    const KEY = 'btnWidgetCollapsed';
+    function setCollapsed(v) {
+        widget.classList.toggle('collapsed', v);
+        try { localStorage.setItem(KEY, v ? '1' : '0'); } catch (e) {}
+    }
+    try { if (localStorage.getItem(KEY) === '1') widget.classList.add('collapsed'); } catch (e) {}
+
+    widget.querySelector('.bw-close').addEventListener('click', e => { e.stopPropagation(); setCollapsed(true); });
+    widget.querySelector('.bw-header').addEventListener('click', () => {
+        if (widget.classList.contains('collapsed')) setCollapsed(false);
+    });
+})();
 
