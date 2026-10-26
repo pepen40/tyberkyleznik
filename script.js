@@ -4,51 +4,8 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const EDGE_FUNCTION_NAME = 'award-coins'; 
 const battleBackgrounds = ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png', 'bg6.png'];
 
-// === ЗАГРУЗКА РЕСУРСОВ (ТОЛЬКО КАРТИНКИ + ТАЙМЕР) ===
-function loadAssets() {
-    return new Promise((resolve) => {
-        const images = [
-            'IMG_3544.jpeg', 'IMG_3545.jpeg', 'IMG_3546.jpeg', 'IMG_3547.jpeg',
-            'img_huynya.png', 'img_kartofel.png', 'img_baran.png', 'img_koala.png',
-            'img_apostol.png', 'img_parashnik.png', 'img_boris.png', 'img_syringe.png',
-            'img_shaver.png', 'enemy_pidor.png', 'enemy_chuvak.png', 'enemy_beduin.png',
-            'bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png', 'bg6.png'
-        ];
-        const total = images.length;
-        let loaded = 0;
-        
-        let finished = false;
-        const finish = () => {
-            if (finished) return;
-            finished = true;
-            resolve();
-        };
-        // Жесткий таймер: если через 5 секунд не загрузилось, едем дальше
-        setTimeout(finish, 5000);
-
-        const updateProgress = () => {
-            loaded++;
-            const percent = Math.round((loaded / total) * 100);
-            const progressBar = document.getElementById('load-progress');
-            const loadText = document.getElementById('load-text');
-            if (progressBar) progressBar.style.width = percent + '%';
-            if (loadText) loadText.innerText = percent + '%';
-            if (loaded === total) finish();
-        };
-
-        if (total === 0) { finish(); return; }
-
-        images.forEach(src => {
-            const img = new Image();
-            img.onload = updateProgress;
-            img.onerror = updateProgress;
-            img.src = src;
-        });
-    });
-}
-
-window.addEventListener('load', async () => {
-    await loadAssets();
+// ВЫРЕЗАЛИ НАХУЙ ЗАГРУЗКУ. СРАЗУ ПОКАЗЫВАЕМ ЭКРАН ЛОГИНА.
+window.addEventListener('load', () => {
     document.getElementById('loading-screen').classList.add('hidden');
     document.getElementById('auth-screen').classList.remove('hidden');
 });
