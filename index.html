@@ -157,7 +157,7 @@
         <button onclick="register()">Зарегаться</button>
         <button onclick="login()">Войти</button>
         <p id="auth-msg"></p>
-        <div class="version-text" style="margin-top: 15px;">версия игры beta 4.0</div>
+        <div class="version-text" style="margin-top: 15px;">версия игры beta 4.3</div>
     </div>
 
     <div id="main-screen" class="hidden">
@@ -250,7 +250,6 @@
                 <h3 id="rpg-floor" style="margin: 0 0 10px 0; color: #000080;">ЭТАЖ 1.1</h3>
                 
                 <div class="battlefield" id="battlefield-bg">
-                    <!-- КОНТЕЙНЕРЫ ДЛЯ РАЗМЕЩЕННЫХ ПРЕДМЕТОВ -->
                     <div class="deployed-items-container left" id="rpg-player-deployed"></div>
                     <div class="deployed-items-container right" id="rpg-enemy-deployed"></div>
 
@@ -290,7 +289,6 @@
                 <h3 style="margin: 0 0 10px 0; color: #000080;">PVP БОЙ</h3>
                 
                 <div class="battlefield" id="pvp-battlefield-bg">
-                    <!-- КОНТЕЙНЕРЫ ДЛЯ РАЗМЕЩЕННЫХ ПРЕДМЕТОВ -->
                     <div class="deployed-items-container left" id="pvp-player-deployed"></div>
                     <div class="deployed-items-container right" id="pvp-enemy-deployed"></div>
 
@@ -331,7 +329,7 @@
             
             <!-- Кейс 1 -->
             <div class="shop-item" style="flex-direction: column; text-align: center;">
-                <div style="margin-bottom: 10px;"><b>Стандартный кейс</b><br><small>Шанс выбить Apostol: 3%</small></div>
+                <div style="margin-bottom: 10px;"><b>Кейс с плазмодием</b><br><small>Шанс выбить Apostol: 3%</small></div>
                 <div>
                     <button onclick="openCase(250)">Открыть (250 монет)</button>
                     <button onclick="openCaseContents(250)" style="background-color: #ffd700;">Содержимое</button>
@@ -340,7 +338,7 @@
 
             <!-- Кейс 2 -->
             <div class="shop-item" style="flex-direction: column; text-align: center; border-color: purple;">
-                <div style="margin-bottom: 10px;"><b style="color: purple;">Премиум Кейс</b><br><small>Шанс выбить Boris: 3%</small></div>
+                <div style="margin-bottom: 10px;"><b style="color: purple;">Кейс «Заводоуковский»</b><br><small>Шанс выбить Boris: 3%</small></div>
                 <div>
                     <button onclick="openCase(390)" style="background-color: #d8bfd8;">Открыть (390 монет)</button>
                     <button onclick="openCaseContents(390)" style="background-color: #ffd700;">Содержимое</button>
@@ -383,7 +381,7 @@
                 привет представляем вашему вниманию новомую игру pepen40 games . У вас наверняка возник вопрос что это за хуйня как в это играть? смотрите нужно нажимать на пидорасов поочередно в соответствии с тем с какой последовательностью каждый из них пищит. Ну там пропищал apostol 2 раза потом амжан желтый 3 раза . Значит надо нажать на apostol 3 раза и потом амжан желтый 3 раза. Также тут представлены кейсы как в ксго . Покупаете вам выпадает всякая хуйня которая в соответствии со своей редкостью выводит вас в топ в Leaderboard на определенный уровень. За хуйню вам маленько дадут баллов за apostol - дохуя. Вы также можете продавать эти хуйни которые выбили. Да да нахуй не ослышались продавать. На торговой площадке. И зарабатывать за это бабки нахуй
             </div>
             <br><br><br>
-            <div class="version-text">версия игры beta 4.0</div>
+            <div class="version-text">версия игры beta 4.3</div>
         </div>
     </div>
 
@@ -460,18 +458,18 @@
         const battleBackgrounds = ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png', 'bg6.png'];
 
         // ==========================================
-        // БАЗА ЗНАНИЙ О ПРЕДМЕТАХ (ТВОИ ТЕКСТЫ)
+        // БАЗА ЗНАНИЙ О ПРЕДМЕТАХ (ОБНОВЛЕННЫЕ ТЕКСТЫ)
         // ==========================================
         const itemDatabase = {
             "хуйня": { desc: "На самом деле это не хуйня а аппарат жизнеобеспечения. подключи ее в разьем и тебе начислится 20 хп", chance: "30-40%" },
             "картофель": { desc: "когда то давно влад пошел мыть картошку но так как леха занял все ведра головами рыб ,окурками, говном, щинячьими цоботами, цокольной хуйней, пастой, дрыном, рырями и прочим хламом ему пришлось мыть ее в ванне , но случилось так что он о ней забыл она проросла и синтезировала в себе ебанутый допинг который придает сил. Используй и получишь +10 к Аттаке!", chance: "25%" },
             "голова барана": { desc: "ее удалось спиздить у дяди мухмеда . если ебануть такую в кого нибудь то оно снесет 40 хп!", chance: "15%" },
             "коала": { desc: "коала. восстановит энергию на 100%.", chance: "10%" },
-            "apostol": { desc: "apostol. apostol! apostol!!!", chance: "3%" },
+            "apostol": { desc: "apostol. apostol! apostol!!! Наносит 100 урона и восстанавливает 30 HP (вампиризм). Имба, ебашит и лечит.", chance: "3%" },
             "парашник": { desc: "ставишь его он пускает пары и отравляет противника также забирает его энергию. наносит 10 урона и сжигает 15 энергии в течение 3 ходов. имеет 30 хп.", chance: "20%" },
-            "boris": { desc: "ставишь его и он поглощает в себя весь урон от врага. но он не вечный. у него 60 хп.", chance: "3%" },
+            "boris": { desc: "ставишь его и он поглощает в себя весь урон от врага. но он не вечный. у него 100 хп. И пока он стоит, атаки по нему отражают 5 урона обратно врагу.", chance: "3%" },
             "шприц и лекарство": { desc: "100% лечение персонажа. восстанавливает все здоровье.", chance: "12%" },
-            "Сбриватель хуйни": { desc: "с одного применения убирает всю хуйню которую поставил противник (boris, парашник). урон не наносит.", chance: "7%" },
+            "Сбриватель хуйни": { desc: "с одного применения убирает всю хуйню которую поставил противник (boris, парашник). Наносит 15 урона, если реально было что сбривать.", chance: "7%" },
             "Вам не повезло": { desc: "вам крупно повезло вам нихуя не выпало!", chance: "6-28%" }
         };
 
@@ -681,7 +679,7 @@
             
             let items = [];
             if(price === 250) {
-                title.innerText = "Содержимое Стандартного Кейса";
+                title.innerText = "Содержимое Кейса с плазмодием";
                 items = [
                     { name: "хуйня", rarity: "Обычное", img: "img_huynya.png" },
                     { name: "картофель", rarity: "Редкое", img: "img_kartofel.png" },
@@ -691,7 +689,7 @@
                     { name: "Вам не повезло", rarity: "Мусор", img: "" }
                 ];
             } else {
-                title.innerText = "Содержимое Премиум Кейса";
+                title.innerText = "Содержимое Кейса «Заводоуковский»";
                 items = [
                     { name: "хуйня", rarity: "Обычное", img: "img_huynya.png" },
                     { name: "парашник", rarity: "Редкое", img: "img_parashnik.png" },
@@ -874,6 +872,8 @@
                 if (pvpGameState.myBorisHp > 0) {
                     pvpGameState.myBorisHp -= dmg;
                     logPvp(`Враг бьет Бориса на ${dmg}. Осталось ${Math.max(0, pvpGameState.myBorisHp)} HP.`);
+                    pvpGameState.enemyHp -= 5; // Контрудар Бориса
+                    logPvp(`Борис отражает 5 урона!`);
                     if(pvpGameState.myBorisHp <= 0) { logPvp("Борис разрушен!"); pvpGameState.myBorisHp = 0; }
                 } else if (pvpGameState.myParashnikHp > 0) {
                     pvpGameState.myParashnikHp -= dmg;
@@ -890,6 +890,8 @@
                 if (pvpGameState.myBorisHp > 0) {
                     pvpGameState.myBorisHp -= dmg;
                     logPvp(`Враг бьет Бориса способностью на ${dmg}.`);
+                    pvpGameState.enemyHp -= 5;
+                    logPvp(`Борис отражает 5 урона!`);
                     if(pvpGameState.myBorisHp <= 0) { logPvp("Борис разрушен!"); pvpGameState.myBorisHp = 0; }
                 } else if (pvpGameState.myParashnikHp > 0) {
                     pvpGameState.myParashnikHp -= dmg;
@@ -908,6 +910,8 @@
                     if(pvpGameState.myBorisHp > 0) {
                         pvpGameState.myBorisHp -= payload.val;
                         logPvp(`Враг швыряет предмет в Бориса! Урон: ${payload.val}`);
+                        pvpGameState.enemyHp -= 5;
+                        logPvp(`Борис отражает 5 урона!`);
                         if(pvpGameState.myBorisHp <= 0) { logPvp("Борис разрушен!"); pvpGameState.myBorisHp = 0; }
                     } else if(pvpGameState.myParashnikHp > 0) {
                         pvpGameState.myParashnikHp -= payload.val;
@@ -918,7 +922,7 @@
                     }
                 }
                 else if (payload.effect === 'atk') { logPvp(`Враг юзает бафф на атаку!`); }
-                else if (payload.effect === 'boris') { pvpGameState.enemyBorisHp += 60; logPvp(`Враг поставил Бориса!`); }
+                else if (payload.effect === 'boris') { pvpGameState.enemyBorisHp += 100; logPvp(`Враг поставил Бориса!`); }
                 else if (payload.effect === 'parashnik') { pvpGameState.myParashnikHp += 30; logPvp(`Враг поставил Парашника!`); }
                 else if (payload.effect === 'shaver') { 
                     pvpGameState.enemyBorisHp = 0; pvpGameState.myParashnikHp = 0;
@@ -950,6 +954,8 @@
             if (pvpGameState.enemyBorisHp > 0) {
                 pvpGameState.enemyBorisHp -= dmg;
                 logPvp(`Ты бьешь Бориса на ${dmg}. Осталось ${Math.max(0, pvpGameState.enemyBorisHp)} HP.`);
+                pvpGameState.myHp -= 5; // Контрудар Бориса по тебе
+                logPvp(`Борис врага отражает 5 урона!`);
                 if(pvpGameState.enemyBorisHp <= 0) { logPvp("Борис врага разрушен!"); pvpGameState.enemyBorisHp = 0; }
             } else if (pvpGameState.enemyParashnikHp > 0) {
                 pvpGameState.enemyParashnikHp -= dmg;
@@ -998,6 +1004,8 @@
                 if (pvpGameState.enemyBorisHp > 0) {
                     pvpGameState.enemyBorisHp -= dmg;
                     logPvp(`Ты бьешь Бориса способностью на ${dmg}.`);
+                    pvpGameState.myHp -= 5;
+                    logPvp(`Борис врага отражает 5 урона!`);
                     if(pvpGameState.enemyBorisHp <= 0) { logPvp("Борис врага разрушен!"); pvpGameState.enemyBorisHp = 0; }
                 } else if (pvpGameState.enemyParashnikHp > 0) {
                     pvpGameState.enemyParashnikHp -= dmg;
@@ -1031,11 +1039,11 @@
                     if(item.name === 'картофель') effectText = "+10 к Атаке";
                     if(item.name === 'голова барана') effectText = "40 урона врагу";
                     if(item.name === 'коала') effectText = "100 энергии";
-                    if(item.name === 'apostol') effectText = "100 урона врагу";
+                    if(item.name === 'apostol') effectText = "100 урона + 30 HP";
                     if(item.name === 'парашник') effectText = "Отравление (30 урона)";
-                    if(item.name === 'boris') effectText = "Щит на 60 HP";
+                    if(item.name === 'boris') effectText = "Щит на 100 HP + контрудар";
                     if(item.name === 'шприц и лекарство') effectText = "100% лечение";
-                    if(item.name === 'Сбриватель хуйни') effectText = "Убирает щиты врага";
+                    if(item.name === 'Сбриватель хуйни') effectText = "Убирает щиты + 15 урона";
 
                     const div = document.createElement('div'); div.className = 'inv-card';
                     if (item.qty > 1) div.innerHTML += `<div class="qty-badge">x${item.qty}</div>`;
@@ -1086,13 +1094,18 @@
                     if(pvpGameState.enemyBorisHp > 0) { pvpGameState.enemyBorisHp -= 100; logPvp(`Швырнул Apostol в Бориса!`); if(pvpGameState.enemyBorisHp <= 0) pvpGameState.enemyBorisHp=0; }
                     else if (pvpGameState.enemyParashnikHp > 0) { pvpGameState.enemyParashnikHp -= 100; logPvp(`Швырнул Apostol в Парашника!`); if(pvpGameState.enemyParashnikHp <= 0) pvpGameState.enemyParashnikHp=0; }
                     else { pvpGameState.enemyHp -= 100; logPvp(`100 УРОНА!`); }
+                    pvpGameState.myHp = Math.min(pvpGameState.myMaxHp, pvpGameState.myHp + 30); logPvp(`+30 HP (вампиризм)`);
                     payload.effect='damage'; payload.val=100; 
                 }
                 else if (item.name === 'шприц и лекарство') { pvpGameState.myHp = pvpGameState.myMaxHp; logPvp(`100% лечение!`); payload.effect='heal'; payload.val=999; }
-                else if (item.name === 'boris') { pvpGameState.myBorisHp += 60; logPvp(`Ты поставил Бориса!`); payload.effect='boris'; }
+                else if (item.name === 'boris') { pvpGameState.myBorisHp += 100; logPvp(`Ты поставил Бориса (100 HP)!`); payload.effect='boris'; }
                 else if (item.name === 'парашник') { pvpGameState.enemyParashnikHp += 30; logPvp(`Ты поставил Парашника врагу!`); payload.effect='parashnik'; }
                 else if (item.name === 'Сбриватель хуйни') { 
-                    pvpGameState.enemyBorisHp = 0; pvpGameState.enemyParashnikHp = 0; logPvp(`Ты сбрил всю хуйню врага!`); payload.effect='shaver';
+                    let dmg = 0;
+                    if(pvpGameState.enemyBorisHp > 0 || pvpGameState.enemyParashnikHp > 0) dmg = 15;
+                    pvpGameState.enemyBorisHp = 0; pvpGameState.enemyParashnikHp = 0; 
+                    pvpGameState.enemyHp -= dmg;
+                    logPvp(`Ты сбрил всю хуйню врага!${dmg>0?' (+15 урона)':''}`); payload.effect='shaver';
                 }
                 else if (item.name === 'Вам не повезло') { logPvp(`Вы нихуя не сделали.`); payload.effect='nothing'; }
 
@@ -1152,7 +1165,7 @@
                 pDep.innerHTML += `
                     <div class="deployed-item">
                         <img src="img_boris.png" onerror="this.src='https://via.placeholder.com/50?text=B'">
-                        <div class="hp-bar-container"><div class="hp-bar-fill" style="width: ${(pvpGameState.myBorisHp/60)*100}%; background: #00ff00;"></div></div>
+                        <div class="hp-bar-container"><div class="hp-bar-fill" style="width: ${(pvpGameState.myBorisHp/100)*100}%; background: #00ff00;"></div></div>
                     </div>`;
             }
             if (pvpGameState.myParashnikHp > 0) {
@@ -1166,7 +1179,7 @@
                 eDep.innerHTML += `
                     <div class="deployed-item">
                         <img src="img_boris.png" onerror="this.src='https://via.placeholder.com/50?text=B'">
-                        <div class="hp-bar-container"><div class="hp-bar-fill" style="width: ${(pvpGameState.enemyBorisHp/60)*100}%; background: #00ff00;"></div></div>
+                        <div class="hp-bar-container"><div class="hp-bar-fill" style="width: ${(pvpGameState.enemyBorisHp/100)*100}%; background: #00ff00;"></div></div>
                     </div>`;
             }
             if (pvpGameState.enemyParashnikHp > 0) {
@@ -1299,7 +1312,7 @@
                 pDep.innerHTML += `
                     <div class="deployed-item">
                         <img src="img_boris.png" onerror="this.src='https://via.placeholder.com/50?text=B'">
-                        <div class="hp-bar-container"><div class="hp-bar-fill" style="width: ${(rpgPlayerBorisHp/60)*100}%; background: #00ff00;"></div></div>
+                        <div class="hp-bar-container"><div class="hp-bar-fill" style="width: ${(rpgPlayerBorisHp/100)*100}%; background: #00ff00;"></div></div>
                     </div>`;
             }
             if (rpgPlayerParashnikHp > 0) {
@@ -1313,7 +1326,7 @@
                 eDep.innerHTML += `
                     <div class="deployed-item">
                         <img src="img_boris.png" onerror="this.src='https://via.placeholder.com/50?text=B'">
-                        <div class="hp-bar-container"><div class="hp-bar-fill" style="width: ${(rpgEnemyBorisHp/60)*100}%; background: #00ff00;"></div></div>
+                        <div class="hp-bar-container"><div class="hp-bar-fill" style="width: ${(rpgEnemyBorisHp/100)*100}%; background: #00ff00;"></div></div>
                     </div>`;
             }
             if (rpgEnemyParashnikHp > 0) {
@@ -1340,7 +1353,9 @@
             let dmg = Math.floor(Math.random() * 10) + rpgChar.atk;
             
             if(rpgEnemyBorisHp > 0) {
-                rpgEnemyBorisHp -= dmg; addLog(`Ты бьешь Бориса на ${dmg}.`); if(rpgEnemyBorisHp <= 0) { rpgEnemyBorisHp = 0; addLog("Борис разрушен!"); }
+                rpgEnemyBorisHp -= dmg; addLog(`Ты бьешь Бориса на ${dmg}.`); 
+                rpgChar.hp -= 5; addLog(`Борис отражает 5 урона!`);
+                if(rpgEnemyBorisHp <= 0) { rpgEnemyBorisHp = 0; addLog("Борис разрушен!"); }
             } else if (rpgEnemyParashnikHp > 0) {
                 rpgEnemyParashnikHp -= dmg; addLog(`Ты бьешь Парашника на ${dmg}.`); if(rpgEnemyParashnikHp <= 0) { rpgEnemyParashnikHp = 0; addLog("Парашник уничтожен!"); }
             } else {
@@ -1367,7 +1382,9 @@
 
             if (dmg > 0) {
                 if(rpgEnemyBorisHp > 0) {
-                    rpgEnemyBorisHp -= dmg; addLog(`Ты бьешь Бориса способностью.`); if(rpgEnemyBorisHp <= 0) { rpgEnemyBorisHp = 0; addLog("Борис разрушен!"); }
+                    rpgEnemyBorisHp -= dmg; addLog(`Ты бьешь Бориса способностью.`); 
+                    rpgChar.hp -= 5; addLog(`Борис отражает 5 урона!`);
+                    if(rpgEnemyBorisHp <= 0) { rpgEnemyBorisHp = 0; addLog("Борис разрушен!"); }
                 } else if (rpgEnemyParashnikHp > 0) {
                     rpgEnemyParashnikHp -= dmg; addLog(`Ты бьешь Парашника способностью.`); if(rpgEnemyParashnikHp <= 0) { rpgEnemyParashnikHp = 0; addLog("Парашник уничтожен!"); }
                 } else {
@@ -1388,7 +1405,9 @@
             if (isPlayerDefending) { dmg = Math.floor(dmg / 2); addLog(`Защита спасла. Урон: ${dmg}.`); } else { addLog(`Враг бьет на ${dmg}!`); }
             
             if(rpgPlayerBorisHp > 0) {
-                rpgPlayerBorisHp -= dmg; addLog(`Атака ушла в Бориса.`); if(rpgPlayerBorisHp <= 0) { rpgPlayerBorisHp = 0; addLog("Твой Борис разрушен!"); }
+                rpgPlayerBorisHp -= dmg; addLog(`Атака ушла в Бориса.`); 
+                rpgEnemy.hp -= 5; addLog(`Борис отражает 5 урона!`);
+                if(rpgPlayerBorisHp <= 0) { rpgPlayerBorisHp = 0; addLog("Твой Борис разрушен!"); }
             } else if (rpgPlayerParashnikHp > 0) {
                 rpgPlayerParashnikHp -= dmg; addLog(`Атака ушла в Парашника.`); if(rpgPlayerParashnikHp <= 0) { rpgPlayerParashnikHp = 0; addLog("Твой Парашник уничтожен!"); }
             } else {
@@ -1634,11 +1653,11 @@
                     if(item.name === 'картофель') effectText = "+10 к Атаке";
                     if(item.name === 'голова барана') effectText = "40 урона врагу";
                     if(item.name === 'коала') effectText = "100 энергии";
-                    if(item.name === 'apostol') effectText = "100 урона врагу";
+                    if(item.name === 'apostol') effectText = "100 урона + 30 HP";
                     if(item.name === 'парашник') effectText = "Отравление (30 урона)";
-                    if(item.name === 'boris') effectText = "Щит на 60 HP";
+                    if(item.name === 'boris') effectText = "Щит на 100 HP + контрудар";
                     if(item.name === 'шприц и лекарство') effectText = "100% лечение";
-                    if(item.name === 'Сбриватель хуйни') effectText = "Убирает щиты врага";
+                    if(item.name === 'Сбриватель хуйни') effectText = "Убирает щиты + 15 урона";
 
                     const div = document.createElement('div'); div.className = 'inv-card';
                     if (item.qty > 1) div.innerHTML += `<div class="qty-badge">x${item.qty}</div>`;
@@ -1688,11 +1707,17 @@
                     if(rpgEnemyBorisHp > 0) { rpgEnemyBorisHp -= 100; addLog(`Швырнул Apostol в Бориса!`); if(rpgEnemyBorisHp <= 0) { rpgEnemyBorisHp=0; addLog("Борис разрушен!"); } }
                     else if(rpgEnemyParashnikHp > 0) { rpgEnemyParashnikHp -= 100; addLog(`Швырнул Apostol в Парашника!`); if(rpgEnemyParashnikHp <= 0) { rpgEnemyParashnikHp=0; addLog("Парашник уничтожен!"); } }
                     else { rpgEnemy.hp -= 100; addLog(`ПРИЗВАН APOSTOL! 100 УРОНА!`); }
+                    rpgChar.hp = Math.min(rpgChar.maxHp, rpgChar.hp + 30); addLog(`+30 HP (вампиризм)`);
                 }
                 else if (item.name === 'шприц и лекарство') { rpgChar.hp = rpgChar.maxHp; addLog(`100% лечение!`); }
-                else if (item.name === 'boris') { rpgPlayerBorisHp += 60; addLog(`Ты поставил Бориса!`); }
+                else if (item.name === 'boris') { rpgPlayerBorisHp += 100; addLog(`Ты поставил Бориса (100 HP)!`); }
                 else if (item.name === 'парашник') { rpgEnemyParashnikHp += 30; addLog(`Ты поставил Парашника врагу!`); }
-                else if (item.name === 'Сбриватель хуйни') { rpgEnemyBorisHp = 0; rpgEnemyParashnikHp = 0; addLog(`Ты сбрил всю хуйню врага!`); }
+                else if (item.name === 'Сбриватель хуйни') { 
+                    let dmg = 0;
+                    if(rpgEnemyBorisHp > 0 || rpgEnemyParashnikHp > 0) dmg = 15;
+                    rpgEnemyBorisHp = 0; rpgEnemyParashnikHp = 0; rpgEnemy.hp -= dmg;
+                    addLog(`Ты сбрил всю хуйню врага!${dmg>0?' (+15 урона)':''}`);
+                }
                 else if (item.name === 'Вам не повезло') { addLog(`Вы нихуя не сделали.`); }
 
                 updateRpgUI(); 
