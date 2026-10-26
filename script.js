@@ -4,7 +4,6 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const EDGE_FUNCTION_NAME = 'award-coins'; 
 const battleBackgrounds = ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png', 'bg6.png'];
 
-// СРАЗУ ПОКАЗЫВАЕМ ЭКРАН ЛОГИНА.
 window.addEventListener('load', () => {
     document.getElementById('loading-screen').classList.add('hidden');
     document.getElementById('auth-screen').classList.remove('hidden');
@@ -46,7 +45,7 @@ let pendingChallengeHost = null;
 
 const soundCache = {};
 function preloadSounds() {
-    const sounds = { 'attack': 'attack.mp4', 'protection': 'protection.mp4', 'heal': 'heal.mp4', 'harmful': 'harmful.mp4', 'thing': 'thing.mp4' };
+    const sounds = { 'attack': 'attack.mp4', 'protection': 'protection.mp4', 'heal': 'heal.mp4', 'harmful': 'harmful.mp4', 'thing': 'thing.mp4', 'shaver': 'shaver_mp4.mp4' };
     for (let key in sounds) {
         let audio = new Audio(sounds[key]);
         audio.preload = 'auto';
@@ -584,7 +583,7 @@ function handlePvpEnemyAction(payload) {
         else if (payload.effect === 'atk') { logPvp(`Враг юзает бафф на атаку!`); }
         else if (payload.effect === 'boris') { playSoundEffect('thing'); pvpGameState.enemyBorisHp += 60; logPvp(`Враг поставил Бориса!`); }
         else if (payload.effect === 'parashnik') { playSoundEffect('thing'); pvpGameState.myParashnikHp += 30; logPvp(`Враг поставил Парашника!`); }
-        else if (payload.effect === 'shaver') { playSoundEffect('thing'); pvpGameState.enemyBorisHp = 0; pvpGameState.myParashnikHp = 0; logPvp(`Враг сбрил твоего Бориса и Парашника!`); }
+        else if (payload.effect === 'shaver') { playSoundEffect('shaver'); pvpGameState.enemyBorisHp = 0; pvpGameState.myParashnikHp = 0; logPvp(`Враг сбрил твоего Бориса и Парашника!`); }
         updatePvpUI();
         return; 
     }
@@ -607,7 +606,7 @@ function handlePvpEnemyAction(payload) {
 
 function pvpAttack() {
     if (!pvpGameState.isMyTurn) return;
-    playSoundEffect('attack'); // СРАЗУ ЗВУК
+    playSoundEffect('attack');
     pvpGameState.isMyTurn = false; pvpGameState.myItemUsed = false; disablePvpButtons(); setPvpTurn(false);
     let dmg = Math.floor(Math.random() * 10) + pvpGameState.myAtk;
     if (pvpGameState.enemyDefending) { dmg = Math.floor(dmg * 0.2); pvpGameState.enemyDefending = false; logPvp(`Враг заблокировал атаку, он получил ${dmg} урона (80% срезано).`); }
@@ -641,7 +640,7 @@ function pvpAttack() {
 function pvpDefend() {
     if (!pvpGameState.isMyTurn) return;
     if (pvpGameState.myMp < 40) { alert("Мало маны для защиты! Нужно 40."); return; }
-    playSoundEffect('protection'); // СРАЗУ ЗВУК
+    playSoundEffect('protection');
     pvpGameState.myMp -= 40;
     pvpGameState.myItemUsed = false;
     pvpGameState.isMyTurn = false; disablePvpButtons(); setPvpTurn(false);
@@ -652,7 +651,7 @@ function pvpDefend() {
 
 function pvpSkill() {
     if (!pvpGameState.isMyTurn || pvpGameState.myMp < 100) return;
-    playSoundEffect('attack'); // СРАЗУ ЗВУК
+    playSoundEffect('attack');
     pvpGameState.isMyTurn = false; pvpGameState.myMp = 0; pvpGameState.myItemUsed = false; disablePvpButtons(); setPvpTurn(false);
     let dmg = 0;
     let charType = currentPvpChar;
@@ -722,7 +721,9 @@ async function pvpUseItem(itemName) {
     closeItemMenu();
     
     // ЗВУК УДАРА/ШВЫРКА СРАЗУ ПРИ НАЖАТИИ
-    if (item.name === 'голова барана' || item.name === 'apostol' || item.name === 'Сбриватель хуйни') {
+    if (item.name === 'Сбриватель хуйни') {
+        playSoundEffect('shaver');
+    } else if (item.name === 'голова барана' || item.name === 'apostol') {
         playSoundEffect('harmful');
     } else {
         playSoundEffect('thing');
@@ -860,19 +861,30 @@ function animatePvpItemUse(item, isDamage) {
     const battlefield = document.getElementById('pvp-battlefield-bg');
     const el = document.createElement('img');
     el.src = item.img || 'https://via.placeholder.com/50?text=ITEM'; 
-    el.style.position = 'absolute'; el.style.width = '80px'; el.style.height = '80px'; el.style.zIndex = '9999'; // ПОДНЯЛИ ВЫШЕ ВСЕХ
-    el.style.transition = 'all 2.6s cubic-bezier(0.25, 0.1, 0.25, 1)'; // 2.6 СЕКУНДЫ
+    el.style.position = 'absolute'; el.style.width = '80px'; el.style.height = '80px'; el.style.zIndex = '9999';
     
-    if (isDamage) {
-        el.style.left = '20%'; el.style.top = '40%'; el.style.transform = 'rotate(-20deg) scale(1)'; battlefield.appendChild(el);
+    if (item.name === 'Сбриватель хуйни') {
+        // МАШИНА ЕДЕТ ПРЯМО
+        el.style.left = '-100px'; 
+        el.style.bottom = '20%'; // Едет по земле
+        el.style.transform = 'rotate(0deg) scale(1)'; 
+        battlefield.appendChild(el);
         void el.offsetWidth; 
-        el.style.left = '75%'; el.style.top = '30%'; el.style.transform = 'scale(1.5) rotate(720deg)'; 
-        setTimeout(() => { el.remove(); }, 2600);
+        el.style.transition = 'all 3s linear'; // Равномерное движение
+        el.style.left = '110%'; // Уезжает за правый край
     } else {
-        el.style.left = '25%'; el.style.top = '30%'; el.style.transform = 'rotate(0deg) scale(1)'; battlefield.appendChild(el);
-        void el.offsetWidth;
-        el.style.top = '60%'; el.style.opacity = '0'; el.style.transform = 'scale(0.8) rotate(15deg)';
-        setTimeout(() => { el.remove(); }, 2600);
+        el.style.transition = 'all 2.6s cubic-bezier(0.25, 0.1, 0.25, 1)'; // 2.6 СЕКУНДЫ
+        if (isDamage) {
+            el.style.left = '20%'; el.style.top = '40%'; el.style.transform = 'rotate(-20deg) scale(1)'; battlefield.appendChild(el);
+            void el.offsetWidth; 
+            el.style.left = '75%'; el.style.top = '30%'; el.style.transform = 'scale(1.5) rotate(720deg)'; 
+            setTimeout(() => { el.remove(); }, 2600);
+        } else {
+            el.style.left = '25%'; el.style.top = '30%'; el.style.transform = 'rotate(0deg) scale(1)'; battlefield.appendChild(el);
+            void el.offsetWidth;
+            el.style.top = '60%'; el.style.opacity = '0'; el.style.transform = 'scale(0.8) rotate(15deg)';
+            setTimeout(() => { el.remove(); }, 2600);
+        }
     }
 }
 
@@ -927,8 +939,6 @@ function spawnEnemy() {
     ];
     let eType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)]; let eHp = Math.floor(baseHp * eType.hpMult);
     rpgEnemy = { name: `${eType.name} (Ур. ${rpgFloorMain}.${rpgFloorSub})`, hp: eHp, maxHp: eHp, atk: Math.floor(baseAtk * eType.atkMult), img: eType.img };
-    // БОРИС И ПАРАШНИК ОСТАЮТСЯ!
-    // rpgPlayerBorisHp = 0; rpgPlayerParashnikHp = 0; <-- УБРАЛИ ЭТО
     rpgEnemyBorisHp = 0; rpgEnemyParashnikHp = 0; rpgItemUsed = false; rpgPlayerDefending = false; rpgEnemyStunned = false;
     document.getElementById('rpg-floor').innerText = `ЭТАЖ ${rpgFloorMain}.${rpgFloorSub}`;
     document.getElementById('rpg-enemy-img').src = rpgEnemy.img;
@@ -987,7 +997,7 @@ function animateAttack(isPlayer) {
 
 function rpgAttack() {
     if (!isPlayerTurn || rpgChar.hp <= 0 || rpgEnemy.hp <= 0) return;
-    playSoundEffect('attack'); // СРАЗУ ЗВУК
+    playSoundEffect('attack');
     isPlayerTurn = false; rpgItemUsed = false; setTurnIndicator(false); checkButtons(); animateAttack(true);
     let dmg = Math.floor(Math.random() * 10) + rpgChar.atk;
     if(rpgEnemyBorisHp > 0) {
@@ -1004,14 +1014,14 @@ function rpgAttack() {
 function rpgDefend() {
     if (!isPlayerTurn || rpgChar.hp <= 0 || rpgEnemy.hp <= 0) return;
     if (rpgMana < 40) { alert("Мало маны для защиты! Нужно 40."); return; }
-    playSoundEffect('protection'); // СРАЗУ ЗВУК
+    playSoundEffect('protection');
     rpgMana -= 40;
     isPlayerTurn = false; rpgItemUsed = false; rpgPlayerDefending = true; rpgEnemyStunned = true; setTurnIndicator(false); checkButtons();
     addLog(`${rpgChar.name} в защите (-40 маны). Враг споткнется на след. ход!`); updateRpgUI(); enemyTurnTimeout = setTimeout(() => enemyTurn(true), 800);
 }
 function rpgSkill() {
     if (!isPlayerTurn || rpgMana < 100 || rpgChar.hp <= 0 || rpgEnemy.hp <= 0) return;
-    playSoundEffect('attack'); // СРАЗУ ЗВУК
+    playSoundEffect('attack');
     isPlayerTurn = false; rpgMana = 0; rpgItemUsed = false; setTurnIndicator(false); checkButtons(); animateAttack(true);
     let dmg = 0;
     if (rpgChar.class === "Берсерк") { dmg = 60 + (currentUpgrades[currentCharType].atk * 10); addLog(`Сокрушающий удар на ${dmg}!`); }
@@ -1367,7 +1377,9 @@ async function useItemInBattle(itemName) {
     isPlayerTurn = false; rpgItemUsed = true; setTurnIndicator(false); checkButtons();
     
     // ЗВУК УДАРА/ШВЫРКА СРАЗУ ПРИ НАЖАТИИ
-    if (item.name === 'голова барана' || item.name === 'apostol' || item.name === 'Сбриватель хуйни') {
+    if (item.name === 'Сбриватель хуйни') {
+        playSoundEffect('shaver');
+    } else if (item.name === 'голова барана' || item.name === 'apostol') {
         playSoundEffect('harmful');
     } else {
         playSoundEffect('thing');
@@ -1421,19 +1433,30 @@ function animateItemUse(item, isDamage) {
     const battlefield = document.getElementById('battlefield-bg');
     const el = document.createElement('img');
     el.src = item.img || 'https://via.placeholder.com/50?text=ITEM'; 
-    el.style.position = 'absolute'; el.style.width = '80px'; el.style.height = '80px'; el.style.zIndex = '9999'; // ПОДНЯЛИ ВЫШЕ ВСЕХ
-    el.style.transition = 'all 2.6s cubic-bezier(0.25, 0.1, 0.25, 1)'; // 2.6 СЕКУНДЫ
+    el.style.position = 'absolute'; el.style.width = '80px'; el.style.height = '80px'; el.style.zIndex = '9999';
     
-    if (isDamage) {
-        el.style.left = '20%'; el.style.top = '40%'; el.style.transform = 'rotate(-20deg) scale(1)'; battlefield.appendChild(el);
+    if (item.name === 'Сбриватель хуйни') {
+        // МАШИНА ЕДЕТ ПРЯМО
+        el.style.left = '-100px'; 
+        el.style.bottom = '20%'; // Едет по земле
+        el.style.transform = 'rotate(0deg) scale(1)'; 
+        battlefield.appendChild(el);
         void el.offsetWidth; 
-        el.style.left = '75%'; el.style.top = '30%'; el.style.transform = 'scale(1.5) rotate(720deg)'; 
-        setTimeout(() => { el.remove(); }, 2600);
+        el.style.transition = 'all 3s linear'; // Равномерное движение
+        el.style.left = '110%'; // Уезжает за правый край
     } else {
-        el.style.left = '25%'; el.style.top = '30%'; el.style.transform = 'rotate(0deg) scale(1)'; battlefield.appendChild(el);
-        void el.offsetWidth;
-        el.style.top = '60%'; el.style.opacity = '0'; el.style.transform = 'scale(0.8) rotate(15deg)';
-        setTimeout(() => { el.remove(); }, 2600);
+        el.style.transition = 'all 2.6s cubic-bezier(0.25, 0.1, 0.25, 1)'; // 2.6 СЕКУНДЫ
+        if (isDamage) {
+            el.style.left = '20%'; el.style.top = '40%'; el.style.transform = 'rotate(-20deg) scale(1)'; battlefield.appendChild(el);
+            void el.offsetWidth; 
+            el.style.left = '75%'; el.style.top = '30%'; el.style.transform = 'scale(1.5) rotate(720deg)'; 
+            setTimeout(() => { el.remove(); }, 2600);
+        } else {
+            el.style.left = '25%'; el.style.top = '30%'; el.style.transform = 'rotate(0deg) scale(1)'; battlefield.appendChild(el);
+            void el.offsetWidth;
+            el.style.top = '60%'; el.style.opacity = '0'; el.style.transform = 'scale(0.8) rotate(15deg)';
+            setTimeout(() => { el.remove(); }, 2600);
+        }
     }
 }
 
