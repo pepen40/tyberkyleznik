@@ -18,7 +18,7 @@
         <button onclick="register()">Зарегаться</button>
         <button onclick="login()">Войти</button>
         <p id="auth-msg"></p>
-        <div class="version-text" style="margin-top: 15px;">версия игры beta 4.8</div>
+        <div class="version-text" style="margin-top: 15px;">версия игры beta 4.9</div>
     </div>
 
     <div id="main-screen" class="hidden">
@@ -139,6 +139,7 @@
                     <button class="btn-def" style="width:48%;" onclick="rpgDefend()">Защита (-40 маны)</button>
                     <button id="rpg-skill-btn" class="btn-skill" style="width:100%;" onclick="rpgSkill()" disabled>Способность (100 маны)</button>
                     <button class="btn-item" style="width:100%;" onclick="openItemMenu()">🎒 Инвентарь</button>
+                    <button class="btn-def" style="width:100%; background:#ffcccb;" onclick="fleeOfflineBattle()">Съебаться с поля боя</button>
                 </div>
             </div>
             
@@ -180,7 +181,7 @@
                     <button class="btn-def" style="width:48%;" id="pvp-def-btn" onclick="pvpDefend()" disabled>Защита (-40 маны)</button>
                     <button class="btn-skill" style="width:100%;" id="pvp-skill-btn" onclick="pvpSkill()" disabled>Способность (100 маны)</button>
                     <button class="btn-item" style="width:100%;" id="pvp-item-btn" onclick="openPvpItemMenu()" disabled>🎒 Использовать предмет</button>
-                    <button class="btn-def" style="width:100%; background:#ffcccb;" id="pvp-leave-btn" onclick="leavePvpRoom()">Выйти</button>
+                    <button class="btn-def" style="width:100%; background:#ffcccb;" id="pvp-leave-btn" onclick="leavePvpRoom()">Свалить</button>
                 </div>
             </div>
         </div>
@@ -234,10 +235,10 @@
         <div id="tab-howto" class="panel hidden">
             <h2>Как играть</h2>
             <div class="howto-text">
-                привет представляем вашему вниманию новомую игру pepen40 games . У вас наверняка возник вопрос что это за хуйня как в это играть? смотрите нужно нажимать на пидорасов поочередно в соответствии с тем с какой последовательностью каждый из них пищит. Ну там пропищал apostol 2 раза потом амжан желтый 3 раза . Значит надо нажать на apostol 3 раза и потом амжан желтый 3 раза. Также тут представлены кейсы как в ксго . Покупаете вам выпадает всякая хуйня которая в соответствии со своей редкостью выводит вас в топ в Leaderboard на определенный уровень. За хуйню вам маленько дадут баллов за apostol - дохуя. Вы также можете продавать эти хуйни которые выбили. Да да нахуй не ослышались продавать. На торговой площадке. И зарабатывать за это бабки нахуй. В РПГ защита теперь жрет 40 маны и режет урон: обычный удар на 80%, ульта на 50%, предметы на 65%. Думай головой, когда жать защиту, а когда бить.
+                привет представляем вашему вниманию новомую игру pepen40 games . У вас наверняка возник вопрос что это за хуйня как в это играть? смотрите нужно нажимать на пидорасов поочередно в соответствии с тем с какой последовательностью каждый из них пищит. Ну там пропищал apostol 2 раза потом амжан желтый 3 раза . Значит надо нажать на apostol 3 раза и потом амжан желтый 3 раза. Также тут представлены кейсы как в ксго . Покупаете вам выпадает всякая хуйня которая в соответствии со своей редкостью выводит вас в топ в Leaderboard на определенный уровень. За хуйню вам маленько дадут баллов за apostol - дохуя. Вы также можете продавать эти хуйни которые выбили. Да да нахуй не ослышались продавать. На торговой площадке. И зарабатывать за это бабки нахуй. В РПГ защита теперь жрет 40 маны и режет урон. А если ты защитился, враг в следующем ходу споткнется и пропустит ход, так что можно ебнуть его с кулака!
             </div>
             <br><br><br>
-            <div class="version-text">версия игры beta 4.8</div>
+            <div class="version-text">версия игры beta 4.9</div>
         </div>
     </div>
 
@@ -258,7 +259,7 @@
         </div>
     </div>
 
-    <div id="pvp-lobby-modal" class="hidden">
+    <div id="pvp-lobby-modal" class="hidden overlay-modal">
         <div class="modal-content" style="max-width: 600px;">
             <h3>⚔️ PVP Лобби</h3>
             <p>Выбери бойца для PVP:</p>
@@ -279,6 +280,41 @@
         </div>
     </div>
 
+    <!-- МОДАЛКА ВЫЗОВА НА БОЙ (ТЫ ВЫЗЫВАЕШЬ) -->
+    <div id="pvp-challenge-modal" class="hidden overlay-modal">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <h3 id="pvp-challenge-title">Вызов на бой</h3>
+            <p>Выбери бойца для боя:</p>
+            <select id="pvp-challenge-char-select" class="pvp-char-select">
+                <option value="ashab">Ashab Tamaev (Берсерк)</option>
+                <option value="apostol">Apostol (Чернокнижник)</option>
+                <option value="mee">Мээ (Друид)</option>
+            </select>
+            <div style="display:flex; gap:5px; margin-top: 15px;">
+                <button onclick="executeChallenge()" style="background:#90ee90; flex-grow:1;">Отправить вызов</button>
+                <button onclick="closeChallengeModal()" style="background:#ffcccb; flex-grow:1;">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛКА ПРИНЯТИЯ ВЫЗОВА (ТЕБЯ ВЫЗЫВАЮТ) -->
+    <div id="pvp-receive-modal" class="hidden overlay-modal">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <h3>Тебе бросили вызов!</h3>
+            <p id="pvp-receive-host-name">Игрок: ...</p>
+            <p>Выбери бойца для защиты:</p>
+            <select id="pvp-receive-char-select" class="pvp-char-select">
+                <option value="ashab">Ashab Tamaev (Берсерк)</option>
+                <option value="apostol">Apostol (Чернокнижник)</option>
+                <option value="mee">Мээ (Друид)</option>
+            </select>
+            <div style="display:flex; gap:5px; margin-top: 15px;">
+                <button onclick="executeAcceptChallenge()" style="background:#90ee90; flex-grow:1;">Принять</button>
+                <button onclick="closeReceiveModal()" style="background:#ffcccb; flex-grow:1;">Отклонить</button>
+            </div>
+        </div>
+    </div>
+
     <div id="case-contents-modal" class="hidden overlay-modal">
         <div class="modal-content" style="max-width: 500px; width: 95%;">
             <h3 id="case-contents-title">Содержимое Кейса</h3>
@@ -287,7 +323,7 @@
         </div>
     </div>
 
-    <div id="item-info-modal" class="hidden overlay-modal">
+    <div id="item-info-modal" class="hidden overlay-modal" style="z-index: 300;">
         <div class="modal-content" style="max-width: 400px; width: 90%; text-align: center;">
             <img id="info-img" src="" class="info-img">
             <h3 id="info-name" style="margin: 5px 0;">Название</h3>
