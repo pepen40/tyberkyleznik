@@ -45,7 +45,7 @@ let pendingChallengeHost = null;
 
 const soundCache = {};
 function preloadSounds() {
-    const sounds = { 'attack': 'attack.mp4', 'protection': 'protection.mp4', 'heal': 'heal.mp4', 'harmful': 'harmful.mp4', 'thing': 'thing.mp4', 'shaver': 'shaver_mp4.mp4' };
+    const sounds = { 'attack': 'attack.mp4', 'protection': 'protection.mp4', 'heal': 'heal.mp4', 'harmful': 'harmful.mp4', 'thing': 'thing.mp4', 'shaver': 'shaver.mp4' };
     for (let key in sounds) {
         let audio = new Audio(sounds[key]);
         audio.preload = 'auto';
