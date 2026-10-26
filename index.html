@@ -10,7 +10,17 @@
 
     <audio id="battle-music" src="ambient.mp3" loop onerror="console.log('Нет музыки')"></audio>
 
-    <div id="auth-screen" class="panel">
+    <!-- ВИДЖЕТ ПОГОДЫ -->
+    <div id="weather-widget" class="hidden">
+        <iframe frameborder="0" scrolling="no" width="250" height="170" style="border:0px solid #000000"
+                src="https://pogodnik.com/informer/horizontal/01/12346-pogoda-v-zavodoukovske-tyumenskaya-oblast-rossiya">
+            <a href="https://pogodnik.com/12346-pogoda-v-zavodoukovske-tyumenskaya-oblast-rossiya">
+                <img alt="prognoz pogody" src="https://pogodnik.com/images/prognoz-pogody-200x240.png">
+            </a>
+        </iframe>
+    </div>
+
+    <div id="auth-screen" class="panel hidden">
         <h1>добро пожаловать</h1>
         <input type="text" id="username" placeholder="Твой ник">
         <input type="password" id="password" placeholder="Пароль">
@@ -18,13 +28,12 @@
         <button onclick="register()">Зарегаться</button>
         <button onclick="login()">Войти</button>
         
-        <!-- КНОПКА ГОСУСЛУГ -->
         <div class="gosuslugi-container">
             <img src="gosyslygi.png" alt="Вход через Госуслуги" class="gosuslugi-btn" onclick="window.open('https://www.gosuslugi.ru', '_blank')">
         </div>
 
         <p id="auth-msg"></p>
-        <div class="version-text" style="margin-top: 15px;">версия игры beta 5.3</div>
+        <div class="version-text" style="margin-top: 15px;">версия игры beta 5.6</div>
     </div>
 
     <div id="main-screen" class="hidden">
@@ -35,11 +44,12 @@
             <span>Очки вещей: <span id="ui-item-points" style="color: magenta;"></span></span>
             <span>PTS: <span id="ui-pvp" style="color: #ff4500;"></span></span>
             <span>Рекорд: <span id="ui-highscore" style="color: cyan;"></span></span>
+            <button onclick="logout()" style="margin: 0 0 0 10px; padding: 2px 8px; font-size: 12px; background: #ff4500; color: #fff;">🚪 Выйти</button>
         </div>
 
         <div class="nav-bar">
-            <button onclick="switchTab('game')">Играть</button>
-            <button onclick="switchTab('rpg')">РПГ Мясорубка</button>
+            <button onclick="switchTab('game')">Мини-игра</button>
+            <button onclick="switchTab('rpg')">Играть</button>
             <button onclick="switchTab('cases')">Кейсы</button>
             <button onclick="switchTab('inventory')">Инвентарь</button>
             <button onclick="switchTab('market')">Рынок</button>
@@ -252,10 +262,9 @@
                 привет представляем вашему вниманию новомую игру pepen40 games . У вас наверняка возник вопрос что это за хуйня как в это играть? смотрите нужно нажимать на пидорасов поочередно в соответствии с тем с какой последовательностью каждый из них пищит. Ну там пропищал apostol 2 раза потом амжан желтый 3 раза . Значит надо нажать на apostol 3 раза и потом амжан желтый 3 раза. Также тут представлены кейсы как в ксго . Покупаете вам выпадает всякая хуйня которая в соответствии со своей редкостью выводит вас в топ в Leaderboard на определенный уровень. За хуйню вам маленько дадут баллов за apostol - дохуя. Вы также можете продавать эти хуйни которые выбили. Да да нахуй не ослышались продавать. На торговой площадке. И зарабатывать за это бабки нахуй. В РПГ защита теперь жрет 40 маны и режет урон. А если ты защитился, враг в следующем ходу споткнется и пропустит ход, так что можно ебнуть его с кулака!
             </div>
             <br><br><br>
-            <div class="version-text">версия игры beta 5.3</div>
+            <div class="version-text">версия игры beta 5.6</div>
         </div>
-    </div>
-    
+
         <div id="tab-settings" class="panel hidden">
             <h2>Настройки</h2>
             <div class="settings-text">
@@ -263,6 +272,14 @@
             </div>
 
             <br>
+            <div style="background: #fff; border: 2px inset #999; padding: 15px; margin-bottom: 20px; text-align: left;">
+                <h3 style="margin-top: 0;">Виджет погоды</h3>
+                <label style="font-size: 16px; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="weather-toggle" onchange="toggleWeather()" style="width: 20px; height: 20px; cursor: pointer;">
+                    Показывать погоду в Заводоуковске
+                </label>
+            </div>
+
             <div id="mfa-block">
                 <button onclick="enable2FA()">🔐 подключить жоскую 2fa аутинфикацию с помощью наших партнеров FreeOTP</button>
                 <div id="mfa-setup" class="hidden">
@@ -276,7 +293,7 @@
             </div>
 
             <br><br><br>
-            <div class="version-text">версия игры beta 5.3</div>
+            <div class="version-text">версия игры beta 5.6</div>
         </div>
     </div>
 
