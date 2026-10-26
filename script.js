@@ -4,6 +4,19 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const EDGE_FUNCTION_NAME = 'award-coins'; 
 const battleBackgrounds = ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png', 'bg6.png'];
 
+// === ПРЕДЗАГРУЗКА РЕСУРСОВ ===
+function preloadAssets() {
+    const images = [
+        'IMG_3544.jpeg', 'IMG_3545.jpeg', 'IMG_3546.jpeg', 'IMG_3547.jpeg',
+        'img_huynya.png', 'img_kartofel.png', 'img_baran.png', 'img_koala.png',
+        'img_apostol.png', 'img_parashnik.png', 'img_boris.png', 'img_syringe.png',
+        'img_shaver.png', 'enemy_pidor.png', 'enemy_chuvak.png', 'enemy_beduin.png',
+        'bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png', 'bg6.png'
+    ];
+    images.forEach(src => { const img = new Image(); img.src = src; });
+}
+window.addEventListener('load', preloadAssets);
+
 const itemDatabase = {
     "хуйня": { desc: "На самом деле это не хуйня а аппарат жизнеобеспечения. подключи ее в разьем и тебе начислится 20 хп", chance: "30-40%" },
     "картофель": { desc: "когда то давно влад пошел мыть картошку но так как леха занял все ведра головами рыб ,окурками, говном, щинячьими цоботами, цокольной хуйней, пастой, дрыном, рырями и прочим хламом ему пришлось мыть ее в ванне , но случилось так что он о ней забыл она проросла и синтезировала в себе ебанутый допинг который придает сил. Используй и получишь +10 к Аттаке!", chance: "25%" },
@@ -33,6 +46,10 @@ let roomChannel = null;
 let myRoomId = null;
 let pvpRooms = {};
 let onlinePlayers = [];
+
+let pendingChallengeTarget = null;
+let pendingChallengeRoomId = null;
+let pendingChallengeHost = null;
 
 const soundCache = {};
 function preloadSounds() {
@@ -332,53 +349,30 @@ function renderPvpRooms() {
     });
 }
 
-async function createPvpRoom() {
-    const roomName = document.getElementById('pvp-room-name').value.trim() || "Комната " + currentUser;
-    const charType = document.getElementById('pvp-char-select').value;
-    let baseHp = charType === 'ashab' ? 150 : (charType === 'apostol' ? 80 : 110);
-    let baseAtk = charType === 'ashab' ? 20 : (charType === 'apostol' ? 30 : 18);
-    let hp = baseHp + (currentUpgrades[charType].hp * 20);
-    let atk = baseAtk + (currentUpgrades[charType].atk * 5);
-    let charName = charType === 'ashab' ? "Ашаб" : (charType === 'apostol' ? "Апостол" : "Мээ");
-    myRoomId = 'room_' + Math.random().toString(36).substr(2, 9);
-    isPvpHost = true;
-    currentPvpChar = charType;
-    if(lobbyChannel) await lobbyChannel.track({ room: { roomId: myRoomId, roomName, hostName: currentUser, hostPts: currentPvpPts, charName, hp, atk } });
-    closePvpLobby();
-    if(roomChannel) supabaseClient.removeChannel(roomChannel);
-    roomChannel = supabaseClient.channel(myRoomId, { config: { broadcast: { self: false } } });
-    roomChannel.on('broadcast', { event: 'join_request' }, (payload) => {
-        const guest = payload.payload;
-        startPvpBattle(guest.charName, guest.hp, guest.atk, guest.username);
-        roomChannel.send({ type: 'broadcast', event: 'start_game', payload: { charName: charName, hp, atk, username: currentUser } });
-    });
-    roomChannel.on('broadcast', { event: 'enemy_action' }, (payload) => { handlePvpEnemyAction(payload.payload); });
-    roomChannel.on('broadcast', { event: 'leave' }, () => { if (pvpGameState.myHp > 0) alert("Соперник покинул комнату."); leavePvpRoom(false); });
-    roomChannel.on('broadcast', { event: 'chat_message' }, (payload) => {
-        addPvpChatMessage(payload.payload.nick || '???', payload.payload.text || '');
-    });
-    roomChannel.subscribe();
-    initPvpChat(myRoomId);
-    switchTab('rpg');
-    document.getElementById('rpg-char-select').classList.add('hidden');
-    document.getElementById('pvp-battle-screen').classList.remove('hidden');
-    document.getElementById('pvp-player-img').src = `IMG_${3544 + (charType==='apostol'?0:charType==='ashab'?1:2)}.jpeg`;
-    document.getElementById('pvp-player-name').innerText = "Ты (" + charName + ")";
-    document.getElementById('pvp-log').innerHTML = "Ожидаем соперника...";
-    document.getElementById('pvp-turn-indicator').innerText = "ОЖИДАНИЕ";
-    document.getElementById('pvp-turn-indicator').className = "turn-indicator";
-    disablePvpButtons();
-    const bgMusic = document.getElementById('battle-music');
-    bgMusic.currentTime = 0; bgMusic.volume = 0.3; bgMusic.play().catch(e => console.log("Audio blocked"));
+function challengePlayer(targetUser) {
+    pendingChallengeTarget = targetUser;
+    document.getElementById('pvp-challenge-title').innerText = "Вызов игрока " + targetUser;
+    document.getElementById('pvp-challenge-modal').classList.remove('hidden');
 }
 
-async function challengePlayer(targetUser) {
-    const charType = document.getElementById('pvp-char-select').value;
+function closeChallengeModal() {
+    document.getElementById('pvp-challenge-modal').classList.add('hidden');
+    pendingChallengeTarget = null;
+}
+
+async function executeChallenge() {
+    const targetUser = pendingChallengeTarget;
+    if (!targetUser) return;
+    closeChallengeModal();
+
+    const charType = document.getElementById('pvp-challenge-char-select').value;
     let baseHp = charType === 'ashab' ? 150 : (charType === 'apostol' ? 80 : 110);
     let baseAtk = charType === 'ashab' ? 20 : (charType === 'apostol' ? 30 : 18);
     let hp = baseHp + (currentUpgrades[charType].hp * 20);
     let atk = baseAtk + (currentUpgrades[charType].atk * 5);
     let charName = charType === 'ashab' ? "Ашаб" : (charType === 'apostol' ? "Апостол" : "Мээ");
+    let img = charType === 'ashab' ? "IMG_3545.jpeg" : (charType === 'apostol' ? "IMG_3544.jpeg" : "IMG_3546.jpeg");
+
     myRoomId = 'room_' + Math.random().toString(36).substr(2, 9);
     isPvpHost = true;
     currentPvpChar = charType;
@@ -387,13 +381,13 @@ async function challengePlayer(targetUser) {
         onlineChannel.send({ type: 'broadcast', event: 'challenge', payload: { target: targetUser, host: currentUser, roomId: myRoomId } });
     }
     closePvpLobby();
-    alert("Вызов отправлен игроку " + targetUser + "! Ожидаем ответа...");
+    
     if(roomChannel) supabaseClient.removeChannel(roomChannel);
     roomChannel = supabaseClient.channel(myRoomId, { config: { broadcast: { self: false } } });
     roomChannel.on('broadcast', { event: 'join_request' }, (payload) => {
         const guest = payload.payload;
-        startPvpBattle(guest.charName, guest.hp, guest.atk, guest.username);
-        roomChannel.send({ type: 'broadcast', event: 'start_game', payload: { charName: charName, hp, atk, username: currentUser } });
+        startPvpBattle(guest.charName, guest.hp, guest.atk, guest.username, guest.charType);
+        roomChannel.send({ type: 'broadcast', event: 'start_game', payload: { charName: charName, hp, atk, username: currentUser, charType: charType } });
     });
     roomChannel.on('broadcast', { event: 'enemy_action' }, (payload) => { handlePvpEnemyAction(payload.payload); });
     roomChannel.on('broadcast', { event: 'chat_message' }, (payload) => {
@@ -401,10 +395,11 @@ async function challengePlayer(targetUser) {
     });
     roomChannel.subscribe();
     initPvpChat(myRoomId);
+    
     switchTab('rpg');
     document.getElementById('rpg-char-select').classList.add('hidden');
     document.getElementById('pvp-battle-screen').classList.remove('hidden');
-    document.getElementById('pvp-player-img').src = `IMG_${3544 + (charType==='apostol'?0:charType==='ashab'?1:2)}.jpeg`;
+    document.getElementById('pvp-player-img').src = img;
     document.getElementById('pvp-player-name').innerText = "Ты (" + charName + ")";
     document.getElementById('pvp-log').innerHTML = "Ожидаем соперника...";
     document.getElementById('pvp-turn-indicator').innerText = "ОЖИДАНИЕ";
@@ -417,15 +412,73 @@ function listenForChallenges() {
     onlineChannel.on('broadcast', { event: 'challenge' }, (payload) => {
         const data = payload.payload;
         if (data.target === currentUser) {
-            if (confirm(`Тебе бросил вызов игрок ${data.host}! Принять бой?`)) {
-                joinPvpRoom(data.roomId);
-            }
+            pendingChallengeRoomId = data.roomId;
+            pendingChallengeHost = data.host;
+            document.getElementById('pvp-receive-host-name').innerText = "Игрок: " + data.host;
+            document.getElementById('pvp-receive-modal').classList.remove('hidden');
         }
     });
 }
 
-async function joinPvpRoom(roomId) {
+function closeReceiveModal() {
+    document.getElementById('pvp-receive-modal').classList.add('hidden');
+    pendingChallengeRoomId = null;
+    pendingChallengeHost = null;
+}
+
+function executeAcceptChallenge() {
+    if (!pendingChallengeRoomId) return;
+    const roomId = pendingChallengeRoomId;
+    closeReceiveModal();
+    const charType = document.getElementById('pvp-receive-char-select').value;
+    joinPvpRoom(roomId, charType);
+}
+
+async function createPvpRoom() {
+    const roomName = document.getElementById('pvp-room-name').value.trim() || "Комната " + currentUser;
     const charType = document.getElementById('pvp-char-select').value;
+    let baseHp = charType === 'ashab' ? 150 : (charType === 'apostol' ? 80 : 110);
+    let baseAtk = charType === 'ashab' ? 20 : (charType === 'apostol' ? 30 : 18);
+    let hp = baseHp + (currentUpgrades[charType].hp * 20);
+    let atk = baseAtk + (currentUpgrades[charType].atk * 5);
+    let charName = charType === 'ashab' ? "Ашаб" : (charType === 'apostol' ? "Апостол" : "Мээ");
+    let img = charType === 'ashab' ? "IMG_3545.jpeg" : (charType === 'apostol' ? "IMG_3544.jpeg" : "IMG_3546.jpeg");
+
+    myRoomId = 'room_' + Math.random().toString(36).substr(2, 9);
+    isPvpHost = true;
+    currentPvpChar = charType;
+    if(lobbyChannel) await lobbyChannel.track({ room: { roomId: myRoomId, roomName, hostName: currentUser, hostPts: currentPvpPts, charName, hp, atk } });
+    closePvpLobby();
+    
+    if(roomChannel) supabaseClient.removeChannel(roomChannel);
+    roomChannel = supabaseClient.channel(myRoomId, { config: { broadcast: { self: false } } });
+    roomChannel.on('broadcast', { event: 'join_request' }, (payload) => {
+        const guest = payload.payload;
+        startPvpBattle(guest.charName, guest.hp, guest.atk, guest.username, guest.charType);
+        roomChannel.send({ type: 'broadcast', event: 'start_game', payload: { charName: charName, hp, atk, username: currentUser, charType: charType } });
+    });
+    roomChannel.on('broadcast', { event: 'enemy_action' }, (payload) => { handlePvpEnemyAction(payload.payload); });
+    roomChannel.on('broadcast', { event: 'leave' }, () => { if (pvpGameState.myHp > 0) alert("Соперник покинул комнату."); leavePvpRoom(false); });
+    roomChannel.on('broadcast', { event: 'chat_message' }, (payload) => {
+        addPvpChatMessage(payload.payload.nick || '???', payload.payload.text || '');
+    });
+    roomChannel.subscribe();
+    initPvpChat(myRoomId);
+    
+    switchTab('rpg');
+    document.getElementById('rpg-char-select').classList.add('hidden');
+    document.getElementById('pvp-battle-screen').classList.remove('hidden');
+    document.getElementById('pvp-player-img').src = img;
+    document.getElementById('pvp-player-name').innerText = "Ты (" + charName + ")";
+    document.getElementById('pvp-log').innerHTML = "Ожидаем соперника...";
+    document.getElementById('pvp-turn-indicator').innerText = "ОЖИДАНИЕ";
+    document.getElementById('pvp-turn-indicator').className = "turn-indicator";
+    disablePvpButtons();
+    const bgMusic = document.getElementById('battle-music');
+    bgMusic.currentTime = 0; bgMusic.volume = 0.3; bgMusic.play().catch(e => console.log("Audio blocked"));
+}
+
+async function joinPvpRoom(roomId, charType) {
     isPvpHost = false;
     currentPvpChar = charType;
     myRoomId = roomId;
@@ -434,21 +487,24 @@ async function joinPvpRoom(roomId) {
     let hp = baseHp + (currentUpgrades[charType].hp * 20);
     let atk = baseAtk + (currentUpgrades[charType].atk * 5);
     let charName = charType === 'ashab' ? "Ашаб" : (charType === 'apostol' ? "Апостол" : "Мээ");
+    let img = charType === 'ashab' ? "IMG_3545.jpeg" : (charType === 'apostol' ? "IMG_3544.jpeg" : "IMG_3546.jpeg");
+    
     closePvpLobby();
     switchTab('rpg');
     document.getElementById('rpg-char-select').classList.add('hidden');
     document.getElementById('pvp-battle-screen').classList.remove('hidden');
-    document.getElementById('pvp-player-img').src = `IMG_${3544 + (charType==='apostol'?0:charType==='ashab'?1:2)}.jpeg`;
+    document.getElementById('pvp-player-img').src = img;
     document.getElementById('pvp-player-name').innerText = "Ты (" + charName + ")";
     document.getElementById('pvp-log').innerHTML = "Подключаемся к бою...";
     document.getElementById('pvp-turn-indicator').innerText = "ОЖИДАНИЕ";
     document.getElementById('pvp-turn-indicator').className = "turn-indicator";
     disablePvpButtons();
+    
     if(roomChannel) supabaseClient.removeChannel(roomChannel);
     roomChannel = supabaseClient.channel(roomId, { config: { broadcast: { self: false } } });
     roomChannel.on('broadcast', { event: 'start_game' }, (payload) => {
         const host = payload.payload;
-        startPvpBattle(host.charName, host.hp, host.atk, host.username);
+        startPvpBattle(host.charName, host.hp, host.atk, host.username, host.charType);
         setPvpTurn(false);
     });
     roomChannel.on('broadcast', { event: 'enemy_action' }, (payload) => { handlePvpEnemyAction(payload.payload); });
@@ -456,20 +512,25 @@ async function joinPvpRoom(roomId) {
         addPvpChatMessage(payload.payload.nick || '???', payload.payload.text || '');
     });
     roomChannel.subscribe((status) => {
-        if (status === 'SUBSCRIBED') { roomChannel.send({ type: 'broadcast', event: 'join_request', payload: { username: currentUser, charName, hp, atk } }); }
+        if (status === 'SUBSCRIBED') { roomChannel.send({ type: 'broadcast', event: 'join_request', payload: { username: currentUser, charName, hp, atk, charType } }); }
     });
     initPvpChat(roomId);
 }
 
-function startPvpBattle(enemyName, enemyHp, enemyAtk, enemyUsername) {
+function startPvpBattle(enemyName, enemyHp, enemyAtk, enemyUsername, enemyCharType) {
     const charType = currentPvpChar;
     let baseHp = charType === 'ashab' ? 150 : (charType === 'apostol' ? 80 : 110);
     let baseAtk = charType === 'ashab' ? 20 : (charType === 'apostol' ? 30 : 18);
     let hp = baseHp + (currentUpgrades[charType].hp * 20);
     let atk = baseAtk + (currentUpgrades[charType].atk * 5);
+    
     pvpGameState = { myHp: hp, myMaxHp: hp, myAtk: atk, myMp: 0, enemyHp: enemyHp, enemyMaxHp: enemyHp, enemyName: enemyName, enemyMp: 0, isMyTurn: isPvpHost, myBorisHp: 0, enemyBorisHp: 0, myParashnikHp: 0, enemyParashnikHp: 0, myDefending: false, enemyDefending: false, myItemUsed: false };
+    
+    let enemyImg = enemyCharType === 'ashab' ? "IMG_3545.jpeg" : (enemyCharType === 'apostol' ? "IMG_3544.jpeg" : "IMG_3546.jpeg");
+    if (!enemyCharType) enemyImg = "https://via.placeholder.com/100?text=ENEMY";
+
     document.getElementById('pvp-enemy-name').innerText = enemyName;
-    document.getElementById('pvp-enemy-img').src = "https://via.placeholder.com/100?text=ENEMY"; 
+    document.getElementById('pvp-enemy-img').src = enemyImg; 
     updatePvpUI(); logPvp(`Бой начался против ${enemyName}!`);
     if (isPvpHost) { setPvpTurn(true); enablePvpButtons(); } 
     else { setPvpTurn(false); disablePvpButtons(); }
@@ -592,7 +653,7 @@ function pvpDefend() {
     pvpGameState.myItemUsed = false;
     pvpGameState.isMyTurn = false; disablePvpButtons(); setPvpTurn(false);
     pvpGameState.myDefending = true;
-    updatePvpUI(); logPvp(`Ты встаешь в защиту. (-40 маны, -80% урона от атак, -50% от ульты, -65% от предметов)`);
+    updatePvpUI(); logPvp(`Ты встаешь в защиту. (-40 маны)`);
     if(roomChannel) roomChannel.send({ type: 'broadcast', event: 'enemy_action', payload: { type: 'defend' } });
 }
 
@@ -606,7 +667,7 @@ function pvpSkill() {
     else if (charType === 'apostol') dmg = Math.floor(Math.random() * 30) + 70 + (currentUpgrades[charType].atk * 10);
     else if (charType === 'mee') { dmg = 0; pvpGameState.myHp = Math.min(pvpGameState.myMaxHp, pvpGameState.myHp + 50); logPvp(`Ты хилишься на 50 HP!`); playSoundEffect('heal'); }
     if (dmg > 0) {
-        if (pvpGameState.enemyDefending) { dmg = Math.floor(dmg * 0.5); pvpGameState.enemyDefending = false; logPvp(`Враг заблокировал способность, получив ${dmg} урона (50% срезано).`); }
+        if (pvpGameState.enemyDefending) { dmg = Math.floor(dmg * 0.5); pvpGameState.enemyDefending = false; logPvp(`Враг заблокировал способность, получив ${dmg} урона.`); }
         else if (pvpGameState.enemyBorisHp > 0) {
             pvpGameState.enemyBorisHp -= dmg; logPvp(`Ты бьешь Бориса способностью на ${dmg}.`);
             if(pvpGameState.enemyBorisHp <= 0) { logPvp("Борис врага разрушен!"); pvpGameState.enemyBorisHp = 0; }
@@ -817,7 +878,7 @@ function animatePvpItemUse(item, isDamage) {
 let rpgChar = null; let rpgEnemy = null; let rpgFloorMain = 1; let rpgFloorSub = 1; 
 let rpgMana = 0; let rpgMaxMana = 100; let isPlayerTurn = true; let enemyIsCharging = false; let currentCharType = null; let currentBgIndex = -1;
 let rpgPlayerBorisHp = 0; let rpgEnemyBorisHp = 0; let rpgPlayerParashnikHp = 0; let rpgEnemyParashnikHp = 0;
-let rpgItemUsed = false; let rpgPlayerDefending = false;
+let rpgItemUsed = false; let rpgPlayerDefending = false; let rpgEnemyStunned = false;
 
 function changeBackground() {
     let newIndex; do { newIndex = Math.floor(Math.random() * battleBackgrounds.length); } while (newIndex === currentBgIndex && battleBackgrounds.length > 1);
@@ -832,7 +893,7 @@ function selectChar(type) {
     else if (type === 'mee') { baseHp = 110; baseAtk = 18; mpGain = 25; name = "Мээ"; charClass = "Друид"; imgUrl = "IMG_3546.jpeg"; }
     let u = currentUpgrades[type];
     rpgChar = { name, class: charClass, maxHp: baseHp + (u.hp * 20), hp: baseHp + (u.hp * 20), atk: baseAtk + (u.atk * 5), mpGain, img: imgUrl };
-    rpgFloorMain = 1; rpgFloorSub = 1; rpgMana = 0; rpgPlayerBorisHp = 0; rpgPlayerParashnikHp = 0; rpgEnemyBorisHp = 0; rpgEnemyParashnikHp = 0; rpgItemUsed = false; rpgPlayerDefending = false;
+    rpgFloorMain = 1; rpgFloorSub = 1; rpgMana = 0; rpgPlayerBorisHp = 0; rpgPlayerParashnikHp = 0; rpgEnemyBorisHp = 0; rpgEnemyParashnikHp = 0; rpgItemUsed = false; rpgPlayerDefending = false; rpgEnemyStunned = false;
     document.getElementById('rpg-char-select').classList.add('hidden');
     document.getElementById('rpg-battle-screen').classList.remove('hidden');
     document.getElementById('rpg-log').innerHTML = `Ты выбрал ${rpgChar.name}.<br>В БОЙ!<br>`;
@@ -840,6 +901,15 @@ function selectChar(type) {
     const bgMusic = document.getElementById('battle-music');
     bgMusic.currentTime = 0; bgMusic.volume = 0.3; bgMusic.play().catch(e => console.log("Audio blocked"));
     changeBackground(); spawnEnemy();
+}
+
+function fleeOfflineBattle() {
+    if (!confirm("Съебаться с поля боя?")) return;
+    document.getElementById('battle-music').pause();
+    document.getElementById('rpg-battle-screen').classList.add('hidden');
+    document.getElementById('rpg-char-select').classList.remove('hidden');
+    rpgChar = null; rpgEnemy = null; rpgFloorMain = 1; rpgFloorSub = 1; rpgMana = 0;
+    renderCharStats(); updateUI();
 }
 
 function spawnEnemy() {
@@ -851,7 +921,7 @@ function spawnEnemy() {
     ];
     let eType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)]; let eHp = Math.floor(baseHp * eType.hpMult);
     rpgEnemy = { name: `${eType.name} (Ур. ${rpgFloorMain}.${rpgFloorSub})`, hp: eHp, maxHp: eHp, atk: Math.floor(baseAtk * eType.atkMult), img: eType.img };
-    rpgPlayerBorisHp = 0; rpgPlayerParashnikHp = 0; rpgEnemyBorisHp = 0; rpgEnemyParashnikHp = 0; rpgItemUsed = false; rpgPlayerDefending = false;
+    rpgPlayerBorisHp = 0; rpgPlayerParashnikHp = 0; rpgEnemyBorisHp = 0; rpgEnemyParashnikHp = 0; rpgItemUsed = false; rpgPlayerDefending = false; rpgEnemyStunned = false;
     document.getElementById('rpg-floor').innerText = `ЭТАЖ ${rpgFloorMain}.${rpgFloorSub}`;
     document.getElementById('rpg-enemy-img').src = rpgEnemy.img;
     updateRpgUI(); addLog(`На арене появился ${rpgEnemy.name}!`);
@@ -928,8 +998,8 @@ function rpgDefend() {
     if (rpgMana < 40) { alert("Мало маны для защиты! Нужно 40."); return; }
     playSoundEffect('protection');
     rpgMana -= 40;
-    isPlayerTurn = false; rpgItemUsed = false; rpgPlayerDefending = true; setTurnIndicator(false); checkButtons();
-    addLog(`${rpgChar.name} в защите (-40 маны, -80% от атак, -50% от ульты, -65% от предметов).`); updateRpgUI(); setTimeout(() => enemyTurn(true), 800);
+    isPlayerTurn = false; rpgItemUsed = false; rpgPlayerDefending = true; rpgEnemyStunned = true; setTurnIndicator(false); checkButtons();
+    addLog(`${rpgChar.name} в защите (-40 маны). Враг споткнется на след. ход!`); updateRpgUI(); setTimeout(() => enemyTurn(true), 800);
 }
 function rpgSkill() {
     if (!isPlayerTurn || rpgMana < 100 || rpgChar.hp <= 0 || rpgEnemy.hp <= 0) return;
@@ -952,9 +1022,17 @@ function rpgSkill() {
 }
 
 function enemyTurn(isPlayerDefending = false) {
+    if (rpgEnemyStunned && !isPlayerDefending) {
+        rpgEnemyStunned = false;
+        addLog(`${rpgEnemy.name} спотыкается и пропускает ход!`);
+        isPlayerTurn = true; setTurnIndicator(true); checkButtons();
+        return;
+    }
+    
     setTurnIndicator(false); animateAttack(false);
     let itemChance = Math.min(0.35, 0.05 + (rpgFloorMain * 0.03)); 
-    if (Math.random() < itemChance) {
+    
+    if (Math.random() < itemChance && !isPlayerDefending) {
         let itemRoll = Math.random();
         if (itemRoll < 0.4 && rpgEnemy.hp < rpgEnemy.maxHp - 20) {
             rpgEnemy.hp = Math.min(rpgEnemy.maxHp, rpgEnemy.hp + 20);
@@ -985,12 +1063,15 @@ function enemyTurn(isPlayerDefending = false) {
         }
         return;
     }
+    
     let dmg = Math.floor(Math.random() * 10) + rpgEnemy.atk;
     let isUlt = false;
+    
     if (!isPlayerDefending && Math.random() < 0.3 && !enemyIsCharging) {
         enemyIsCharging = true; addLog(`${rpgEnemy.name} копит силы...`); isPlayerTurn = true; setTurnIndicator(true); checkButtons(); return;
     }
     if (enemyIsCharging) { dmg *= 2; enemyIsCharging = false; isUlt = true; addLog(`ЕБАТЬ! Усиленный удар!`); }
+    
     if (isPlayerDefending) {
         if (isUlt) { dmg = Math.floor(dmg * 0.5); addLog(`Защита срезала ульту на 50%. Урон: ${dmg}.`); }
         else { dmg = Math.floor(dmg * 0.2); addLog(`Защита срезала атаку на 80%. Урон: ${dmg}.`); }
@@ -998,6 +1079,7 @@ function enemyTurn(isPlayerDefending = false) {
         playSoundEffect('attack');
         addLog(`Враг бьет на ${dmg}!`);
     }
+    
     if(rpgPlayerBorisHp > 0) {
         rpgPlayerBorisHp -= dmg; addLog(`Атака ушла в Бориса.`); if(rpgPlayerBorisHp <= 0) { rpgPlayerBorisHp = 0; addLog("Твой Борис разрушен!"); }
     } else if (rpgPlayerParashnikHp > 0) {
@@ -1005,8 +1087,10 @@ function enemyTurn(isPlayerDefending = false) {
     } else {
         rpgChar.hp -= dmg; 
     }
+    
     rpgPlayerDefending = false;
     updateRpgUI();
+    
     if (rpgChar.hp <= 0) { 
         addLog(`Ты сдох...`); isPlayerTurn = false; checkButtons(); document.getElementById('battle-music').pause(); setTimeout(() => { document.getElementById('rpg-char-select').classList.remove('hidden'); document.getElementById('rpg-battle-screen').classList.add('hidden'); renderCharStats(); updateUI(); }, 3000); 
     } else { 
