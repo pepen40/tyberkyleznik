@@ -4,24 +4,36 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const EDGE_FUNCTION_NAME = 'award-coins'; 
 const battleBackgrounds = ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png', 'bg6.png'];
 
-// === АВТОЛОГИН И ПОГОДА ===
-window.addEventListener('load', () => {
-    // Загрузка настроек погоды
-    const isWeatherOn = localStorage.getItem('pepen_weather') === 'true';
-    const wt = document.getElementById('weather-toggle');
-    if (wt) wt.checked = isWeatherOn;
-    if (isWeatherOn) document.getElementById('weather-widget').classList.remove('hidden');
+// === РАБОТА С КУКАМИ ===
+function setCookie(name, value, days) {
+    const d = new Date();
+    d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
+    document.cookie = name + "=" + encodeURIComponent(value) + "; expires=" + d.toUTCString() + "; path=/";
+}
 
-    // АВТОЛОГИН С ПАРОЛЕМ
-    const savedUser = localStorage.getItem('pepen_user');
-    const savedPass = localStorage.getItem('pepen_pass');
+function getCookie(name) {
+    const nameEQ = name + "=";
+    const ca = document.cookie.split(';');
+    for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) == 0) return decodeURIComponent(c.substring(nameEQ.length, c.length));
+    }
+    return null;
+}
+
+function deleteCookie(name) {
+    document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+}
+
+// === АВТОЛОГИН НА КУКАХ ===
+window.addEventListener('load', () => {
+    const savedUser = getCookie('pepen_user');
+    const savedPass = getCookie('pepen_pass');
 
     if (savedUser && savedPass) {
-        // Скрываем экран логина сразу
         document.getElementById('auth-screen').classList.add('hidden');
         document.getElementById('main-screen').classList.remove('hidden');
-        
-        // Подставляем данные и логинимся
         document.getElementById('username').value = savedUser;
         document.getElementById('password').value = savedPass;
         login(true); 
@@ -31,23 +43,14 @@ window.addEventListener('load', () => {
     }
 });
 
-function toggleWeather() {
-    const isChecked = document.getElementById('weather-toggle').checked;
-    localStorage.setItem('pepen_weather', isChecked);
-    if (isChecked) {
-        document.getElementById('weather-widget').classList.remove('hidden');
-    } else {
-        document.getElementById('weather-widget').classList.add('hidden');
-    }
-}
-
 function logout() {
     if (!confirm("Выйти с аккаунта?")) return;
-    localStorage.removeItem('pepen_user');
-    localStorage.removeItem('pepen_pass'); // Удаляем и пароль
+    deleteCookie('pepen_user');
+    deleteCookie('pepen_pass');
     location.reload();
 }
 
+// === ОСТАЛЬНОЙ КОД БЕЗ ИЗМЕНЕНИЙ ===
 const itemDatabase = {
     "хуйня": { desc: "На самом деле это не хуйня а аппарат жизнеобеспечения. подключи ее в разьем и тебе начислится 20 хп", chance: "30-40%" },
     "картофель": { desc: "когда то давно влад пошел мыть картошку но так как леха занял все ведра головами рыб ,окурками, говном, щинячьими цоботами, цокольной хуйней, пастой, дрыном, рырями и прочим хламом ему пришлось мыть ее в ванне , но случилось так что он о ней забыл она проросла и синтезировала в себе ебанутый допинг который придает сил. Используй и получишь +10 к Аттаке!", chance: "25%" },
@@ -212,7 +215,6 @@ async function register() {
     else { document.getElementById('auth-msg').style.color = "green"; document.getElementById('auth-msg').textContent = "Успех! Жми Войти."; }
 }
 
-// ИЗМЕНЕНА ФУНКЦИЯ LOGIN
 async function login(isAutoLogin = false) {
     const u = document.getElementById('username').value.trim();
     const p = document.getElementById('password').value;
@@ -226,9 +228,8 @@ async function login(isAutoLogin = false) {
     
     if (error || !data) { 
         if (isAutoLogin) {
-            // Если автологин не удался (пароль сменили, например), показываем экран логина
-            localStorage.removeItem('pepen_user');
-            localStorage.removeItem('pepen_pass');
+            deleteCookie('pepen_user');
+            deleteCookie('pepen_pass');
             document.getElementById('auth-screen').classList.remove('hidden');
             document.getElementById('main-screen').classList.add('hidden');
             document.getElementById('auth-msg').textContent = "Сессия истекла, войди заново.";
@@ -247,31 +248,20 @@ async function login(isAutoLogin = false) {
         currentMaxFloors = data.rpg_max_floors || {"ashab":0,"apostol":0,"mee":0};
         await supabaseClient.from('players').update({ last_online: new Date().toISOString() }).eq('username', u);
         
-        // СОХРАНЯЕМ И НИК И ПАРОЛЬ
-        localStorage.setItem('pepen_user', currentUser);
-        localStorage.setItem('pepen_pass', p);
+        // СОХРАНЯЕМ В КУКИ НА 365 ДНЕЙ
+        setCookie('pepen_user', currentUser, 365);
+        setCookie('pepen_pass', p, 365);
 
         document.getElementById('auth-screen').classList.add('hidden');
         document.getElementById('main-screen').classList.remove('hidden');
         
-        if (!isAutoLogin) {
-            preloadSounds(); 
-            initOnlineCounter();
-            initLobby();
-            updateUI();
-            resetGame();
-            renderCharStats();
-            switchTab('game');
-        } else {
-            // Если автологин, тоже инициализируем всё, но без лишних телодвижений
-            preloadSounds(); 
-            initOnlineCounter();
-            initLobby();
-            updateUI();
-            resetGame();
-            renderCharStats();
-            switchTab('game');
-        }
+        preloadSounds(); 
+        initOnlineCounter();
+        initLobby();
+        updateUI();
+        resetGame();
+        renderCharStats();
+        switchTab('game');
     }
 }
 
