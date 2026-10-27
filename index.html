@@ -1924,8 +1924,156 @@ function updateClock() {
     }
 })();
 </script>
+
+    
+<script>
+(() => {
+    const overlay = document.getElementById('performance-overlay');
+    const toggle = document.getElementById('fps-overlay-toggle');
+
+    if (!overlay || overlay.dataset.monitorReady) return;
+    overlay.dataset.monitorReady = 'true';
+
+    const rows = [...overlay.querySelectorAll(':scope > div span')];
+    if (rows.length < 16) {
+        console.error('Оверлей: не найдены все 16 показателей');
+        return;
+    }
+
+    // Сохраняем работу переключателя в настройках.
+    const saved = localStorage.getItem('fpsOverlayEnabled');
+    const enabled = saved === null ? true : saved !== 'false';
+
+    if (toggle) {
+        toggle.checked = enabled;
+        toggle.addEventListener('change', () => {
+            overlay.hidden = !toggle.checked;
+            localStorage.setItem('fpsOverlayEnabled', String(toggle.checked));
+        });
+    }
+    overlay.hidden = !enabled;
+
+    const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+    const rand = (min, max) => min + Math.random() * (max - min);
+    const smooth = (current, target, factor = 0.12) =>
+        current + (target - current) * factor;
+
+    // FPS — реальное измерение кадров браузера.
+    const frameTimes = [];
+    let previousFrame = 0;
+    let lastDisplay = 0;
+    let fps = 0;
+
+    function measureFrame(now) {
+        if (previousFrame) {
+            const dt = now - previousFrame;
+
+            if (dt > 0 && dt < 1000) {
+                frameTimes.push(dt);
+                if (frameTimes.length > 600) frameTimes.shift();
+            }
+        }
+        previousFrame = now;
+
+        if (now - lastDisplay >= 500 && frameTimes.length > 5) {
+            const times = [...frameTimes].sort((a, b) => a - b);
+            const average = frameTimes.reduce((a, b) => a + b, 0)
+                / frameTimes.length;
+
+            fps = Math.round(1000 / average);
+
+            // 1% low: средняя частота самых медленных 1% кадров.
+            const slowCount = Math.max(1, Math.ceil(times.length * 0.01));
+            const slowAverage = times.slice(-slowCount)
+                .reduce((a, b) => a + b, 0) / slowCount;
+
+            // 99% FPS: частота на границе 99-го процентиля кадров.
+            const p99Time = times[Math.min(
+                times.length - 1,
+                Math.floor(times.length * 0.99)
+            )];
+
+            rows[0].textContent = fps;
+            rows[1].textContent = Math.round(1000 / slowAverage);
+            rows[13].textContent = Math.round(1000 / p99Time);
+
+            lastDisplay = now;
+        }
+
+        requestAnimationFrame(measureFrame);
+    }
+    requestAnimationFrame(measureFrame);
+
+    // Симуляция показателей современного игрового ПК.
+    // Это НЕ реальные датчики твоего компьютера.
+    const sim = {
+        gpuLoad: 32, gpuLoadTarget: 32,
+        cpuLoad: 18, cpuLoadTarget: 18,
+        gpuTemp: 52, cpuTemp: 43,
+        gpuClock: 2100, cpuClock: 4300,
+        voltage: 0.98, power: 95, fan: 950,
+        vramClock: 10000
+    };
+
+    function updateSimulation() {
+        sim.gpuLoadTarget = clamp(sim.gpuLoadTarget + rand(-12, 12), 8, 98);
+        sim.cpuLoadTarget = clamp(sim.cpuLoadTarget + rand(-9, 9), 4, 85);
+
+        sim.gpuLoad = smooth(sim.gpuLoad, sim.gpuLoadTarget, 0.18);
+        sim.cpuLoad = smooth(sim.cpuLoad, sim.cpuLoadTarget, 0.15);
+
+        // Температуры реагируют на нагрузку постепенно.
+        sim.gpuTemp = smooth(
+            sim.gpuTemp, 35 + sim.gpuLoad * 0.36 + rand(-1, 1), 0.06
+        );
+        sim.cpuTemp = smooth(
+            sim.cpuTemp, 34 + sim.cpuLoad * 0.42 + rand(-1.5, 1.5), 0.07
+        );
+
+        sim.gpuClock = smooth(
+            sim.gpuClock, 1500 + sim.gpuLoad * 11 + rand(-80, 80), 0.18
+        );
+        sim.cpuClock = smooth(
+            sim.cpuClock, 3600 + sim.cpuLoad * 9 + rand(-150, 150), 0.16
+        );
+        sim.voltage = smooth(
+            sim.voltage, 0.78 + sim.gpuLoad * 0.003 + rand(-0.025, 0.025), 0.15
+        );
+        sim.power = smooth(
+            sim.power, 35 + sim.gpuLoad * 2.05 + rand(-8, 8), 0.12
+        );
+        sim.fan = smooth(
+            sim.fan, 650 + Math.max(0, sim.gpuTemp - 35) * 28 + rand(-40, 40), 0.12
+        );
+
+        const gpuTemp = Math.round(sim.gpuTemp);
+        const cpuTemp = Math.round(sim.cpuTemp);
+        const gpuLoad = Math.round(sim.gpuLoad);
+        const cpuLoad = Math.round(sim.cpuLoad);
+
+        rows[2].textContent = gpuLoad + '%';
+        rows[3].textContent = gpuTemp + ' °C';
+        rows[4].textContent = Math.round(sim.gpuClock) + ' MHz';
+        rows[5].textContent = sim.voltage.toFixed(3) + ' V';
+        rows[6].textContent = Math.round(sim.power) + ' W';
+        rows[7].textContent = Math.round(sim.fan) + ' RPM';
+        rows[8].textContent = Math.round(sim.vramClock) + ' MHz';
+        rows[9].textContent = cpuLoad + '%';
+        rows[10].textContent = cpuTemp + ' °C';
+        rows[11].textContent = (gpuTemp + Math.round(rand(10, 17))) + ' °C';
+        rows[12].textContent = (cpuTemp + Math.round(rand(5, 12))) + ' °C';
+
+        // Оценочные значения, а не измерения реального оборудования.
+        rows[14].textContent = (3 + rand(0, 8)).toFixed(1) + ' ms';
+        rows[15].textContent = (rand(0.1, 1.8)).toFixed(1);
+
+        setTimeout(updateSimulation, 400);
+    }
+
+    updateSimulation();
+})();
+</script>
 </body>
-</html>
 
 </body>
 </html>
