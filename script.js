@@ -26,8 +26,21 @@ function deleteCookie(name) {
     document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 }
 
-// === АВТОЛОГИН НА КУКАХ ===
+// === АВТОЛОГИН И ПОГОДА ===
 window.addEventListener('load', () => {
+    // Загрузка настроек погоды
+    const weatherCookie = getCookie('pepen_weather');
+    const isWeatherOn = weatherCookie === null ? true : weatherCookie === 'true';
+    const wt = document.getElementById('weather-toggle');
+    if (wt) wt.checked = isWeatherOn;
+    
+    if (isWeatherOn) {
+        document.getElementById('weather-widget').classList.remove('hidden');
+    } else {
+        document.getElementById('weather-widget').classList.add('hidden');
+    }
+
+    // АВТОЛОГИН
     const savedUser = getCookie('pepen_user');
     const savedPass = getCookie('pepen_pass');
 
@@ -43,6 +56,16 @@ window.addEventListener('load', () => {
     }
 });
 
+function toggleWeather() {
+    const isChecked = document.getElementById('weather-toggle').checked;
+    setCookie('pepen_weather', isChecked, 365);
+    if (isChecked) {
+        document.getElementById('weather-widget').classList.remove('hidden');
+    } else {
+        document.getElementById('weather-widget').classList.add('hidden');
+    }
+}
+
 function logout() {
     if (!confirm("Выйти с аккаунта?")) return;
     deleteCookie('pepen_user');
@@ -50,7 +73,6 @@ function logout() {
     location.reload();
 }
 
-// === ОСТАЛЬНОЙ КОД БЕЗ ИЗМЕНЕНИЙ ===
 const itemDatabase = {
     "хуйня": { desc: "На самом деле это не хуйня а аппарат жизнеобеспечения. подключи ее в разьем и тебе начислится 20 хп", chance: "30-40%" },
     "картофель": { desc: "когда то давно влад пошел мыть картошку но так как леха занял все ведра головами рыб ,окурками, говном, щинячьими цоботами, цокольной хуйней, пастой, дрыном, рырями и прочим хламом ему пришлось мыть ее в ванне , но случилось так что он о ней забыл она проросла и синтезировала в себе ебанутый допинг который придает сил. Используй и получишь +10 к Аттаке!", chance: "25%" },
@@ -248,7 +270,6 @@ async function login(isAutoLogin = false) {
         currentMaxFloors = data.rpg_max_floors || {"ashab":0,"apostol":0,"mee":0};
         await supabaseClient.from('players').update({ last_online: new Date().toISOString() }).eq('username', u);
         
-        // СОХРАНЯЕМ В КУКИ НА 365 ДНЕЙ
         setCookie('pepen_user', currentUser, 365);
         setCookie('pepen_pass', p, 365);
 
