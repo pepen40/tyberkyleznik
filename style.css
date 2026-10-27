@@ -553,3 +553,40 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
     right: auto !important;
     bottom: auto !important;
 }
+
+
+/* Фотографии шахматных ботов */
+.chess-bot-avatar {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    border-radius: 8px;
+    font-size: 0;
+}
+
+.chess-bot-avatar img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.chess-bot-detail-avatar {
+    width: 100px;
+    height: 100px;
+    flex-shrink: 0;
+    overflow: hidden;
+    border-radius: 10px;
+}
+
+.chess-bot-detail-avatar img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: inherit;
+}
+
+
