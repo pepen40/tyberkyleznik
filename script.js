@@ -1907,6 +1907,27 @@ document.getElementById("freeotp-modal")?.addEventListener("click", function(eve
 
   function setStatus(text) { if ($('chess-status')) $('chess-status').textContent = text; }
   function setEngineStatus(text) { if ($('chess-engine-status')) $('chess-engine-status').textContent = text; }
+    function playMoveSound(move) {
+    if (!game || !move) return;
+
+    let sound = chessSounds.move;
+
+    if (game.isCheckmate()) {
+        sound = chessSounds.checkmate;
+    } else if (game.isCheck()) {
+        sound = chessSounds.check;
+    } else if (move.captured) {
+        sound = chessSounds.capture;
+    }
+
+    sound.currentTime = 0;
+    sound.play().catch(() => {});
+}
+// === КОНЕЦ ЗВУКОВ ===
+
+function startEngine() {
+    if (engine) return;
+    try {
   function startEngine() {
     if (engine) return;
     try {
@@ -1934,7 +1955,12 @@ document.getElementById("freeotp-modal")?.addEventListener("click", function(eve
             try {
               const from = uci.slice(0, 2), to = uci.slice(2, 4);
               const movingPiece = capturePieceForAnimation(from);
-              game.move({ from, to, promotion: uci[4] || 'q' });
+              const playedMove = game.move({
+    from,
+    to,
+    promotion: uci[4] || 'q'
+});
+playMoveSound(playedMove);
               selectedSquare = null; legalTargets = [];
               renderBoard();
               animatePieceMove(movingPiece, to);
@@ -1997,14 +2023,60 @@ document.getElementById("freeotp-modal")?.addEventListener("click", function(eve
     engine.postMessage('setoption name Skill Level value ' + cfg.skill);
     engine.postMessage('isready');
   }
-  function askEngineMove() {
-    if (!engine || !engineReady || engineBusy || ended || !game || game.turn() === humanColor) return;
+
+function askEngineMove() {
+    if (!engine || !engineReady || engineBusy || ended ||
+        !game || game.turn() === humanColor) return;
+
+    // Первый уровень: очень слабый бот со случайными допустимыми ходами.
+    if (level === 1) {
+        engineBusy = true;
+        setStatus('Лёгкий бот думает…');
+
+        const positionAtStart = game.fen();
+
+        window.setTimeout(() => {
+            if (!game || ended || game.fen() !== positionAtStart) {
+                engineBusy = false;
+                return;
+            }
+
+            const moves = game.moves({ verbose: true });
+            if (!moves.length) {
+                engineBusy = false;
+                return;
+            }
+
+            const move = moves[Math.floor(Math.random() * moves.length)];
+            const movingPiece = capturePieceForAnimation(move.from);
+
+            game.move({
+                from: move.from,
+                to: move.to,
+                promotion: move.promotion || 'q'
+            });
+
+            selectedSquare = null;
+            legalTargets = [];
+            renderBoard();
+            animatePieceMove(movingPiece, move.to);
+            playMoveSound(move);
+            updateGameStatus();
+
+            engineBusy = false;
+        }, 1000);
+
+        return;
+    }
+
     engineBusy = true;
-    setStatus('PEPENAI думает..');
+    setStatus('Stockfish думает…');
+
     const cfg = levels[level];
     engine.postMessage('position fen ' + game.fen());
     engine.postMessage('go depth ' + cfg.depth);
-  }
+}
+
   function capturePieceForAnimation(square) {
     const board = boardEl();
     const cell = board && Array.from(board.children).find(el => el.getAttribute('aria-label') === square);
@@ -2082,7 +2154,12 @@ document.getElementById("freeotp-modal")?.addEventListener("click", function(eve
         promotion = ['q','r','b','n'].includes(choice) ? choice : 'q';
       }
       const movingPiece = capturePieceForAnimation(selectedSquare);
-      game.move({ from: selectedSquare, to: square, promotion: promotion || 'q' });
+      const playedMove = game.move({
+    from: selectedSquare,
+    to: square,
+    promotion: promotion || 'q'
+});
+playMoveSound(playedMove);
       selectedSquare = null; legalTargets = [];
       renderBoard();
       animatePieceMove(movingPiece, square);
