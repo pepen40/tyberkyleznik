@@ -584,20 +584,25 @@
         rotate(calc(-1 * var(--angle)));
     }
   }
-    #clock-bird {
+    
+#antique-clock {
+  overflow: visible;
+}
+
+#clock-bird {
   position: absolute;
-  z-index: 2;
+  z-index: 0;
   width: 110px;
   height: auto;
   left: 50%;
-  top: -65px;
+  top: -55px;
   transform: translate(-50%, 100%);
   opacity: 0;
   pointer-events: none;
 }
 
 #clock-bird.bird-crowing {
-  animation: bird-emerge 3.8s ease-in-out both;
+  animation: bird-emerge 6s ease-in-out both;
 }
 
 @keyframes bird-emerge {
@@ -618,6 +623,7 @@
     opacity: 0;
   }
 }
+
 </style>
 
 <div id="antique-clock">
