@@ -661,36 +661,37 @@
   let audioEnabled = false;
   let lastMinute = new Date().getMinutes();
 
-  function updateClock() {
-    const now = new Date();
-    const s = now.getSeconds() + now.getMilliseconds() / 1000;
-    const m = now.getMinutes() + s / 60;
-    const h = (now.getHours() % 12) + m / 60;
+  
+function updateClock() {
+  const now = new Date();
+  const s = now.getSeconds() + now.getMilliseconds() / 1000;
+  const m = now.getMinutes() + s / 60;
+  const h = (now.getHours() % 12) + m / 60;
 
-    hour.style.transform = `rotate(${h * 30}deg)`;
-    minute.style.transform = `rotate(${m * 6}deg)`;
-    second.style.transform = `rotate(${s * 6}deg)`;
+  hour.style.transform = `rotate(${h * 30}deg)`;
+  minute.style.transform = `rotate(${m * 6}deg)`;
+  second.style.transform = `rotate(${s * 6}deg)`;
 
-    if (audioEnabled && tick.paused) {
-      tick.play().catch(() => {});
-    }
-
-    if (audioEnabled && now.getMinutes() !== lastMinute) {
-  const bird = document.getElementById('clock-bird');
-
-  if (bird) {
-    bird.classList.remove('bird-crowing');
-    void bird.offsetWidth;
-    bird.classList.add('bird-crowing');
+  if (audioEnabled && tick.paused) {
+    tick.play().catch(() => {});
   }
 
-  cuckoo.currentTime = 0;
-  cuckoo.play().catch(() => {});
+  if (audioEnabled && now.getMinutes() !== lastMinute) {
+    const bird = document.getElementById('clock-bird');
+
+    if (bird) {
+      bird.classList.remove('bird-crowing');
+      void bird.offsetWidth;
+      bird.classList.add('bird-crowing');
+    }
+
+    cuckoo.currentTime = 0;
+    cuckoo.play().catch(() => {});
+  }
+
+  lastMinute = now.getMinutes();
 }
-    }
-
-    lastMinute = now.getMinutes();
-  }
+    
 
   function enableAudio() {
     if (audioEnabled) return;
