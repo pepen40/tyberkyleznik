@@ -676,25 +676,37 @@
   let audioEnabled = false;
   let lastMinute = new Date().getMinutes();
     
-  function toggleAntiqueClock() {
-    const enabled = document.getElementById('clock-toggle').checked;
-    const clock = document.getElementById('antique-clock');
-    const tick = document.getElementById('antique-tick');
-    const cuckoo = document.getElementById('antique-cuckoo');
-    const bird = document.getElementById('clock-bird');
+  
+function toggleAntiqueClock() {
+  const checkbox = document.getElementById('clock-toggle');
+  const clock = document.getElementById('antique-clock');
+  const tick = document.getElementById('antique-tick');
+  const cuckoo = document.getElementById('antique-cuckoo');
+  const bird = document.getElementById('clock-bird');
 
-    clock.style.display = enabled ? '' : 'none';
+  if (!checkbox || !clock) return;
 
-    if (!enabled) {
+  if (checkbox.checked) {
+    clock.style.setProperty('display', 'block', 'important');
+  } else {
+    clock.style.setProperty('display', 'none', 'important');
+
+    if (tick) {
       tick.pause();
       tick.currentTime = 0;
+    }
+
+    if (cuckoo) {
       cuckoo.pause();
       cuckoo.currentTime = 0;
+    }
+
+    if (bird) {
       bird.classList.remove('bird-crowing');
-    } else if (audioEnabled) {
-      tick.play().catch(() => {});
     }
   }
+}
+
 
 
   
