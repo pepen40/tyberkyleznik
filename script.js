@@ -225,13 +225,7 @@ async function login() {
         resetGame();
         renderCharStats();
         switchTab('game');
-        function openMiniGame(game) {
-    if (game === 'game') {
-        switchTab('game');
-    } else if (game === 'chess') {
-        alert('Шахматы пока не подключены.');
-    }
-}
+
     }
 }
 
@@ -278,7 +272,13 @@ function switchTab(tab) {
     if (tab === 'leaderboard') renderLeaderboard();
     if (tab === 'rpg') renderCharStats();
 }
-
+function openMiniGame(game) {
+    if (game === 'game') {
+        switchTab('game');
+    } else if (game === 'chess') {
+        switchTab('chess');
+    }
+}
 async function buyUpgrade(charType, statType) {
     try {
         const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
