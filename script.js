@@ -225,6 +225,13 @@ async function login() {
         resetGame();
         renderCharStats();
         switchTab('game');
+        function openMiniGame(game) {
+    if (game === 'game') {
+        switchTab('game');
+    } else if (game === 'chess') {
+        alert('Шахматы пока не подключены.');
+    }
+}
     }
 }
 
