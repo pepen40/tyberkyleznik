@@ -591,11 +591,12 @@
 
 #clock-bird {
   position: absolute;
-  z-index: 0;
-  width: 10px;
-  height: auto;
+  z-index: 2;
+  width: 24px !important;
+  max-width: none !important;
+  height: auto !important;
   left: 50%;
-  top: -50px;
+  top: -40px;
   transform: translate(-50%, 100%);
   opacity: 0;
   pointer-events: none;
@@ -604,6 +605,7 @@
 #clock-bird.bird-crowing {
   animation: bird-emerge 8s ease-in-out both;
 }
+
 
 @keyframes bird-emerge {
   0% {
