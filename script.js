@@ -224,7 +224,7 @@ async function login() {
         updateUI();
         resetGame();
         renderCharStats();
-        switchTab('game');
+        switchTab('minigames');
 
     }
 }
