@@ -31,8 +31,8 @@ window.addEventListener('load', () => {
     const weatherCookie = getCookie('pepen_weather');
     const isWeatherOn = weatherCookie === null ? true : weatherCookie === 'true';
     
-    const checkmark = document.getElementById('weather-checkmark');
-    if (checkmark) checkmark.textContent = isWeatherOn ? '✔' : '';
+    const wt = document.getElementById('weather-toggle');
+    if (wt) wt.checked = isWeatherOn;
     
     if (isWeatherOn) {
         document.getElementById('weather-widget').classList.remove('hidden');
@@ -56,21 +56,17 @@ window.addEventListener('load', () => {
 });
 
 function toggleWeather() {
+    const cb = document.getElementById('weather-toggle');
+    const isChecked = cb.checked;
     const weatherWidget = document.getElementById('weather-widget');
-    const checkmark = document.getElementById('weather-checkmark');
-    
-    const isCurrentlyHidden = weatherWidget.classList.contains('hidden');
-    const newState = isCurrentlyHidden; 
 
-    if (newState) {
+    if (isChecked) {
         weatherWidget.classList.remove('hidden');
-        if (checkmark) checkmark.textContent = '✔';
     } else {
         weatherWidget.classList.add('hidden');
-        if (checkmark) checkmark.textContent = '';
     }
     
-    setCookie('pepen_weather', newState, 365);
+    setCookie('pepen_weather', isChecked, 365);
 }
 
 function logout() {
@@ -783,4 +779,84 @@ function pvpSkill() {
     if (pvpGameState.enemyHp <= 0) { endPvpBattle(true); }
 }
 
-// Остальной код (openPvpItemMenu, endPvpBattle, updatePvpUI, logPvp, leavePvpRoom, disablePvpButtons, enablePvpButtons, setPvpTurn и т.д.) остается без изменений, так как я не менял логику игры, только убрал смайлики.
+function endPvpBattle(isWin) {
+    if (isWin) {
+        playSoundEffect('heal');
+        alert("Победа! Ты получаешь 10 PTS.");
+        currentPvpPts += 10;
+        supabaseClient.from('players').update({ pvp_pts: currentPvpPts }).eq('username', currentUser).then();
+    } else {
+        alert("Поражение.");
+    }
+    updateUI();
+    leavePvpRoom(false);
+}
+
+function updatePvpUI() {
+    const myHpPercent = (pvpGameState.myHp / pvpGameState.myMaxHp) * 100;
+    const enemyHpPercent = (pvpGameState.enemyHp / pvpGameState.enemyMaxHp) * 100;
+    
+    document.getElementById('pvp-player-hp-text').innerText = `${Math.max(0, pvpGameState.myHp)}/${pvpGameState.myMaxHp}`;
+    document.getElementById('pvp-player-hp-bar').style.width = `${Math.max(0, myHpPercent)}%`;
+    document.getElementById('pvp-player-mp-text').innerText = `${pvpGameState.myMp}/100`;
+    document.getElementById('pvp-player-mp-bar').style.width = `${pvpGameState.myMp}%`;
+    
+    document.getElementById('pvp-enemy-hp-text').innerText = `${Math.max(0, pvpGameState.enemyHp)}/${pvpGameState.enemyMaxHp}`;
+    document.getElementById('pvp-enemy-hp-bar').style.width = `${Math.max(0, enemyHpPercent)}%`;
+    
+    const skillBtn = document.getElementById('pvp-skill-btn');
+    if (skillBtn) skillBtn.disabled = pvpGameState.myMp < 100 || !pvpGameState.isMyTurn;
+    const defBtn = document.getElementById('pvp-def-btn');
+    if (defBtn) defBtn.disabled = pvpGameState.myMp < 40 || !pvpGameState.isMyTurn;
+}
+
+function logPvp(msg) {
+    const log = document.getElementById('pvp-log');
+    if (!log) return;
+    const div = document.createElement('div');
+    div.innerText = msg;
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+}
+
+function disablePvpButtons() {
+    ['pvp-atk-btn', 'pvp-def-btn', 'pvp-skill-btn', 'pvp-item-btn'].forEach(id => {
+        const btn = document.getElementById(id);
+        if(btn) btn.disabled = true;
+    });
+}
+
+function enablePvpButtons() {
+    const atk = document.getElementById('pvp-atk-btn');
+    const item = document.getElementById('pvp-item-btn');
+    if(atk) atk.disabled = false;
+    if(item) item.disabled = pvpGameState.myItemUsed;
+    updatePvpUI();
+}
+
+function setPvpTurn(isMyTurn) {
+    const ind = document.getElementById('pvp-turn-indicator');
+    if (!ind) return;
+    if (isMyTurn) {
+        ind.innerText = "ТВОЙ ХОД";
+        ind.className = "turn-indicator turn-player";
+    } else {
+        ind.innerText = "ХОД ВРАГА";
+        ind.className = "turn-indicator turn-enemy";
+    }
+}
+
+function leavePvpRoom(sendMsg = true) {
+    if(sendMsg && roomChannel) { roomChannel.send({ type: 'broadcast', event: 'leave' }); }
+    if(roomChannel) supabaseClient.removeChannel(roomChannel);
+    roomChannel = null;
+    document.getElementById('pvp-battle-screen').classList.add('hidden');
+    document.getElementById('rpg-char-select').classList.remove('hidden');
+    if(lobbyChannel) lobbyChannel.untrack();
+    const bgMusic = document.getElementById('battle-music');
+    bgMusic.pause();
+}
+
+// Функции для оффлайн режима (ПвЕ) и инвентаря остаются как в оригинале. Если они нужны, я могу их предоставить, но в данном ответе они не менялись.
+// Для полноты картины, код до этого места включает в себя все основные функции PvP.
+// Обрати внимание, что я не менял логику боя, только убрал смайлики.
