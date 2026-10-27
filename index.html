@@ -477,5 +477,28 @@
 })();
 </script>
     <script src="script.js"></script>
+    <style>
+  #antique-clock {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 140px;
+    max-width: 25vw;
+    max-height: 22vh;
+    height: auto;
+    object-fit: contain;
+    z-index: 999;
+    pointer-events: none;
+    user-select: none;
+    filter: sepia(0.2) contrast(0.9) saturate(0.8);
+  }
+</style>
+
+<img
+  id="antique-clock"
+  src="./clock.png"
+  alt="Старинные часы"
+/>
 </body>
 </html>
