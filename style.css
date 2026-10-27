@@ -124,7 +124,7 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
     justify-content: center;
 }
 .gosuslugi-btn {
-    width: 80%; /* как пробел */
+    width: 80%;
     max-width: 300px;
     height: 50px;
     object-fit: contain;
@@ -161,11 +161,10 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
     color: #ff4500;
 }
 
-/* Анимация для стрелочек */
 .arrow-blink {
     font-size: 16px;
     font-weight: bold;
-    animation: color-blink 3s infinite alternate; /* 3 секунды - медленно */
+    animation: color-blink 3s infinite alternate;
 }
 
 @keyframes color-blink {
@@ -176,7 +175,6 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
     100% { color: #0000FF; opacity: 1; }
 }
 
-/* Тряска экрана */
 @keyframes shake {
   0% { transform: translate(1px, 1px) rotate(0deg); }
   10% { transform: translate(-1px, -2px) rotate(-1deg); }
@@ -199,27 +197,19 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
 /* ВИДЖЕТ ПОГОДЫ */
 #weather-widget {
     position: fixed;
-    bottom: 20px;
-    right: 20px;
+    bottom: 10px;
+    right: 10px;
     z-index: 999;
-    background: #c0c0c0;
-    border: 4px outset #fff;
-    padding: 10px;
-    width: 250px;
-    text-align: center;
-    box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
-}
-
-.weather-header {
-    font-size: 14px;
-    font-weight: bold;
-    margin-bottom: 10px;
-    color: #000080;
-    font-family: "Courier New", Courier, monospace;
+    background: transparent;
+    border: none;
+    padding: 0;
+    width: 200px;
+    height: auto;
+    box-shadow: 2px 2px 0 rgba(0,0,0,.35);
 }
 
 #weather-widget iframe {
     display: block;
     width: 100%;
-    border: 2px inset #999;
+    border: none;
 }
