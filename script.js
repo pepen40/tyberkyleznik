@@ -1908,6 +1908,7 @@ document.getElementById("freeotp-modal")?.addEventListener("click", function(eve
   function setStatus(text) { if ($('chess-status')) $('chess-status').textContent = text; }
   function setEngineStatus(text) { if ($('chess-engine-status')) $('chess-engine-status').textContent = text; }
     function playMoveSound(move) {
+            if (typeof chessSounds === 'undefined') return;
     if (!game || !move) return;
 
     let sound = chessSounds.move;
