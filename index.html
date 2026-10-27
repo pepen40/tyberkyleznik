@@ -10,10 +10,9 @@
 
     <audio id="battle-music" src="ambient.mp3" loop onerror="console.log('Нет музыки')"></audio>
 
-    <!-- ВИДЖЕТ ПОГОДЫ -->
+    <!-- ВИДЖЕТ ПОГОДЫ (ОЧИЩЕННЫЙ ОТ РАМОК И ТЕКСТА) -->
     <div id="weather-widget">
-        <div class="weather-header">Погода в Заводоуковске</div>
-        <iframe frameborder="0" scrolling="no" width="100%" height="170" style="border:2px inset #999;"
+        <iframe frameborder="0" scrolling="no" width="100%" height="170" style="border:none; display:block;"
                 src="https://pogodnik.com/informer/horizontal/01/12346-pogoda-v-zavodoukovske-tyumenskaya-oblast-rossiya">
             <a href="https://pogodnik.com/12346-pogoda-v-zavodoukovske-tyumenskaya-oblast-rossiya">
                 <img alt="prognoz pogody" src="https://pogodnik.com/images/prognoz-pogody-200x240.png">
@@ -45,7 +44,7 @@
             <span>Очки вещей: <span id="ui-item-points" style="color: magenta;"></span></span>
             <span>PTS: <span id="ui-pvp" style="color: #ff4500;"></span></span>
             <span>Рекорд: <span id="ui-highscore" style="color: cyan;"></span></span>
-            <button onclick="logout()" style="margin: 0 0 0 10px; padding: 2px 8px; font-size: 12px; background: #ff4500; color: #fff;">🚪 Выйти</button>
+            <button onclick="logout()" style="margin: 0 0 0 10px; padding: 2px 8px; font-size: 12px; background: #ff4500; color: #fff;">Выйти</button>
         </div>
 
         <div class="nav-bar">
@@ -87,7 +86,7 @@
             <h2>РПГ МЯСОРУБКА</h2>
             
             <div id="rpg-char-select">
-                <button onclick="openPvpLobby()" style="background-color: #ff4500; color: #fff; font-size: 20px; width: 100%; margin-bottom: 15px;">⚔️ PVP ОНЛАЙН</button>
+                <button onclick="openPvpLobby()" style="background-color: #ff4500; color: #fff; font-size: 20px; width: 100%; margin-bottom: 15px;">PVP ОНЛАЙН</button>
                 <p>Выбери бойца для оффлайн мясорубки:</p>
                 <div class="rpg-char-card">
                     <img src="IMG_3545.jpeg" class="char-avatar">
@@ -163,7 +162,7 @@
                     <button class="btn-atk" style="width:48%;" onclick="rpgAttack()">Обычный удар (+25 маны)</button>
                     <button class="btn-def" style="width:48%;" onclick="rpgDefend()">Защита (-40 маны)</button>
                     <button id="rpg-skill-btn" class="btn-skill" style="width:100%;" onclick="rpgSkill()" disabled>Способность (100 маны)</button>
-                    <button class="btn-item" style="width:100%;" onclick="openItemMenu()">🎒 Инвентарь</button>
+                    <button class="btn-item" style="width:100%;" onclick="openItemMenu()">Инвентарь</button>
                     <button class="btn-def" style="width:100%; background:#ffcccb;" onclick="fleeOfflineBattle()">Съебаться с поля боя</button>
                 </div>
             </div>
@@ -205,7 +204,7 @@
                     <button class="btn-atk" style="width:48%;" id="pvp-atk-btn" onclick="pvpAttack()" disabled>Атака</button>
                     <button class="btn-def" style="width:48%;" id="pvp-def-btn" onclick="pvpDefend()" disabled>Защита (-40 маны)</button>
                     <button class="btn-skill" style="width:100%;" id="pvp-skill-btn" onclick="pvpSkill()" disabled>Способность (100 маны)</button>
-                    <button class="btn-item" style="width:100%;" id="pvp-item-btn" onclick="openPvpItemMenu()" disabled>🎒 Использовать предмет</button>
+                    <button class="btn-item" style="width:100%;" id="pvp-item-btn" onclick="openPvpItemMenu()" disabled>Использовать предмет</button>
                     <button class="btn-def" style="width:100%; background:#ffcccb;" id="pvp-leave-btn" onclick="leavePvpRoom()">Свалить</button>
                 </div>
             </div>
@@ -274,17 +273,17 @@
 
             <br>
             
-            <!-- НАСТРОЙКИ ПОГОДЫ (В СТИЛЕ 2FA) -->
+            <!-- НАСТРОЙКИ ПОГОДЫ (В СТИЛЕ 2FA, С КНОПКОЙ И ГАЛОЧКОЙ) -->
             <div style="background: #fff; border: 2px inset #999; padding: 15px; margin-bottom: 20px; text-align: left;">
                 <h3 style="margin-top: 0;">Виджет погоды</h3>
-                <label style="font-size: 16px; cursor: pointer; display: flex; align-items: center; gap: 10px;">
-                    <input type="checkbox" id="weather-toggle" onchange="toggleWeather()" style="width: 20px; height: 20px; cursor: pointer;" checked>
+                <button id="weather-toggle-btn" onclick="toggleWeather()" style="width: 100%; text-align: left; display: flex; align-items: center; gap: 10px; background: #c0c0c0; border: 4px outset #ffffff; padding: 10px; font-size: 16px; cursor: pointer; font-family: 'Courier New', Courier, monospace; font-weight: bold;">
+                    <span id="weather-checkmark" style="font-size: 18px; font-family: Arial, sans-serif;">✔</span> 
                     Показывать погоду в Заводоуковске
-                </label>
+                </button>
             </div>
 
             <div id="mfa-block">
-                <button onclick="enable2FA()">🔐 подключить жоскую 2fa аутинфикацию с помощью наших партнеров FreeOTP</button>
+                <button onclick="enable2FA()">подключить жоскую 2fa аутинфикацию с помощью наших партнеров FreeOTP</button>
                 <div id="mfa-setup" class="hidden">
                     <p>скачай приложуху FreeOTP с gugl play и отскнируй эту хуйню:</p>
                     <img id="mfa-qr" width="200" height="200">
@@ -319,7 +318,7 @@
 
     <div id="pvp-lobby-modal" class="hidden overlay-modal">
         <div class="modal-content" style="max-width: 600px;">
-            <h3>⚔️ PVP Лобби</h3>
+            <h3>PVP Лобби</h3>
             <p>Выбери бойца для PVP:</p>
             <select id="pvp-char-select" class="pvp-char-select">
                 <option value="ashab">Ashab Tamaev (Берсерк)</option>
@@ -447,7 +446,7 @@
 
 <script>
 (function () {
-    var url = location.href.split('#')[0]; // можно вписать свой адрес: 'https://твой-сайт.ru/'
+    var url = location.href.split('#')[0];
     var title = document.title;
     var u = encodeURIComponent(url), t = encodeURIComponent(title);
     var links = {
@@ -470,7 +469,6 @@
         });
     }
 
-    // крестик: только "нажимается", ничего не закрывает
     var close = document.getElementById('fw-close');
     close.addEventListener('click', function () {
         close.classList.remove('fw-pop');
