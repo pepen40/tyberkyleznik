@@ -487,7 +487,7 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
     box-shadow: none !important;
 }
 
-/* Windows 98 FPS overlay */
+/* Windows 98 performance overlay */
 #performance-overlay {
     position: fixed;
     top: 12px;
@@ -495,18 +495,29 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
     z-index: 99999;
 
     display: flex;
-    gap: 10px;
-    padding: 6px 8px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 3px;
+
+    min-width: 155px;
+    padding: 7px 9px;
 
     background: #c0c0c0;
     color: #000;
     border: 2px solid;
     border-color: #fff #404040 #404040 #fff;
+    box-shadow: 1px 1px 0 #000;
 
     font: 11px Tahoma, "MS Sans Serif", sans-serif;
-    box-shadow: 1px 1px 0 #000;
     pointer-events: none;
     backdrop-filter: none;
+}
+
+#performance-overlay > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    white-space: nowrap;
 }
 
 #performance-overlay span {
