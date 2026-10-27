@@ -65,6 +65,47 @@
             <span class="arrow-blink"><-</span>
         </div>
 
+<!-- КАТАЛОГ МИНИ-ИГР -->
+<div id="tab-minigames" class="panel hidden">
+    <h2>🎮 Мини-игры</h2>
+    <p>Выбери, во что хочешь сыграть!</p>
+
+    <div class="minigames-grid">
+
+        <!-- Старая мини-игра -->
+        <div class="minigame-card">
+            <div class="minigame-preview memory-preview">
+                <img src="IMG_3544.jpeg" alt="">
+                <img src="IMG_3545.jpeg" alt="">
+                <img src="IMG_3546.jpeg" alt="">
+                <img src="IMG_3547.jpeg" alt="">
+            </div>
+            <h3>Запомни последовательность</h3>
+            <p>Повторяй последовательность персонажей и получай монеты.</p>
+            <button onclick="openMiniGame('game')">
+                Играть
+            </button>
+        </div>
+
+        <!-- Шахматы -->
+        <div class="minigame-card">
+            <div class="minigame-preview chess-preview">
+                <span>♜ ♞ ♝ ♛ ♚ ♝ ♞ ♜</span>
+                <span>♟ ♟ ♟ ♟ ♟ ♟ ♟ ♟</span>
+                <span>♙ ♙ ♙ ♙ ♙ ♙ ♙ ♙</span>
+                <span>♖ ♘ ♗ ♕ ♔ ♗ ♘ ♖</span>
+            </div>
+            <h3>♟ Шахматы</h3>
+            <p>Играй против компьютера и выбирай сложность соперника.</p>
+            <button onclick="openMiniGame('chess')">
+                Играть
+            </button>
+        </div>
+
+    </div>
+</div>
+<!-- КОНЕЦ КАТАЛОГА -->
+
         <div id="tab-game" class="panel">
             <h2>мини игра "пидоры и тугарин змей"</h2>
             <p style="font-size: 14px; margin-top: -10px; color: darkred; font-weight: bold;">За каждый угаданный раунд дают 40 монет!</p>
