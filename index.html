@@ -126,15 +126,22 @@
     <button onclick="switchTab('minigames')">← Назад к каталогу мини-игр</button>
     <div id="chess-game-container">
       <div class="chess-setup" id="chess-setup">
-        <h3>Новая партия против Stockfish</h3>
-        <label for="chess-color">Твой цвет:</label>
-        <select id="chess-color"><option value="w">Белые</option><option value="b">Чёрные</option></select>
-        <label for="chess-level">Сложность:</label>
-        <select id="chess-level">
-          <option value="1">1 — очень легко</option><option value="2">2 — легко</option>
-          <option value="3" selected>3 — средне</option><option value="4">4 — сложно</option>
-          <option value="5">5 — очень сложно</option>
-        </select>
+        <h3>Выбери соперника</h3>
+        <p class="chess-note">Нажми на аватар, чтобы посмотреть, кто это и насколько он силён.</p>
+        <div class="chess-bot-grid" id="chess-bot-grid">
+          <button type="button" class="chess-bot-card" data-level="1" aria-pressed="false"><span class="chess-bot-avatar">🐣</span><strong>Новичок</strong><small>Уровень 1</small></button>
+          <button type="button" class="chess-bot-card" data-level="2" aria-pressed="false"><span class="chess-bot-avatar">🧑‍🎓</span><strong>Ученик</strong><small>Уровень 2</small></button>
+          <button type="button" class="chess-bot-card is-selected" data-level="3" aria-pressed="true"><span class="chess-bot-avatar">🤖</span><strong>Тактик</strong><small>Уровень 3</small></button>
+          <button type="button" class="chess-bot-card" data-level="4" aria-pressed="false"><span class="chess-bot-avatar">🧙</span><strong>Гроссмейстер</strong><small>Уровень 4</small></button>
+          <button type="button" class="chess-bot-card" data-level="5" aria-pressed="false"><span class="chess-bot-avatar">👑</span><strong>Легенда</strong><small>Уровень 5</small></button>
+        </div>
+        <div class="chess-bot-details" id="chess-bot-details" aria-live="polite">
+          <div class="chess-bot-detail-avatar" id="chess-bot-detail-avatar">🤖</div>
+          <div><h4 id="chess-bot-detail-name">Тактик</h4><p id="chess-bot-detail-text">Сбалансированный соперник: замечает тактические возможности и наказывает за невнимательные ходы.</p></div>
+        </div>
+        <input type="hidden" id="chess-level" value="3">
+        <label for="chess-color">Играть за:</label>
+        <select id="chess-color"><option value="w">Белых</option><option value="b">Чёрных</option></select>
         <button id="chess-start">Начать партию</button>
         <p class="chess-note">Без шахматных часов. Выбирай фигуру, чтобы увидеть возможные ходы.</p>
       </div>
