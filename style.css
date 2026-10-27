@@ -533,3 +533,16 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
 #performance-overlay[hidden] {
     display: none !important;
 }
+
+#performance-overlay {
+    position: fixed !important;
+    top: 12px !important;
+    right: 12px !important;
+    bottom: auto !important;
+    left: auto !important;
+
+    z-index: 99999 !important;
+    width: max-content !important;
+    max-width: calc(100vw - 24px) !important;
+    box-sizing: border-box !important;
+}
