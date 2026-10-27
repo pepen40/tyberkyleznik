@@ -207,3 +207,59 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
     padding: 5px;
     box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
 }
+
+.freeotp-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    z-index: 99999;
+    align-items: center;
+    justify-content: center;
+    padding: 15px;
+    box-sizing: border-box;
+}
+
+.freeotp-window {
+    position: relative;
+    width: 100%;
+    max-width: 380px;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-sizing: border-box;
+    background: white;
+    color: #222;
+    padding: 25px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+.freeotp-window img {
+    display: block;
+    margin: 15px auto;
+    max-width: 100%;
+    height: auto;
+}
+
+.freeotp-window input {
+    box-sizing: border-box;
+    max-width: 100%;
+    padding: 10px;
+    margin: 8px;
+}
+
+.freeotp-window button {
+    cursor: pointer;
+    margin: 5px;
+    padding: 9px 13px;
+}
+
+.freeotp-window .freeotp-close {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    border: none;
+    background: transparent;
+    font-size: 20px;
+}
