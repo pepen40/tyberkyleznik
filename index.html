@@ -1049,7 +1049,46 @@
 
 
 </style>
+.minigames-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 15px;
+}
 
+.minigame-card {
+    display: grid;
+    grid-template-columns: 45% 1fr;
+    gap: 10px;
+    align-items: center;
+    padding: 12px;
+    border-radius: 12px;
+}
+
+.minigame-preview {
+    grid-column: 1;
+    grid-row: 1 / span 3;
+    width: 100%;
+    overflow: hidden;
+}
+
+.minigame-preview img {
+    width: 100%;
+    height: 65px;
+    object-fit: cover;
+}
+
+.minigame-card h3,
+.minigame-card p,
+.minigame-card button {
+    grid-column: 2;
+    margin: 3px 0;
+}
+
+@media (max-width: 600px) {
+    .minigames-grid {
+        grid-template-columns: 1fr;
+    }
+}
 <div id="antique-clock">
   <img id="clock-bird" src="./bird.png" alt="Кукарекающий петух">
   <img src="./clock.png" alt="Старинные часы">
