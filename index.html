@@ -10,7 +10,7 @@
 
     <audio id="battle-music" src="ambient.mp3" loop onerror="console.log('Нет музыки')"></audio>
 
-    <!-- ВИДЖЕТ ПОГОДЫ (ОЧИЩЕННЫЙ ОТ РАМОК И ТЕКСТА) -->
+    <!-- ВИДЖЕТ ПОГОДЫ -->
     <div id="weather-widget">
         <iframe frameborder="0" scrolling="no" width="100%" height="170" style="border:none; display:block;"
                 src="https://pogodnik.com/informer/horizontal/01/12346-pogoda-v-zavodoukovske-tyumenskaya-oblast-rossiya">
@@ -273,13 +273,13 @@
 
             <br>
             
-            <!-- НАСТРОЙКИ ПОГОДЫ (В СТИЛЕ 2FA, С КНОПКОЙ И ГАЛОЧКОЙ) -->
-            <div style="background: #fff; border: 2px inset #999; padding: 15px; margin-bottom: 20px; text-align: left;">
-                <h3 style="margin-top: 0;">Виджет погоды</h3>
-                <button id="weather-toggle-btn" onclick="toggleWeather()" style="width: 100%; text-align: left; display: flex; align-items: center; gap: 10px; background: #c0c0c0; border: 4px outset #ffffff; padding: 10px; font-size: 16px; cursor: pointer; font-family: 'Courier New', Courier, monospace; font-weight: bold;">
-                    <span id="weather-checkmark" style="font-size: 18px; font-family: Arial, sans-serif;">✔</span> 
+            <!-- НАСТРОЙКИ ПОГОДЫ (НАСТОЯЩИЙ ЧЕКБОКС) -->
+            <div style="background: #c0c0c0; border: 2px inset #ffffff; padding: 15px; margin-bottom: 20px; text-align: left;">
+                <h3 style="margin-top: 0; color: #000;">Виджет погоды</h3>
+                <label style="font-size: 16px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-family: 'Times New Roman', Times, serif;">
+                    <input type="checkbox" id="weather-toggle" onchange="toggleWeather()" style="width: 20px; height: 20px; cursor: pointer; border: 2px inset #ffffff; appearance: auto;">
                     Показывать погоду в Заводоуковске
-                </button>
+                </label>
             </div>
 
             <div id="mfa-block">
