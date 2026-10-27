@@ -1926,11 +1926,21 @@ document.getElementById("freeotp-modal")?.addEventListener("click", function(eve
           const match = line.match(/^bestmove\s+([a-h][1-8][a-h][1-8][qrbn]?)/);
           if (!match || !game || ended) return;
           const uci = match[1];
-          try {
-            game.move({ from: uci.slice(0,2), to: uci.slice(2,4), promotion: uci[4] || 'q' });
-            selectedSquare = null; legalTargets = [];
-            renderBoard(); updateGameStatus();
-          } catch (e) { setStatus('Не удалось применить ход движка. Начни новую партию.'); }
+          const positionAtReply = game.fen();
+          // Небольшая пауза для естественного ощущения, что бот обдумывает ход.
+          setStatus('Stockfish обдумывает ход…');
+          window.setTimeout(() => {
+            if (!game || ended || game.fen() !== positionAtReply) return;
+            try {
+              const from = uci.slice(0, 2), to = uci.slice(2, 4);
+              const movingPiece = capturePieceForAnimation(from);
+              game.move({ from, to, promotion: uci[4] || 'q' });
+              selectedSquare = null; legalTargets = [];
+              renderBoard();
+              animatePieceMove(movingPiece, to);
+              updateGameStatus();
+            } catch (e) { setStatus('Не удалось применить ход движка. Начни новую партию.'); }
+          }, 1000);
         } else if (line.startsWith('id name')) {
           setEngineStatus('Stockfish: ' + line.slice(7));
         }
@@ -1995,6 +2005,42 @@ document.getElementById("freeotp-modal")?.addEventListener("click", function(eve
     engine.postMessage('position fen ' + game.fen());
     engine.postMessage('go depth ' + cfg.depth);
   }
+  function capturePieceForAnimation(square) {
+    const board = boardEl();
+    const cell = board && Array.from(board.children).find(el => el.getAttribute('aria-label') === square);
+    const img = cell && cell.querySelector('img');
+    if (!img) return null;
+    const rect = img.getBoundingClientRect();
+    return { src: img.src, rect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height } };
+  }
+  function animatePieceMove(pieceSnapshot, targetSquare) {
+    if (!pieceSnapshot) return;
+    const board = boardEl();
+    const targetCell = board && Array.from(board.children).find(el => el.getAttribute('aria-label') === targetSquare);
+    const targetImg = targetCell && targetCell.querySelector('img');
+    if (!targetCell || !targetImg) return;
+    const end = targetImg.getBoundingClientRect();
+    const flyer = document.createElement('img');
+    flyer.src = pieceSnapshot.src;
+    flyer.alt = '';
+    flyer.setAttribute('aria-hidden', 'true');
+    flyer.className = 'chess-moving-piece';
+    Object.assign(flyer.style, {
+      left: pieceSnapshot.rect.left + 'px', top: pieceSnapshot.rect.top + 'px',
+      width: pieceSnapshot.rect.width + 'px', height: pieceSnapshot.rect.height + 'px'
+    });
+    document.body.appendChild(flyer);
+    targetImg.style.visibility = 'hidden';
+    requestAnimationFrame(() => {
+      flyer.style.transform = `translate(${end.left - pieceSnapshot.rect.left}px, ${end.top - pieceSnapshot.rect.top}px)`;
+      flyer.style.width = end.width + 'px';
+      flyer.style.height = end.height + 'px';
+    });
+    window.setTimeout(() => {
+      flyer.remove();
+      if (targetImg.isConnected) targetImg.style.visibility = '';
+    }, 480);
+  }
   function renderBoard() {
     const board = boardEl();
     if (!board || !game) return;
@@ -2035,9 +2081,12 @@ document.getElementById("freeotp-modal")?.addEventListener("click", function(eve
         const choice = (prompt('Превратить пешку в (q — ферзь, r — ладья, b — слон, n — конь):', 'q') || 'q').toLowerCase();
         promotion = ['q','r','b','n'].includes(choice) ? choice : 'q';
       }
+      const movingPiece = capturePieceForAnimation(selectedSquare);
       game.move({ from: selectedSquare, to: square, promotion: promotion || 'q' });
       selectedSquare = null; legalTargets = [];
-      renderBoard(); updateGameStatus();
+      renderBoard();
+      animatePieceMove(movingPiece, square);
+      updateGameStatus();
       if (!ended) { engineBusy = false; askEngineMove(); }
       return;
     }
@@ -2073,6 +2122,26 @@ document.getElementById("freeotp-modal")?.addEventListener("click", function(eve
     setStatus('Выбери цвет и сложность.');
   }
   document.addEventListener('DOMContentLoaded', () => {
+    const botInfo = {
+      1: { avatar: '🐣', name: 'Новичок', text: 'Спокойный соперник для первых партий. Играет на минимальной сложности и подходит, чтобы освоить правила и научиться замечать простые ходы.' },
+      2: { avatar: '🧑‍🎓', name: 'Ученик', text: 'Уже старается развивать фигуры и замечать угрозы. Хороший выбор, если ты знаешь основы и хочешь немного потренироваться.' },
+      3: { avatar: '🤖', name: 'Тактик', text: 'Сбалансированный соперник: замечает тактические возможности и наказывает за невнимательные ходы. Подходит для обычной тренировочной партии.' },
+      4: { avatar: '🧙', name: 'Гроссмейстер', text: 'Сильный противник, который глубже рассчитывает варианты и лучше использует ошибки. Подготовься к серьёзной борьбе.' },
+      5: { avatar: '👑', name: 'Легенда', text: 'Максимальная доступная сложность Stockfish в этой игре. Рассчитывает больше вариантов и станет испытанием даже для опытных игроков.' }
+    };
+    document.querySelectorAll('.chess-bot-card').forEach(card => card.addEventListener('click', () => {
+      const chosenLevel = Number(card.dataset.level);
+      const info = botInfo[chosenLevel];
+      $('chess-level').value = String(chosenLevel);
+      document.querySelectorAll('.chess-bot-card').forEach(other => {
+        const active = other === card;
+        other.classList.toggle('is-selected', active);
+        other.setAttribute('aria-pressed', String(active));
+      });
+      $('chess-bot-detail-avatar').textContent = info.avatar;
+      $('chess-bot-detail-name').textContent = info.name;
+      $('chess-bot-detail-text').textContent = info.text;
+    }));
     if ($('chess-start')) $('chess-start').addEventListener('click', startGame);
     if ($('chess-resign')) $('chess-resign').addEventListener('click', resign);
     if ($('chess-new')) $('chess-new').addEventListener('click', showSetup);
