@@ -294,17 +294,41 @@
 
 
 
-            <div id="mfa-block">
-                <button onclick="enable2FA()">🔐 подключить жоскую 2fa аутинфикацию с помощью наших партнеров FreeOTP</button>
-                <div id="mfa-setup" class="hidden">
-                    <p>скачай приложуху FreeOTP с gugl play и отскнируй эту хуйню:</p>
-                    <img id="mfa-qr" width="200" height="200">
-                    <p>ну или текстом тож можно:<br>
-                       <b id="mfa-secret"></b></p>
-                    <input type="text" id="mfa-code" placeholder="6-значный код" maxlength="6">
-                    <button onclick="confirm2FA()">Подтвердить</button>
-                </div>
-            </div>
+
+<div id="mfa-block">
+    <button onclick="openFreeOTPWindow()">
+        🔐 Настройка FreeOTP
+    </button>
+</div>
+
+<!-- Маленькое окно FreeOTP -->
+<div id="freeotp-modal" class="freeotp-overlay">
+    <div class="freeotp-window">
+        <button class="freeotp-close" onclick="closeFreeOTPWindow()">✕</button>
+
+        <h2>🔐 Настройка FreeOTP</h2>
+
+        <p style="color: #c58b00;">
+            защитите свой аккаунт прямо сейчас.
+        </p>
+
+        <button onclick="showDemoFreeOTP()">Показать QR-код</button>
+
+        <div id="freeotp-demo-setup" style="display: none;">
+            <p>Демонстрационный QR-код:</p>
+            <img id="freeotp-demo-qr" width="180" height="180"
+                 alt="Демо QR-код">
+
+            <p>Код из приложения:</p>
+            <input id="freeotp-demo-code" type="text"
+                   maxlength="6" placeholder="6 цифр из приложения">
+
+            <button onclick="checkDemoFreeOTP()">Подтвердить</button>
+            <p id="freeotp-demo-message"></p>
+        </div>
+    </div>
+</div>
+
 
             <br><br><br>
             <div class="version-text">версия игры beta 5.6</div>
