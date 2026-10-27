@@ -398,3 +398,27 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
   .chess-setup label { display:block; margin:10px 0 3px; }
   .chess-setup select { width:100%; }
 }
+
+/* Выбор шахматного соперника */
+.chess-setup { max-width: 760px; border: 1px solid #9aa6b2; border-radius: 14px; background: linear-gradient(145deg,#f7f9fc,#e8edf4); box-shadow: 0 12px 28px rgba(22,35,54,.14); }
+.chess-bot-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; margin:16px 0; }
+.chess-bot-card { display:flex; flex-direction:column; align-items:center; gap:7px; min-width:0; padding:12px 6px; border:2px solid #c6ced8; border-radius:12px; background:#fff; color:#172033; cursor:pointer; transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease; }
+.chess-bot-card:hover { transform:translateY(-3px); border-color:#647da5; box-shadow:0 6px 15px rgba(30,50,80,.12); }
+.chess-bot-card.is-selected { border-color:#345b9b; background:#eaf1ff; box-shadow:0 0 0 2px rgba(52,91,155,.15); }
+.chess-bot-avatar { display:grid; place-items:center; width:64px; height:64px; border-radius:50%; background:linear-gradient(145deg,#dce7f6,#f6f8fb); border:1px solid #c6d2e2; font-size:38px; }
+.chess-bot-card strong { font-size:13px; text-align:center; }
+.chess-bot-card small { color:#526174; font-size:12px; }
+.chess-bot-details { display:flex; align-items:center; gap:16px; padding:16px; margin:12px 0 18px; background:#fff; border:1px solid #d0d8e2; border-radius:12px; text-align:left; min-height:110px; }
+.chess-bot-detail-avatar { display:grid; place-items:center; flex:0 0 86px; height:86px; border-radius:50%; background:linear-gradient(145deg,#dce7f6,#f6f8fb); border:1px solid #c6d2e2; font-size:54px; }
+.chess-bot-details h4 { margin:0 0 6px; font-size:18px; }
+.chess-bot-details p { margin:0; line-height:1.5; color:#364152; }
+.chess-setup #chess-color { display:block; margin:6px 0 14px; }
+.chess-setup #chess-start { padding:10px 18px; border-radius:8px; }
+.chess-moving-piece { position:fixed; z-index:99999; object-fit:contain; pointer-events:none; transition:transform .44s cubic-bezier(.2,.75,.25,1),width .44s ease,height .44s ease; filter:drop-shadow(0 2px 2px rgba(0,0,0,.22)); }
+@media(max-width:600px) {
+  .chess-bot-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .chess-bot-avatar { width:52px; height:52px; font-size:31px; }
+  .chess-bot-details { align-items:flex-start; padding:12px; gap:12px; }
+  .chess-bot-detail-avatar { flex-basis:60px; height:60px; font-size:38px; }
+}
+@media(max-width:380px) { .chess-bot-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
