@@ -4,36 +4,34 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const EDGE_FUNCTION_NAME = 'award-coins'; 
 const battleBackgrounds = ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png', 'bg6.png'];
 
-// === АВТОЛОГИН И ПОГОДА ===
+// === БЕЗ АВТОЛОГИНА, ПОГОДА И ЧАСЫ ВКЛЮЧЕНЫ ПО УМОЛЧАНИЮ ===
 window.addEventListener('load', () => {
-    // Автологин
-    const savedUser = localStorage.getItem('pepen_user');
-    if (savedUser) {
-        document.getElementById('username').value = savedUser;
-        login(); 
-    } else {
-        document.getElementById('auth-screen').classList.remove('hidden');
-    }
+    // Всегда показываем экран входа — никакого автологина
+    document.getElementById('auth-screen').classList.remove('hidden');
 
-    // Загрузка настроек погоды
-    const isWeatherOn = localStorage.getItem('pepen_weather') === 'true';
-    document.getElementById('weather-toggle').checked = isWeatherOn;
-    if (isWeatherOn) document.getElementById('weather-widget').classList.remove('hidden');
+    // Погода включена по умолчанию
+    document.getElementById('weather-toggle').checked = true;
+    document.getElementById('weather-widget').classList.remove('hidden');
+
+    // Часы включены по умолчанию
+    const clockToggle = document.getElementById('clock-toggle');
+    if (clockToggle) clockToggle.checked = true;
+    const clockEl = document.getElementById('antique-clock');
+    if (clockEl) clockEl.style.setProperty('display', 'block', 'important');
 });
 
 function toggleWeather() {
     const isChecked = document.getElementById('weather-toggle').checked;
-    localStorage.setItem('pepen_weather', isChecked);
     if (isChecked) {
         document.getElementById('weather-widget').classList.remove('hidden');
     } else {
         document.getElementById('weather-widget').classList.add('hidden');
     }
+    // Никакого localStorage
 }
 
 function logout() {
     if (!confirm("Выйти с аккаунта?")) return;
-    localStorage.removeItem('pepen_user');
     location.reload();
 }
 
@@ -217,8 +215,6 @@ async function login() {
         currentUpgrades = data.rpg_upgrades || {"ashab":{"hp":0,"atk":0},"apostol":{"hp":0,"atk":0},"mee":{"hp":0,"atk":0}};
         currentMaxFloors = data.rpg_max_floors || {"ashab":0,"apostol":0,"mee":0};
         await supabaseClient.from('players').update({ last_online: new Date().toISOString() }).eq('username', u);
-        
-        localStorage.setItem('pepen_user', currentUser);
 
         document.getElementById('auth-screen').classList.add('hidden');
         document.getElementById('main-screen').classList.remove('hidden');
