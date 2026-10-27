@@ -2223,49 +2223,60 @@ playMoveSound(playedMove);
   });
 })();
 
-// Real FPS counter
+// FPS counter + overlay toggle
 (() => {
-    const output = document.getElementById('perf-fps');
-    if (!output) return;
+    function initPerformanceOverlay() {
+        const overlay = document.getElementById('performance-overlay');
+        const output = document.getElementById('perf-fps');
+        const toggle = document.getElementById('fps-overlay-toggle');
 
-    let frames = 0;
-    let lastTime = performance.now();
+        if (!overlay) return;
 
-    function measureFPS(now) {
-        frames++;
+        // Восстанавливаем сохранённое состояние переключателя
+        const saved = localStorage.getItem('fpsOverlayEnabled');
+        const enabled = saved !== 'false';
 
-        const elapsed = now - lastTime;
+        if (toggle) {
+            toggle.checked = enabled;
 
-        if (elapsed >= 500) {
-            const fps = Math.round(frames * 1000 / elapsed);
-
-            output.textContent = fps;
-            frames = 0;
-            lastTime = now;
+            toggle.addEventListener('change', () => {
+                overlay.hidden = !toggle.checked;
+                localStorage.setItem(
+                    'fpsOverlayEnabled',
+                    String(toggle.checked)
+                );
+            });
         }
 
+        overlay.hidden = !enabled;
+
+        // Измеряем FPS
+        if (!output) return;
+
+        let frames = 0;
+        let lastTime = performance.now();
+
+        function measureFPS(now) {
+            frames++;
+
+            const elapsed = now - lastTime;
+
+            if (elapsed >= 500) {
+                output.textContent = Math.round(frames * 1000 / elapsed);
+                frames = 0;
+                lastTime = now;
+            }
+
+            requestAnimationFrame(measureFPS);
+        }
+
+        output.textContent = '0';
         requestAnimationFrame(measureFPS);
     }
 
-    requestAnimationFrame(measureFPS);
-})();
-
-// FPS overlay settings
-(() => {
-    const overlay = document.getElementById('performance-overlay');
-    const toggle = document.getElementById('fps-overlay-toggle');
-
-    if (!overlay || !toggle) return;
-
-    const saved = localStorage.getItem('fpsOverlayEnabled');
-
-    toggle.checked = saved !== 'false';
-    overlay.style.display = toggle.checked ? 'flex' : 'none';
-
-    toggle.addEventListener('change', () => {
-        const enabled = toggle.checked;
-
-        overlay.style.display = enabled ? 'flex' : 'none';
-        localStorage.setItem('fpsOverlayEnabled', String(enabled));
-    });
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initPerformanceOverlay);
+    } else {
+        initPerformanceOverlay();
+    }
 })();
