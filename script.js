@@ -1919,7 +1919,7 @@ document.getElementById("freeotp-modal")?.addEventListener("click", function(eve
           engine.postMessage('isready');
         } else if (line === 'readyok') {
           engineReady = true;
-          setEngineStatus('Stockfish: подключён');
+          setEngineStatus('PEPENAI: подключён');
           if (game && !ended && game.turn() !== humanColor) askEngineMove();
         } else if (line.startsWith('bestmove')) {
           engineBusy = false;
@@ -1928,7 +1928,7 @@ document.getElementById("freeotp-modal")?.addEventListener("click", function(eve
           const uci = match[1];
           const positionAtReply = game.fen();
           // Небольшая пауза для естественного ощущения, что бот обдумывает ход.
-          setStatus('Stockfish обдумывает ход…');
+          setStatus('PEPENAI обдумывает ход…');
           window.setTimeout(() => {
             if (!game || ended || game.fen() !== positionAtReply) return;
             try {
@@ -1947,13 +1947,13 @@ document.getElementById("freeotp-modal")?.addEventListener("click", function(eve
       };
       engine.onerror = () => {
         engineReady = false;
-        setEngineStatus('Stockfish: ошибка загрузки');
-        setStatus('Не удалось загрузить Stockfish. Проверь подключение к интернету и перезагрузи страницу.');
+        setEngineStatus('PEPENAI: ошибка загрузки');
+        setStatus('Не удалось загрузить PEPENAI. Проверь подключение к интернету и перезагрузи страницу.');
       };
       engine.postMessage('uci');
     } catch (e) {
-      setEngineStatus('Stockfish: недоступен');
-      setStatus('Браузер не смог запустить Stockfish. Проверь интернет и настройки безопасности.');
+      setEngineStatus('PEPENAI: недоступен');
+      setStatus('Браузер не смог запустить PEPENAI. Проверь интернет и настройки безопасности.');
     }
   }
   async function startGame() {
@@ -1981,10 +1981,10 @@ document.getElementById("freeotp-modal")?.addEventListener("click", function(eve
 
       if (engineReady) configureEngine();
       if (humanColor === 'b') {
-        setStatus(engineReady ? 'Stockfish думает…' : 'Загружаю Stockfish. Подожди первого хода…');
+        setStatus(engineReady ? 'PEPENAI думает…' : 'Загружаю PEPENAI. Подожди первого хода…');
         if (engineReady) askEngineMove();
       } else {
-        setStatus(engineReady ? 'Твой ход — белые.' : 'Твой ход — белые. Stockfish загружается…');
+        setStatus(engineReady ? 'Твой ход — белые.' : 'Твой ход — белые. PEPENAI загружается…');
       }
     } catch (error) {
       console.error('Ошибка запуска шахмат:', error);
@@ -2000,7 +2000,7 @@ document.getElementById("freeotp-modal")?.addEventListener("click", function(eve
   function askEngineMove() {
     if (!engine || !engineReady || engineBusy || ended || !game || game.turn() === humanColor) return;
     engineBusy = true;
-    setStatus('Stockfish думает…');
+    setStatus('PEPENAI думает..');
     const cfg = levels[level];
     engine.postMessage('position fen ' + game.fen());
     engine.postMessage('go depth ' + cfg.depth);
@@ -2105,15 +2105,15 @@ document.getElementById("freeotp-modal")?.addEventListener("click", function(eve
     } else if (game.isDraw()) {
       ended = true; setStatus('Ничья.');
     } else if (game.isCheck()) {
-      setStatus(game.turn() === humanColor ? 'Шах! Твой ход.' : 'Шах Stockfish.');
+      setStatus(game.turn() === humanColor ? 'Шах! Твой ход.' : 'Шах PEPENAI.');
     } else {
-      setStatus(game.turn() === humanColor ? 'Твой ход.' : 'Ход Stockfish…');
+      setStatus(game.turn() === humanColor ? 'Твой ход.' : 'Ход PEPENAI…');
     }
   }
   function resign() {
     if (!game || ended) return;
     ended = true; engineBusy = false;
-    setStatus('Ты сдался. Нажми «Новая партия / сменить сложность», чтобы сыграть ещё.');
+    setStatus('Ты проебал. Нажми «Новая партия / сменить сложность», чтобы сыграть ещё.');
   }
   function showSetup() {
     ended = true; engineBusy = false;
