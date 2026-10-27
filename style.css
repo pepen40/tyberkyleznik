@@ -422,3 +422,68 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
   .chess-bot-detail-avatar { flex-basis:60px; height:60px; font-size:38px; }
 }
 @media(max-width:380px) { .chess-bot-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+
+/* Шахматы — оформление в стиле остального сайта */
+.chess-setup {
+    background: #c0c0c0;
+    border: 3px outset #fff;
+    border-radius: 0;
+    box-shadow: none;
+    color: #000;
+}
+
+.chess-bot-card {
+    background: #ddd;
+    color: #000;
+    border: 2px outset #fff;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.chess-bot-card:hover {
+    transform: none;
+    background: #eee;
+    border-color: #fff;
+    box-shadow: none;
+}
+
+.chess-bot-card.is-selected {
+    background: #b8d8e8;
+    border: 2px inset #888;
+    box-shadow: none;
+}
+
+.chess-bot-avatar,
+.chess-bot-detail-avatar {
+    background: #ddd;
+    border: 2px inset #999;
+    border-radius: 0;
+}
+
+.chess-bot-details {
+    background: #ddd;
+    border: 2px inset #fff;
+    border-radius: 0;
+}
+
+#chess-status {
+    background: #000;
+    color: #0f0;
+    border: 2px inset #999;
+    font-family: monospace;
+}
+
+#chess-engine-status {
+    color: inherit;
+}
+
+#chess-board {
+    border: 3px solid #000;
+}
+
+.chess-actions button,
+#chess-start {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
