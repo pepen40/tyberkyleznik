@@ -1925,9 +1925,6 @@ document.getElementById("freeotp-modal")?.addEventListener("click", function(eve
 }
 // === КОНЕЦ ЗВУКОВ ===
 
-function startEngine() {
-    if (engine) return;
-    try {
   function startEngine() {
     if (engine) return;
     try {
