@@ -124,7 +124,7 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
     justify-content: center;
 }
 .gosuslugi-btn {
-    width: 80%;
+    width: 80%; /* как пробел */
     max-width: 300px;
     height: 50px;
     object-fit: contain;
@@ -161,10 +161,11 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
     color: #ff4500;
 }
 
+/* Анимация для стрелочек */
 .arrow-blink {
     font-size: 16px;
     font-weight: bold;
-    animation: color-blink 3s infinite alternate;
+    animation: color-blink 3s infinite alternate; /* 3 секунды - медленно */
 }
 
 @keyframes color-blink {
@@ -175,6 +176,7 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
     100% { color: #0000FF; opacity: 1; }
 }
 
+/* Тряска экрана */
 @keyframes shake {
   0% { transform: translate(1px, 1px) rotate(0deg); }
   10% { transform: translate(-1px, -2px) rotate(-1deg); }
@@ -197,19 +199,11 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
 /* ВИДЖЕТ ПОГОДЫ */
 #weather-widget {
     position: fixed;
-    bottom: 10px;
-    right: 10px;
+    bottom: 20px;
+    right: 20px;
     z-index: 999;
-    background: transparent;
-    border: none;
-    padding: 0;
-    width: 200px;
-    height: auto;
-    box-shadow: 2px 2px 0 rgba(0,0,0,.35);
+    border: 2px outset #fff;
+    background: #c0c0c0;
+    padding: 5px;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
 }
-
-#weather-widget iframe {
-    display: block;
-    width: 100%;
-    border: none;
-} 
