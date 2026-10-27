@@ -258,7 +258,7 @@ function renderCharStats() {
 }
 
 function switchTab(tab) {
-    ['game', 'rpg', 'cases', 'inventory', 'market', 'leaderboard', 'howto', 'settings'].forEach(t => {
+    ['minigames', 'game', 'rpg', 'cases', 'inventory', 'market', 'leaderboard', 'howto', 'settings'].forEach(t => {
         const el = document.getElementById('tab-' + t);
         if (el) el.classList.add('hidden');
     });
