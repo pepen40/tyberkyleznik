@@ -676,8 +676,7 @@
   let audioEnabled = false;
   let lastMinute = new Date().getMinutes();
     
-  
-function toggleAntiqueClock() {
+  window.toggleAntiqueClock = function() {
   const checkbox = document.getElementById('clock-toggle');
   const clock = document.getElementById('antique-clock');
   const tick = document.getElementById('antique-tick');
@@ -704,12 +703,9 @@ function toggleAntiqueClock() {
     if (bird) {
       bird.classList.remove('bird-crowing');
     }
-  }
-}
+    }
+};
 
-
-
-  
 function updateClock() {
   const now = new Date();
       if (!document.getElementById('clock-toggle').checked) {
