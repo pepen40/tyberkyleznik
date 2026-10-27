@@ -589,10 +589,16 @@
   overflow: visible;
 }
 
+
+#antique-clock {
+  overflow: visible;
+  isolation: isolate;
+}
+
 #clock-bird {
   position: absolute;
-  z-index: 2;
-  width: 24px !important;
+  z-index: -1;
+  width: 65px !important;
   max-width: none !important;
   height: auto !important;
   left: 50%;
@@ -606,25 +612,17 @@
   animation: bird-emerge 8s ease-in-out both;
 }
 
-
 @keyframes bird-emerge {
-  0% {
+  0%, 100% {
     transform: translate(-50%, 100%);
     opacity: 0;
   }
-  25% {
-    transform: translate(-50%, 0);
+  25%, 75% {
+    transform: translate(-50%, 45%);
     opacity: 1;
-  }
-  75% {
-    transform: translate(-50%, 0);
-    opacity: 1;
-  }
-  100% {
-    transform: translate(-50%, 100%);
-    opacity: 0;
   }
 }
+
 
 </style>
 
