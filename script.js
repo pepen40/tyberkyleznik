@@ -2247,3 +2247,23 @@ playMoveSound(playedMove);
 
     requestAnimationFrame(update);
 })();
+
+// FPS overlay settings
+(() => {
+    const overlay = document.getElementById('performance-overlay');
+    const toggle = document.getElementById('fps-overlay-toggle');
+
+    if (!overlay || !toggle) return;
+
+    const saved = localStorage.getItem('fpsOverlayEnabled');
+
+    toggle.checked = saved !== 'false';
+    overlay.style.display = toggle.checked ? 'flex' : 'none';
+
+    toggle.addEventListener('change', () => {
+        const enabled = toggle.checked;
+
+        overlay.style.display = enabled ? 'flex' : 'none';
+        localStorage.setItem('fpsOverlayEnabled', String(enabled));
+    });
+})();
