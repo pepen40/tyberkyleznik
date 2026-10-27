@@ -2222,3 +2222,28 @@ playMoveSound(playedMove);
     if ($('chess-new')) $('chess-new').addEventListener('click', showSetup);
   });
 })();
+
+// FPS counter
+(() => {
+    const output = document.getElementById('perf-fps');
+    if (!output) return;
+
+    let frames = 0;
+    let lastTime = performance.now();
+
+    function update(now) {
+        frames++;
+
+        if (now - lastTime >= 1000) {
+            output.textContent = Math.round(
+                frames * 1000 / (now - lastTime)
+            );
+            frames = 0;
+            lastTime = now;
+        }
+
+        requestAnimationFrame(update);
+    }
+
+    requestAnimationFrame(update);
+})();
