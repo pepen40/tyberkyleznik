@@ -487,57 +487,28 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
     box-shadow: none !important;
 }
 
-/* Windows 98 performance overlay */
+
+/* Windows 98 performance overlay — larger text */
 #performance-overlay {
-    position: fixed;
-    top: 12px;
-    right: 12px;
-    z-index: 99999;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 3px !important;
 
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 3px;
+    width: max-content !important;
+    min-width: 0 !important;
+    padding: 8px 10px !important;
 
-    min-width: 155px;
-    padding: 7px 9px;
+    box-sizing: border-box;
+    font-family: Tahoma, "MS Sans Serif", sans-serif !important;
+    font-size: 13px !important;
+    line-height: 1.35 !important;
 
     background: #c0c0c0;
     color: #000;
     border: 2px solid;
     border-color: #fff #404040 #404040 #fff;
     box-shadow: 1px 1px 0 #000;
-
-    font: 11px Tahoma, "MS Sans Serif", sans-serif;
-    pointer-events: none;
-    backdrop-filter: none;
-}
-
-#performance-overlay > div {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    white-space: nowrap;
-}
-
-#performance-overlay span {
-    color: #008000;
-    font-weight: bold;
-}
-
-/* Force vertical Windows 98 performance overlay */
-#performance-overlay {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: stretch !important;
-    gap: 2px !important;
-
-    font-size: 7.33px !important;
-    line-height: 1.2 !important;
-
-    min-width: 0 !important;
-    width: max-content !important;
-    padding: 5px 6px !important;
 }
 
 #performance-overlay > div {
@@ -545,14 +516,20 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
     flex-direction: row !important;
     justify-content: space-between !important;
     align-items: center !important;
-    gap: 8px !important;
+    gap: 12px !important;
 
-    font-size: 7.33px !important;
-    line-height: 1.2 !important;
+    font-size: 13px !important;
+    line-height: 1.35 !important;
     white-space: nowrap !important;
 }
 
 #performance-overlay span {
-    font-size: 7.33px !important;
-    line-height: 1.2 !important;
+    font-size: 13px !important;
+    line-height: 1.35 !important;
+    font-weight: bold;
+    color: #008000;
+}
+
+#performance-overlay[hidden] {
+    display: none !important;
 }
