@@ -122,18 +122,18 @@
         </div>
         <!-- ВКЛАДКА ШАХМАТ -->
 <div id="tab-chess" class="panel hidden chess-panel">
-    <h2>♟ Шахматы</h2>
-    <button onclick="switchTab('minigames')">← Назад к каталогу мини-игр</button>
+    <h2>шахматы: definitive edition</h2>
+    <button onclick="switchTab('minigames')">назад</button>
     <div id="chess-game-container">
       <div class="chess-setup" id="chess-setup">
         <h3>Выбери соперника</h3>
-        <p class="chess-note">Нажми на аватар, чтобы посмотреть, кто это и насколько он силён.</p>
+        <p class="chess-note">нажми на аватар чтобы узнать кто это нахуй и че он умеет</p>
         <div class="chess-bot-grid" id="chess-bot-grid">
-          <button type="button" class="chess-bot-card" data-level="1" aria-pressed="false"><span class="chess-bot-avatar">🐣</span><strong>Новичок</strong><small>Уровень 1</small></button>
+          <button type="button" class="chess-bot-card" data-level="1" aria-pressed="false"><span class="chess-bot-avatar">🐣</span><strong>ебаный нахуй даун</strong><small>Уровень 1</small></button>
           <button type="button" class="chess-bot-card" data-level="2" aria-pressed="false"><span class="chess-bot-avatar">🧑‍🎓</span><strong>Ученик</strong><small>Уровень 2</small></button>
           <button type="button" class="chess-bot-card is-selected" data-level="3" aria-pressed="true"><span class="chess-bot-avatar">🤖</span><strong>Тактик</strong><small>Уровень 3</small></button>
-          <button type="button" class="chess-bot-card" data-level="4" aria-pressed="false"><span class="chess-bot-avatar">🧙</span><strong>Гроссмейстер</strong><small>Уровень 4</small></button>
-          <button type="button" class="chess-bot-card" data-level="5" aria-pressed="false"><span class="chess-bot-avatar">👑</span><strong>Легенда</strong><small>Уровень 5</small></button>
+          <button type="button" class="chess-bot-card" data-level="4" aria-pressed="false"><span class="chess-bot-avatar">🧙</span><strong>анатолий карпов</strong><small>Уровень 4</small></button>
+          <button type="button" class="chess-bot-card" data-level="5" aria-pressed="false"><span class="chess-bot-avatar">👑</span><strong>ГАРРИ КАСПАРОВ*</strong><small>Уровень 5</small></button>
         </div>
         <div class="chess-bot-details" id="chess-bot-details" aria-live="polite">
           <div class="chess-bot-detail-avatar" id="chess-bot-detail-avatar">🤖</div>
@@ -141,19 +141,19 @@
         </div>
         <input type="hidden" id="chess-level" value="3">
         <label for="chess-color">Играть за:</label>
-        <select id="chess-color"><option value="w">Белых</option><option value="b">Чёрных</option></select>
-        <button id="chess-start">Начать партию</button>
-        <p class="chess-note">Без шахматных часов. Выбирай фигуру, чтобы увидеть возможные ходы.</p>
+        <select id="chess-color"><option value="w">представителей нашего плана</option><option value="b">потусторонний мир</option></select>
+        <button id="chess-start">начать партию</button>
+        <p class="chess-note">никакого времени нахуй тут нет нажмите на фигуру чтобы увидеть возможные ходы</p>
       </div>
       <div id="chess-play" class="hidden">
         <div class="chess-toolbar">
           <strong id="chess-status" role="status">Подготовка движка…</strong>
-          <span id="chess-engine-status">Stockfish: подключение…</span>
+          <span id="chess-engine-status">шахматный движок PEPENAI: подключён.</span>
         </div>
         <div id="chess-board" aria-label="Шахматная доска"></div>
         <div class="chess-actions">
-          <button id="chess-resign">Сдаться</button>
-          <button id="chess-new">Новая партия / сменить сложность</button>
+          <button id="chess-resign">всё проебал я нахуй</button>
+          <button id="chess-new">новая партия</button>
         </div>
         <p class="chess-note">Зелёные клетки — возможные ходы; точка — тихий ход, красный круг — взятие.</p>
       </div>
