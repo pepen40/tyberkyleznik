@@ -584,9 +584,44 @@
         rotate(calc(-1 * var(--angle)));
     }
   }
+    #clock-bird {
+  position: absolute;
+  z-index: 2;
+  width: 110px;
+  height: auto;
+  left: 50%;
+  top: -65px;
+  transform: translate(-50%, 100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+#clock-bird.bird-crowing {
+  animation: bird-emerge 3.8s ease-in-out both;
+}
+
+@keyframes bird-emerge {
+  0% {
+    transform: translate(-50%, 100%);
+    opacity: 0;
+  }
+  25% {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+  75% {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, 100%);
+    opacity: 0;
+  }
+}
 </style>
 
 <div id="antique-clock">
+  <img id="clock-bird" src="./bird.png" alt="Кукарекающий петух">
   <img src="./clock.png" alt="Старинные часы">
 
   <div class="dial" aria-label="Старинный циферблат">
@@ -641,8 +676,17 @@
     }
 
     if (audioEnabled && now.getMinutes() !== lastMinute) {
-      cuckoo.currentTime = 0;
-      cuckoo.play().catch(() => {});
+  const bird = document.getElementById('clock-bird');
+
+  if (bird) {
+    bird.classList.remove('bird-crowing');
+    void bird.offsetWidth;
+    bird.classList.add('bird-crowing');
+  }
+
+  cuckoo.currentTime = 0;
+  cuckoo.play().catch(() => {});
+}
     }
 
     lastMinute = now.getMinutes();
