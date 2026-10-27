@@ -2223,7 +2223,7 @@ playMoveSound(playedMove);
   });
 })();
 
-// FPS counter
+// Real FPS counter
 (() => {
     const output = document.getElementById('perf-fps');
     if (!output) return;
@@ -2231,21 +2231,23 @@ playMoveSound(playedMove);
     let frames = 0;
     let lastTime = performance.now();
 
-    function update(now) {
+    function measureFPS(now) {
         frames++;
 
-        if (now - lastTime >= 1000) {
-            output.textContent = Math.round(
-                frames * 1000 / (now - lastTime)
-            );
+        const elapsed = now - lastTime;
+
+        if (elapsed >= 500) {
+            const fps = Math.round(frames * 1000 / elapsed);
+
+            output.textContent = fps;
             frames = 0;
             lastTime = now;
         }
 
-        requestAnimationFrame(update);
+        requestAnimationFrame(measureFPS);
     }
 
-    requestAnimationFrame(update);
+    requestAnimationFrame(measureFPS);
 })();
 
 // FPS overlay settings
