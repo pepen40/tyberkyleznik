@@ -28,7 +28,6 @@ function deleteCookie(name) {
 
 // === АВТОЛОГИН И ПОГОДА ===
 window.addEventListener('load', () => {
-    // Загрузка настроек погоды
     const weatherCookie = getCookie('pepen_weather');
     const isWeatherOn = weatherCookie === null ? true : weatherCookie === 'true';
     const wt = document.getElementById('weather-toggle');
@@ -40,7 +39,6 @@ window.addEventListener('load', () => {
         document.getElementById('weather-widget').classList.add('hidden');
     }
 
-    // АВТОЛОГИН
     const savedUser = getCookie('pepen_user');
     const savedPass = getCookie('pepen_pass');
 
@@ -56,8 +54,12 @@ window.addEventListener('load', () => {
     }
 });
 
-function toggleWeather() {
-    const isChecked = document.getElementById('weather-toggle').checked;
+function toggleWeather(event) {
+    if (event) event.preventDefault();
+    const cb = document.getElementById('weather-toggle');
+    cb.checked = !cb.checked;
+    const isChecked = cb.checked;
+    
     setCookie('pepen_weather', isChecked, 365);
     if (isChecked) {
         document.getElementById('weather-widget').classList.remove('hidden');
@@ -1041,4 +1043,4 @@ function spawnEnemy() {
     rpgEnemy = { name: `${eType.name} (Ур. ${rpgFloorMain}.${rpgFloorSub})`, hp: eHp, maxHp: eHp, atk: Math.floor(baseAtk * eType.atkMult), img: eType.img };
     updateRpgUI(); logRpg(`Появился ${rpgEnemy.name}!`); isPlayerTurn = true; document.getElementById('rpg-turn-indicator').innerText = "ВАШ ХОД"; document.getElementById('rpg-turn-indicator').className = "turn-indicator turn-player";
 }
-// Дальше идет остальной твой код (так как он длинный, я обрезал его для экономии места, но ты просто вставь его сюда, ничего не меняя).
+// (Если тут обрезалось, то остаток кода (updateRpgUI, rpgAttack, и т.д.) у тебя уже есть в файле, ты просто замени верхнюю часть файла до функции `function spawnEnemy()`)
