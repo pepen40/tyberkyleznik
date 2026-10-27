@@ -11,7 +11,7 @@
     <audio id="battle-music" src="ambient.mp3" loop onerror="console.log('Нет музыки')"></audio>
 
     <!-- ВИДЖЕТ ПОГОДЫ -->
-    <div id="weather-widget" class="hidden">
+    <div id="weather-widget">
         <iframe frameborder="0" scrolling="no" width="250" height="170" style="border:0px solid #000000"
                 src="https://pogodnik.com/informer/horizontal/01/12346-pogoda-v-zavodoukovske-tyumenskaya-oblast-rossiya">
             <a href="https://pogodnik.com/12346-pogoda-v-zavodoukovske-tyumenskaya-oblast-rossiya">
@@ -275,7 +275,7 @@
             <div style="background: #fff; border: 2px inset #999; padding: 15px; margin-bottom: 20px; text-align: left;">
                 <h3 style="margin-top: 0;">Виджет погоды</h3>
                 <label style="font-size: 16px; cursor: pointer; display: flex; align-items: center; gap: 10px;">
-                    <input type="checkbox" id="weather-toggle" onchange="toggleWeather()" style="width: 20px; height: 20px; cursor: pointer;">
+                    <input type="checkbox" id="weather-toggle" checked onchange="toggleWeather()" style="width: 20px; height: 20px; cursor: pointer;">
                     Показывать погоду в Заводоуковске
                 </label>
             </div>
