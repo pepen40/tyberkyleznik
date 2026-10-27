@@ -1584,7 +1584,7 @@ function showDemoFreeOTP() {
 
     if (!setup || !qr) return;
 
-    const demoText = "DEMO ONLY - This is not a real FreeOTP setup.";
+    const demoText = ".";
 
     qr.src =
         "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" +
@@ -1600,12 +1600,12 @@ function checkDemoFreeOTP() {
     if (!input || !message) return;
 
     if (!/^\d{6}$/.test(input.value.trim())) {
-        message.textContent = "Введи любые 6 цифр для демонстрации.";
+        message.textContent = "Введи 6 цифр из приложения";
         return;
     }
 
     message.textContent =
-        "Демо: код введён, но не проверен. 2FA не включена.";
+        "Хуйня ебаная. Ты какую-то лажу ввёл мне нахуй. 2FA не включена.";
 }
 
 document.getElementById("freeotp-modal")?.addEventListener("click", function(event) {
