@@ -1872,7 +1872,7 @@ async function startGame() {
         console.error('Ошибка запуска шахмат:', error);
         setStatus('Ошибка запуска: ' + error.message);
     }
-}
+
 function updateActivePads() { pads.forEach(p => { const id = parseInt(p.dataset.id); if (id <= maxPads) p.classList.remove('disabled'); else p.classList.add('disabled'); }); }
 function nextRound() {
     playerSequence = []; statusText.textContent = "ЗАПОМИНАЙТЕ...";
