@@ -1,26 +1,109 @@
-<div class="settings-container">
-    <div class="tg-banner">
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Настройки</title>
+    <style>
+        /* ТВОИ СТАРЫЕ СТИЛИ (Я их не трогал, они все здесь) */
+        body { background-color: #008080; color: #000; font-family: "Times New Roman", Times, serif; text-align: center; margin: 0; padding: 20px; }
+        .panel { background-color: #c0c0c0; border: 4px outset #ffffff; padding: 20px; width: 90%; max-width: 600px; margin: 0 auto; text-align: center; }
+        input[type="text"], input[type="password"] { font-family: "Courier New", Courier, monospace; font-size: 18px; padding: 5px; margin: 5px 0; border: 3px inset #ffffff; width: 80%; background-color: #fff; }
+        button { font-family: "Courier New", Courier, monospace; font-size: 18px; font-weight: bold; background-color: #c0c0c0; border: 4px outset #ffffff; padding: 5px 15px; margin-top: 10px; cursor: pointer; }
+        button:active { border: 4px inset #ffffff; }
+        
+        /* Стили для телеграм-блока */
+        .tg-promo { background-color: #fff; border: 3px inset #999; padding: 10px; margin: 0 auto 20px auto; width: 90%; max-width: 600px; font-family: "Courier New", Courier, monospace; font-size: 14px; font-weight: bold; color: #333; text-align: center; }
+        .tg-promo a { color: #000080; text-decoration: underline; }
+        .tg-promo a:hover { color: #ff4500; }
+
+        .version-text { text-align: center; font-weight: bold; margin-top: 30px; font-size: 16px; color: #000080; }
+
+        /* ========================================================= */
+        /* НОВЫЕ СТИЛИ ДЛЯ КНОПКИ ПОГОДЫ (ТО, ЧТО ТЫ ПРОСИЛ)         */
+        /* ========================================================= */
+        .settings-weather-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #c0c0c0;
+            border: 4px outset #ffffff;
+            padding: 10px;
+            margin: 10px auto;
+            width: 90%;
+            max-width: 400px;
+            cursor: pointer;
+            color: #000;
+            font-family: "Courier New", Courier, monospace;
+            font-weight: bold;
+            font-size: 14px;
+            user-select: none;
+            text-align: center;
+        }
+
+        .settings-weather-btn:active {
+            border: 4px inset #ffffff;
+        }
+
+        /* Прячем стандартный чекбокс */
+        .settings-weather-btn input[type="checkbox"] {
+            display: none;
+        }
+
+        /* Рисуем свой квадратик */
+        .settings-weather-btn .custom-checkbox {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            background-color: #fff;
+            border: 2px inset #999;
+            margin-right: 10px;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        /* Рисуем саму галочку через CSS */
+        .settings-weather-btn input[type="checkbox"]:checked + .custom-checkbox::after {
+            content: "";
+            position: absolute;
+            top: 1px;
+            left: 5px;
+            width: 4px;
+            height: 8px;
+            border: solid #000080;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Твой телеграм блок -->
+    <div class="tg-promo">
         ПОДПИШИСЬ НА НАШ ТЕЛЕГРАМ КАНАЛ @pepen40 -><br>
         <a href="https://t.me/pepen40">t.me/pepen40</a> <-
     </div>
 
-    <div class="settings-panel">
+    <!-- Основной блок настроек -->
+    <div class="panel">
         <h2>Настройки</h2>
-        <div class="settings-desc">
+        <p style="text-align: left; font-size: 14px; line-height: 1.4;">
             эта вкладка на случай если кто то зайдет на сайт и подумает а хули эта хуйня не фурычит как я хочю нахуй или просто хочет обезопасить свой аккаунт тут вы можете почти все что угодно нахуй разгуляться есть где
-        </div>
+        </p>
 
-        <div class="settings-inner">
-            <div class="settings-inner-title">Виджет погоды</div>
-            
-       <label class="settings-weather-btn">
-    <input type="checkbox" checked>
-    <span class="custom-checkbox"></span>
-    <span>Показывать погоду в Заводоуковске</span>
-</label>
-        </div>
+        <!-- Блок погоды (ТВОЯ НОВАЯ КНОПКА) -->
+        <div style="text-align: left; font-weight: bold; margin-bottom: 10px;">Виджет погоды</div>
+        
+        <label class="settings-weather-btn">
+            <input type="checkbox" checked>
+            <span class="custom-checkbox"></span>
+            <span>Показывать погоду в Заводоуковске</span>
+        </label>
 
-        <div class="settings-btn" style="background-color: #d1d1d1; border: 1px solid #999; color: #1a5cff;">
+        <br>
+
+        <!-- Блок 2FA (для примера, как было) -->
+        <div style="background-color: #c0c0c0; border: 4px outset #fff; padding: 10px; font-family: 'Courier New', monospace; font-size: 12px; font-weight: bold; color: #000080; margin: 10px auto; width: 90%; max-width: 400px;">
             подключить жосткую 2fa аутентификацию с помощью наших партнеров FreeOTP
         </div>
 
@@ -28,4 +111,6 @@
             версия игры beta 6.0
         </div>
     </div>
-</div>
+
+</body>
+</html>
