@@ -1567,3 +1567,47 @@ async function handlePadClick(e) {
 pads.forEach(pad => pad.addEventListener('click', handlePadClick));
 restartBtn.addEventListener('click', startGame);
 statusText.addEventListener('click', () => { if (!gameStarted) startGame(); });
+
+function openFreeOTPWindow() {
+    const modal = document.getElementById("freeotp-modal");
+    if (modal) modal.style.display = "flex";
+}
+
+function closeFreeOTPWindow() {
+    const modal = document.getElementById("freeotp-modal");
+    if (modal) modal.style.display = "none";
+}
+
+function showDemoFreeOTP() {
+    const setup = document.getElementById("freeotp-demo-setup");
+    const qr = document.getElementById("freeotp-demo-qr");
+
+    if (!setup || !qr) return;
+
+    const demoText = "DEMO ONLY - This is not a real FreeOTP setup.";
+
+    qr.src =
+        "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" +
+        encodeURIComponent(demoText);
+
+    setup.style.display = "block";
+}
+
+function checkDemoFreeOTP() {
+    const input = document.getElementById("freeotp-demo-code");
+    const message = document.getElementById("freeotp-demo-message");
+
+    if (!input || !message) return;
+
+    if (!/^\d{6}$/.test(input.value.trim())) {
+        message.textContent = "Введи любые 6 цифр для демонстрации.";
+        return;
+    }
+
+    message.textContent =
+        "Демо: код введён, но не проверен. 2FA не включена.";
+}
+
+document.getElementById("freeotp-modal")?.addEventListener("click", function(event) {
+    if (event.target === this) closeFreeOTPWindow();
+});
