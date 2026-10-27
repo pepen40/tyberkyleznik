@@ -1584,7 +1584,7 @@ function showDemoFreeOTP() {
 
     if (!setup || !qr) return;
 
-    const demoText = ".";
+    const demoText = "Unable to";
 
     qr.src =
         "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" +
