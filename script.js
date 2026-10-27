@@ -1789,8 +1789,44 @@ function resetGame() {
     statusText.textContent = "привет ножми"; statusText.style.color = "#00FF00"; pads.forEach(p => p.classList.add('disabled')); updateActivePads();
 }
 function startGame() {
-    gameStarted = true; gameSequence = []; level = 1; maxPads = 1;
-    restartBtn.classList.add('hidden'); updateActivePads(); nextRound();
+    if (typeof Chess === 'undefined') {
+        setStatus('Ошибка: библиотека chess.js не загрузилась. Перезагрузи страницу.');
+        setEngineStatus('Ошибка загрузки chess.js');
+        return;
+    }
+
+    try {
+        humanColor = $('chess-color').value;
+        level = Number($('chess-level').value) || 3;
+
+        game = new Chess();
+        ended = false;
+        selectedSquare = null;
+        legalTargets = [];
+        engineBusy = false;
+
+        $('chess-setup').classList.add('hidden');
+        $('chess-play').classList.remove('hidden');
+
+        renderBoard();
+        setStatus('Загружаю Stockfish…');
+        startEngine();
+
+        if (humanColor === 'b') {
+            setStatus('Ты играешь чёрными. Ожидание хода Stockfish…');
+        } else {
+            setStatus('Ты играешь белыми. Ожидание Stockfish…');
+        }
+
+        if (engineReady) {
+            configureEngine();
+            if (humanColor === 'b') askEngineMove();
+            else setStatus('Твой ход — белые.');
+        }
+    } catch (error) {
+        console.error('Ошибка запуска шахмат:', error);
+        setStatus('Ошибка запуска: ' + error.message);
+    }
 }
 function updateActivePads() { pads.forEach(p => { const id = parseInt(p.dataset.id); if (id <= maxPads) p.classList.remove('disabled'); else p.classList.add('disabled'); }); }
 function nextRound() {
