@@ -196,30 +196,30 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
   animation-iteration-count: 1;
 }
 
-/* ВИДЖЕТ ПОГОДЫ (БЕЗ РАМКИ) */
+/* ВИДЖЕТ ПОГОДЫ */
 #weather-widget {
     position: fixed;
     bottom: 20px;
     right: 20px;
     z-index: 999;
-    background: transparent;
-    border: none;
-    padding: 0;
+    background: #c0c0c0;
+    border: 4px outset #fff;
+    padding: 10px;
     width: 250px;
     text-align: center;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
 }
 
 .weather-header {
     font-size: 14px;
     font-weight: bold;
-    margin-bottom: 5px;
+    margin-bottom: 10px;
     color: #000080;
     font-family: "Courier New", Courier, monospace;
-    text-shadow: 1px 1px 0 #fff;
 }
 
 #weather-widget iframe {
     display: block;
     width: 100%;
-    border: 1px solid #000;
-} 
+    border: 2px inset #999;
+}
