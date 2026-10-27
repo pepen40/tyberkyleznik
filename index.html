@@ -477,28 +477,188 @@
 })();
 </script>
     <script src="script.js"></script>
-    <style>
-  #antique-clock {
+    
+<style>
+  #retro-clock {
     position: fixed;
-    bottom: 0;
     left: 50%;
+    bottom: 0;
     transform: translateX(-50%);
-    width: 140px;
-    max-width: 25vw;
-    max-height: 22vh;
-    height: auto;
-    object-fit: contain;
+    width: 150px;
+    aspect-ratio: 920 / 968;
     z-index: 999;
     pointer-events: none;
-    user-select: none;
-    filter: sepia(0.2) contrast(0.9) saturate(0.8);
+    filter: sepia(.2) contrast(.92) saturate(.8);
+  }
+
+  #retro-clock img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+
+  #retro-clock .hands {
+    position: absolute;
+    left: 50%;
+    top: 64.6%;
+    width: 1px;
+    height: 1px;
+  }
+
+  #retro-clock .hand {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    transform-origin: 50% 100%;
+    border-radius: 4px;
+    background: #382719;
+    box-shadow: 0 0 2px #d6b66b;
+  }
+
+  #retro-clock .hour {
+    width: 3px;
+    height: 20px;
+    margin-left: -1.5px;
+  }
+
+  #retro-clock .minute {
+    width: 2px;
+    height: 29px;
+    margin-left: -1px;
+  }
+
+  #retro-clock .second {
+    width: 1px;
+    height: 33px;
+    margin-left: -.5px;
+    background: #a52c19;
+  }
+
+  #retro-clock .pin {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #b28a42;
+    left: -3px;
+    top: -3px;
+    box-shadow: 0 0 2px #24180e;
+  }
+
+  #retro-clock .cuckoo {
+    position: absolute;
+    top: 10%;
+    right: 4%;
+    font-size: 30px;
+    opacity: 0;
+    transform: translate(0, 12px) scale(.2);
+  }
+
+  #retro-clock .cuckoo.pop {
+    animation: cuckoo-pop 1.1s ease-in-out;
+  }
+
+  @keyframes cuckoo-pop {
+    0% { opacity: 0; transform: translate(0, 12px) scale(.2); }
+    20% { opacity: 1; transform: translate(8px, -8px) scale(1.1); }
+    65% { opacity: 1; transform: translate(0, 0) scale(1); }
+    100% { opacity: 0; transform: translate(0, 12px) scale(.2); }
   }
 </style>
 
-<img
-  id="antique-clock"
-  src="./clock.png"
-  alt="Старинные часы"
-/>
+<div id="retro-clock">
+  <img src="./clock.png" alt="Старинные карманные часы">
+  <div class="hands">
+    <div class="hand hour" id="retro-hour"></div>
+    <div class="hand minute" id="retro-minute"></div>
+    <div class="hand second" id="retro-second"></div>
+    <div class="pin"></div>
+  </div>
+  <div class="cuckoo" id="retro-cuckoo">🐦</div>
+</div>
+
+<script>
+(() => {
+  const hourHand = document.getElementById('retro-hour');
+  const minuteHand = document.getElementById('retro-minute');
+  const secondHand = document.getElementById('retro-second');
+  const bird = document.getElementById('retro-cuckoo');
+
+  if (!hourHand || !minuteHand || !secondHand || !bird) return;
+
+  let audio;
+  let soundEnabled = false;
+  let lastMinute = -1;
+
+  function tickSound(frequency = 1100, duration = .035) {
+    if (!soundEnabled) return;
+
+    try {
+      audio ||= new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state === 'suspended') audio.resume();
+
+      const osc = audio.createOscillator();
+      const gain = audio.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.value = frequency;
+      gain.gain.setValueAtTime(.0001, audio.currentTime);
+      gain.gain.exponentialRampToValueAtTime(.045, audio.currentTime + .005);
+      gain.gain.exponentialRampToValueAtTime(.0001, audio.currentTime + duration);
+
+      osc.connect(gain);
+      gain.connect(audio.destination);
+      osc.start();
+      osc.stop(audio.currentTime + duration);
+    } catch (_) {}
+  }
+
+  function cuckooSound() {
+    if (!soundEnabled) return;
+
+    // Два тона имитируют «ку-ку»
+    [880, 660, 880, 660].forEach((freq, i) => {
+      setTimeout(() => tickSound(freq, .16), i * 260);
+    });
+  }
+
+  function updateClock() {
+    const now = new Date();
+    const ms = now.getMilliseconds();
+    const seconds = now.getSeconds() + ms / 1000;
+    const minutes = now.getMinutes() + seconds / 60;
+    const hours = (now.getHours() % 12) + minutes / 60;
+
+    hourHand.style.transform = `rotate(${hours * 30}deg)`;
+    minuteHand.style.transform = `rotate(${minutes * 6}deg)`;
+    secondHand.style.transform = `rotate(${seconds * 6}deg)`;
+
+    if (now.getMinutes() !== lastMinute) {
+      if (lastMinute !== -1) {
+        bird.classList.remove('pop');
+        void bird.offsetWidth;
+        bird.classList.add('pop');
+        cuckooSound();
+      }
+      lastMinute = now.getMinutes();
+    }
+  }
+
+  // Звук разрешается после первого клика по странице
+  document.addEventListener('pointerdown', () => {
+    soundEnabled = true;
+    try {
+      audio ||= new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state === 'suspended') audio.resume();
+    } catch (_) {}
+  }, { once: true });
+
+  updateClock();
+  setInterval(updateClock, 100);
+  setInterval(() => tickSound(1000, .025), 1000);
+})();
+</script>
+
 </body>
 </html>
