@@ -196,43 +196,40 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
   animation-iteration-count: 1;
 }
 
-/* ВИДЖЕТ ПОГОДЫ (УБРАНА СЕРАЯ РАМКА И ЗАГОЛОВОК) */
+/* ВИДЖЕТ ПОГОДЫ (ВСЁ УБРАНО) */
 #weather-widget {
     position: fixed;
     bottom: 20px;
     right: 20px;
     z-index: 999;
     width: 250px;
-    text-align: center;
+    /* Убрали фон, рамки, паддинги */
 }
 
 #weather-widget iframe {
     display: block;
     width: 100%;
-    border: none;
+    border: none; /* Убрали рамку с самого ифрейма */
 } 
 
-/* НОВЫЙ СТИЛЬ ДЛЯ НАСТРОЕК (КАК 2FA) */
-.settings-block {
-    background-color: #d1d1d1;
-    border: 2px inset #999;
-    padding: 15px;
-    margin-bottom: 20px;
-    text-align: center;
-}
-.settings-link {
-    color: #4a90e2;
-    text-decoration: none;
-    font-weight: bold;
-    font-family: sans-serif;
+/* НОВАЯ КНОПКА ПОГОДЫ (В СТИЛЕ 2FA) */
+.fake-2fa-btn {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
-    cursor: pointer;
-    transition: color 0.2s;
-}
-.settings-link:hover {
-    color: #2a6cb8;
+    width: 100%;
+    padding: 10px;
+    background-color: #c0c0c0;
+    border: 4px outset #ffffff;
+    color: #0000ee; /* Синий цвет как у ссылки */
     text-decoration: underline;
+    font-family: "Courier New", Courier, monospace;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+.fake-2fa-btn:active {
+    border: 4px inset #ffffff;
 }
