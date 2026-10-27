@@ -675,10 +675,35 @@
 
   let audioEnabled = false;
   let lastMinute = new Date().getMinutes();
+    
+  function toggleAntiqueClock() {
+    const enabled = document.getElementById('clock-toggle').checked;
+    const clock = document.getElementById('antique-clock');
+    const tick = document.getElementById('antique-tick');
+    const cuckoo = document.getElementById('antique-cuckoo');
+    const bird = document.getElementById('clock-bird');
+
+    clock.style.display = enabled ? '' : 'none';
+
+    if (!enabled) {
+      tick.pause();
+      tick.currentTime = 0;
+      cuckoo.pause();
+      cuckoo.currentTime = 0;
+      bird.classList.remove('bird-crowing');
+    } else if (audioEnabled) {
+      tick.play().catch(() => {});
+    }
+  }
+
 
   
 function updateClock() {
   const now = new Date();
+      if (!document.getElementById('clock-toggle').checked) {
+    lastMinute = new Date().getMinutes();
+    return;
+  }
   const s = now.getSeconds() + now.getMilliseconds() / 1000;
   const m = now.getMinutes() + s / 60;
   const h = (now.getHours() % 12) + m / 60;
