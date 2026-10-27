@@ -2280,3 +2280,77 @@ playMoveSound(playedMove);
         initPerformanceOverlay();
     }
 })();
+
+
+(() => {
+    const botImages = {
+        1: 'bot1.jpg',
+        2: 'bot2.jpg',
+        3: 'bot3.jpg',
+        4: 'bot4.jpg',
+        5: 'bot5.jpg'
+    };
+
+    function setupBotImages() {
+        const cards = document.querySelectorAll('.chess-bot-card');
+
+        cards.forEach(card => {
+            const level = card.dataset.level;
+            const avatar = card.querySelector('.chess-bot-avatar');
+            if (!avatar || !botImages[level] || avatar.dataset.imageReady) return;
+
+            const img = document.createElement('img');
+            img.src = botImages[level];
+            img.alt = `Шахматный бот ${level}`;
+            img.onerror = () => {
+                img.remove();
+                avatar.textContent = '📷';
+                console.warn(`Не удалось загрузить ${botImages[level]}`);
+            };
+
+            avatar.textContent = '';
+            avatar.appendChild(img);
+            avatar.dataset.imageReady = 'true';
+        });
+
+        const selected = document.querySelector(
+            '.chess-bot-card.is-selected'
+        );
+
+        if (selected) showDetailImage(selected.dataset.level);
+    }
+
+    function showDetailImage(level) {
+        const container = document.getElementById('chess-bot-detail-avatar');
+        if (!container || !botImages[level]) return;
+
+        const current = container.querySelector('img');
+        if (current?.dataset.level === level) return;
+
+        const img = document.createElement('img');
+        img.src = botImages[level];
+        img.alt = `Шахматный бот ${level}`;
+        img.dataset.level = level;
+
+        img.onerror = () => {
+            img.remove();
+            container.textContent = '📷';
+        };
+
+        container.replaceChildren(img);
+    }
+
+    document.addEventListener('click', event => {
+        const card = event.target.closest('.chess-bot-card');
+        if (card) {
+            showDetailImage(card.dataset.level);
+        }
+    });
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupBotImages);
+    } else {
+        setupBotImages();
+    }
+})();
+
