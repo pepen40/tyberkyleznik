@@ -1879,5 +1879,53 @@ function updateClock() {
     <div>PCL (cp.) <span>НЕИЗВЕСТНО</span></div>
 </div>
 
+<script>
+(() => {
+    const overlay = document.getElementById('performance-overlay');
+    const fps = document.getElementById('perf-fps');
+    const toggle = document.getElementById('fps-overlay-toggle');
+
+    if (!overlay || !toggle) {
+        console.error('Не найден оверлей или переключатель FPS');
+        return;
+    }
+
+    // Восстанавливаем сохранённое состояние
+    const saved = localStorage.getItem('fpsOverlayEnabled');
+    toggle.checked = saved !== 'false';
+    overlay.hidden = !toggle.checked;
+
+    // Переключатель
+    toggle.addEventListener('change', () => {
+        overlay.hidden = !toggle.checked;
+        localStorage.setItem('fpsOverlayEnabled', String(toggle.checked));
+    });
+
+    // Измерение FPS
+    if (fps) {
+        let frames = 0;
+        let lastTime = performance.now();
+
+        function update(now) {
+            frames++;
+
+            const elapsed = now - lastTime;
+
+            if (elapsed >= 500) {
+                fps.textContent = Math.round(frames * 1000 / elapsed);
+                frames = 0;
+                lastTime = now;
+            }
+
+            requestAnimationFrame(update);
+        }
+
+        requestAnimationFrame(update);
+    }
+})();
+</script>
+</body>
+</html>
+
 </body>
 </html>
