@@ -2560,7 +2560,7 @@ playMoveSound(playedMove);
 
 (() => {
     const botImages = {
-        1: 'king.jpg',
+        1: 'king.png',
         2: 'bot2.jpg',
         3: 'bot3.jpg',
         4: 'bot4.jpg',
