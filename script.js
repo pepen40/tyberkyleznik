@@ -2403,19 +2403,88 @@ function askEngineMove() {
 
     updateMaterialCounter();
   }
-function renderBoard() {
-    // существующий код отрисовки доски
-
-    updateMaterialCounter();
-}
-
 function updateMaterialCounter() {
-    // сюда вставляется весь код счётчика
-}
+    if (!game) return;
 
-function onSquareClick(square) {
-    // существующий код обработки ходов
+    const whiteBox = document.getElementById('chess-white-lost');
+    const blackBox = document.getElementById('chess-black-lost');
+    const scoreBox = document.getElementById('chess-material-score');
+
+    if (!whiteBox || !blackBox || !scoreBox) return;
+
+    const moves = game.history({ verbose: true });
+
+    const pieceValues = {
+        p: 1,
+        n: 3,
+        b: 3,
+        r: 5,
+        q: 9,
+        k: 0
+    };
+
+    const whiteLost = [];
+    const blackLost = [];
+
+    moves.forEach(move => {
+        if (!move.captured) return;
+
+        const capturedColor = move.color === 'w' ? 'b' : 'w';
+        const capturedPiece = {
+            color: capturedColor,
+            type: move.captured
+        };
+
+        if (capturedColor === 'w') {
+            whiteLost.push(capturedPiece);
+        } else {
+            blackLost.push(capturedPiece);
+        }
+    });
+
+    function renderLostPieces(container, pieces) {
+        container.replaceChildren();
+
+        if (pieces.length === 0) {
+            container.textContent = 'Нет потерь';
+            return;
+        }
+
+        pieces.forEach(piece => {
+            const img = document.createElement('img');
+
+            img.className = 'chess-lost-piece';
+            img.src = pieceFiles[piece.color][piece.type];
+            img.alt = piece.color === 'w'
+                ? 'Белая фигура'
+                : 'Чёрная фигура';
+            img.title = img.alt;
+
+            img.onerror = () => {
+                img.replaceWith(
+                    document.createTextNode(piece.type.toUpperCase())
+                );
+            };
+
+            container.appendChild(img);
+        });
+    }
+
+    renderLostPieces(whiteBox, whiteLost);
+    renderLostPieces(blackBox, blackLost);
+
+    const whiteScore = blackLost.reduce(
+        (sum, piece) => sum + pieceValues[piece.type], 0
+    );
+
+    const blackScore = whiteLost.reduce(
+        (sum, piece) => sum + pieceValues[piece.type], 0
+    );
+
+    scoreBox.textContent =
+        `Материальный баланс: Белые +${whiteScore} | Чёрные +${blackScore}`;
 }
+    
   function onSquareClick(square) {
     if (!game || ended || engineBusy || game.turn() !== humanColor) return;
     const piece = game.get(square);
