@@ -475,8 +475,19 @@ function listenForChallenges() {
     if(!onlineChannel) return;
     onlineChannel.on('broadcast', { event: 'challenge' }, (payload) => {
         const data = payload.payload;
-if (data.target === currentUser) {
+if (data && data.target === currentUser) {
     if (localStorage.getItem('rpgInvitesEnabled') === 'false') {
+        onlineChannel.send({
+            type: 'broadcast',
+            event: 'challenge_response',
+            payload: {
+                roomId: data.roomId,
+                from: currentUser,
+                target: data.host,
+                accepted: false,
+                reason: 'disabled'
+            }
+        });
         return;
     }
 
@@ -485,6 +496,37 @@ if (data.target === currentUser) {
             document.getElementById('pvp-receive-host-name').innerText = "Игрок: " + data.host;
             document.getElementById('pvp-receive-modal').classList.remove('hidden');
         }
+    });
+
+    onlineChannel.on('broadcast', { event: 'challenge_response' }, async (payload) => {
+        const data = payload.payload;
+        if (!data || data.target !== currentUser || data.reason !== 'disabled') return;
+        if (data.roomId !== myRoomId || !isPvpHost) return;
+
+        const blockedPlayer = data.from || 'Игрок';
+        const log = document.getElementById('pvp-log');
+        const indicator = document.getElementById('pvp-turn-indicator');
+        if (log) log.textContent = blockedPlayer + ' отключил входящие RPG-приглашения. Дуэль не состоится.';
+        if (indicator) indicator.textContent = 'ВЫЗОВ НЕ ДОСТАВЛЕН';
+
+        const battleScreen = document.getElementById('pvp-battle-screen');
+        const characterSelect = document.getElementById('rpg-char-select');
+        if (battleScreen) battleScreen.classList.add('hidden');
+        if (characterSelect) characterSelect.classList.remove('hidden');
+
+        if (roomChannel) {
+            const oldRoomChannel = roomChannel;
+            roomChannel = null;
+            await supabaseClient.removeChannel(oldRoomChannel);
+        }
+        if (lobbyChannel) {
+            try { await lobbyChannel.track({ online: true }); } catch (_) {}
+        }
+
+        myRoomId = null;
+        isPvpHost = false;
+        currentPvpChar = null;
+        alert(blockedPlayer + ' отключил входящие приглашения на RPG-дуэли. Вызов не доставлен.');
     });
 }
 
@@ -2907,7 +2949,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        if (result !== 'ok') {
+        if (result !== 'ok' && result?.status !== 'ok') {
             outgoingInvite = null;
             if (outgoingStatus) {
                 outgoingStatus.textContent = 'Не удалось отправить вызов. Попробуй ещё раз.';
@@ -2933,7 +2975,8 @@ document.addEventListener('DOMContentLoaded', () => {
             id: data.id,
             from: currentUser,
             target: data.from,
-            accepted: false
+            accepted: false,
+            reason: 'disabled'
         }
     });
     return;
@@ -3017,7 +3060,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (outgoingStatus) {
                 outgoingStatus.textContent = data.accepted
                     ? target + ' принял вызов! Следующим шагом подключим шахматную доску.'
-                    : target + ' отклонил вызов.';
+                    : (data.reason === 'disabled'
+                        ? target + ' отключил шахматные приглашения. Вызов не доставлен.'
+                        : target + ' отклонил шахматный вызов.');
             }
         })
         .subscribe(result => {
