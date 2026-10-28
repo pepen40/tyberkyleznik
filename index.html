@@ -283,6 +283,24 @@
           <span id="chess-engine-status">шахматный движок PEPENAI: подключён.</span>
         </div>
         <div id="chess-board" aria-label="Шахматная доска"></div>
+          <div id="chess-online-chat" class="hidden">
+    <h3>ЧАТ С СОПЕРНИКОМ</h3>
+
+    <div id="chess-chat-messages" aria-live="polite">
+        <div>Сообщения появятся здесь.</div>
+    </div>
+
+    <div id="chess-chat-input-row">
+        <input
+            id="chess-chat-input"
+            type="text"
+            maxlength="300"
+            placeholder="Напиши сопернику..."
+            autocomplete="off"
+        >
+        <button type="button" id="chess-chat-send">Отправить</button>
+    </div>
+</div>
           
 <div id="chess-material" class="chess-material">
     <div class="chess-material-title">МАТЕРИАЛЬНЫЕ ПОТЕРИ</div>
