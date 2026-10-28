@@ -2810,3 +2810,69 @@ playMoveSound(playedMove);
     });
 })();
 
+
+document.addEventListener('DOMContentLoaded', () => {
+    const openButton = document.getElementById('chess-multiplayer-open');
+    const backButton = document.getElementById('chess-multiplayer-back');
+    const menu = document.getElementById('chess-multiplayer-menu');
+    const panel = document.getElementById('chess-multiplayer-panel');
+    const status = document.getElementById('chess-multiplayer-status');
+    const list = document.getElementById('chess-online-players');
+
+    if (!openButton || !backButton || !menu || !panel || !status || !list) {
+        console.warn('Шахматный мультиплеер: HTML-элементы не найдены.');
+        return;
+    }
+
+    function renderChessOnlinePlayers() {
+        if (!window.supabaseClient && typeof supabaseClient === 'undefined') {
+            status.textContent = 'Подключение Supabase не найдено.';
+            return;
+        }
+
+        if (typeof onlineChannel === 'undefined' || !onlineChannel) {
+            status.textContent = 'Сначала войди в аккаунт на сайте.';
+            return;
+        }
+
+        const players = Object.keys(onlineChannel.presenceState())
+            .filter(name => name !== currentUser);
+
+        list.replaceChildren();
+
+        if (players.length === 0) {
+            status.textContent = 'Других игроков онлайн пока нет.';
+            return;
+        }
+
+        status.textContent = 'Игроки онлайн: ' + players.length;
+
+        players.forEach(name => {
+            const item = document.createElement('div');
+            item.className = 'pvp-room-item';
+            item.textContent = name;
+            list.appendChild(item);
+        });
+    }
+
+    openButton.addEventListener('click', () => {
+        menu.classList.add('hidden');
+        panel.classList.remove('hidden');
+        renderChessOnlinePlayers();
+    });
+
+    backButton.addEventListener('click', () => {
+        panel.classList.add('hidden');
+        menu.classList.remove('hidden');
+    });
+
+    if (typeof onlineChannel !== 'undefined' && onlineChannel) {
+        onlineChannel.on('presence', { event: 'sync' }, () => {
+            if (!panel.classList.contains('hidden')) {
+                renderChessOnlinePlayers();
+            }
+        });
+    }
+});
+
+
