@@ -2594,8 +2594,20 @@ playMoveSound(playedMove);
       setStatus(game.turn() === humanColor ? 'Мат. Ты проиграл.' : 'Мат! Ты победил!');
     } else if (game.isDraw()) {
       ended = true; setStatus('Ничья.');
-    } else if (game.isCheck()) {
-      setStatus(onlineChessMode ? (game.turn() === humanColor ? 'Шах! Твой ход.' : 'Тебе шах. Ход противника.') : (game.turn() === humanColor ? 'Шах! Твой ход.' : 'Шах PEPENAI.'));
+} else if (game.isCheck()) {
+  if (onlineChessMode) {
+    setStatus(
+      game.turn() === humanColor
+        ? 'ВАМ ШАХ! ВАШ ХОД.'
+        : 'ШАХ СОПЕРНИКУ! ХОД ПРОТИВНИКА.'
+    );
+  } else {
+    setStatus(
+      game.turn() === humanColor
+        ? 'Шах! Твой ход.'
+        : 'Шах PEPENAI.'
+    );
+  }
     } else {
       setStatus(onlineChessMode ? (game.turn() === humanColor ? 'Твой ход.' : 'Ход противника.') : (game.turn() === humanColor ? 'Твой ход.' : 'Ход PEPENAI…'));
     }
