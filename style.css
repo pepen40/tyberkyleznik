@@ -664,3 +664,13 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
     cursor: grabbing;
 }
 
+
+#performance-overlay {
+    cursor: move;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+#performance-overlay.dragging {
+    cursor: grabbing;
+}
