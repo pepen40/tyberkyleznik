@@ -475,8 +475,12 @@ function listenForChallenges() {
     if(!onlineChannel) return;
     onlineChannel.on('broadcast', { event: 'challenge' }, (payload) => {
         const data = payload.payload;
-        if (data.target === currentUser) {
-            pendingChallengeRoomId = data.roomId;
+if (data.target === currentUser) {
+    if (localStorage.getItem('rpgInvitesEnabled') === 'false') {
+        return;
+    }
+
+    pendingChallengeRoomId = data.roomId;
             pendingChallengeHost = data.host;
             document.getElementById('pvp-receive-host-name').innerText = "Игрок: " + data.host;
             document.getElementById('pvp-receive-modal').classList.remove('hidden');
@@ -2921,6 +2925,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!data || data.target !== currentUser || !data.from || !data.id) return;
 
+        if (localStorage.getItem('chessInvitesEnabled') === 'false') {
+    chessInviteChannel.send({
+        type: 'broadcast',
+        event: 'chess_invite_answer',
+        payload: {
+            id: data.id,
+            from: currentUser,
+            target: data.from,
+            accepted: false
+        }
+    });
+    return;
+}
+
         incomingInvite = data;
 
         if (inviteFrom) inviteFrom.textContent = data.from;
@@ -3013,5 +3031,43 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 });
 
+
+/* Настройки входящих дуэлей */
+(() => {
+    const rpgToggle = document.getElementById('rpg-invites-toggle');
+    const chessToggle = document.getElementById('chess-invites-toggle');
+
+    if (!rpgToggle || !chessToggle) return;
+
+    rpgToggle.checked =
+        localStorage.getItem('rpgInvitesEnabled') !== 'false';
+
+    chessToggle.checked =
+        localStorage.getItem('chessInvitesEnabled') !== 'false';
+
+    rpgToggle.addEventListener('change', () => {
+        localStorage.setItem(
+            'rpgInvitesEnabled',
+            String(rpgToggle.checked)
+        );
+
+        if (!rpgToggle.checked) {
+            const modal = document.getElementById('pvp-receive-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+    });
+
+    chessToggle.addEventListener('change', () => {
+        localStorage.setItem(
+            'chessInvitesEnabled',
+            String(chessToggle.checked)
+        );
+
+        if (!chessToggle.checked) {
+            const modal = document.getElementById('chess-invite-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+    });
+})();
 
 
