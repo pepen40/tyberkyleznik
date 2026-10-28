@@ -2811,6 +2811,7 @@ playMoveSound(playedMove);
 })();
 
 
+
 document.addEventListener('DOMContentLoaded', () => {
     const openButton = document.getElementById('chess-multiplayer-open');
     const backButton = document.getElementById('chess-multiplayer-back');
@@ -2818,19 +2819,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const panel = document.getElementById('chess-multiplayer-panel');
     const status = document.getElementById('chess-multiplayer-status');
     const list = document.getElementById('chess-online-players');
+    const inviteModal = document.getElementById('chess-invite-modal');
+    const inviteFrom = document.getElementById('chess-invite-from');
+    const acceptButton = document.getElementById('chess-invite-accept');
+    const declineButton = document.getElementById('chess-invite-decline');
+    const outgoingStatus = document.getElementById('chess-outgoing-status');
 
     if (!openButton || !backButton || !menu || !panel || !status || !list) {
         console.warn('Шахматный мультиплеер: HTML-элементы не найдены.');
         return;
     }
 
-    function renderChessOnlinePlayers() {
-        if (!window.supabaseClient && typeof supabaseClient === 'undefined') {
-            status.textContent = 'Подключение Supabase не найдено.';
-            return;
-        }
+    let chessInviteChannel = null;
+    let incomingInvite = null;
+    let outgoingInvite = null;
 
-        if (typeof onlineChannel === 'undefined' || !onlineChannel) {
+    function renderChessOnlinePlayers() {
+        if (!onlineChannel) {
             status.textContent = 'Сначала войди в аккаунт на сайте.';
             return;
         }
@@ -2850,9 +2855,102 @@ document.addEventListener('DOMContentLoaded', () => {
         players.forEach(name => {
             const item = document.createElement('div');
             item.className = 'pvp-room-item';
-            item.textContent = name;
+
+            const nick = document.createElement('strong');
+            nick.textContent = name;
+
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.textContent = 'Вызвать на шахматы';
+
+            button.addEventListener('click', () => sendChessInvite(name));
+
+            item.append(nick, button);
             list.appendChild(item);
         });
+    }
+
+    async function sendChessInvite(target) {
+        if (!chessInviteChannel) {
+            if (outgoingStatus) {
+                outgoingStatus.textContent = 'Канал приглашений ещё подключается.';
+            }
+            return;
+        }
+
+        if (outgoingInvite) {
+            if (outgoingStatus) {
+                outgoingStatus.textContent = 'Ты уже отправил приглашение. Дождись ответа.';
+            }
+            return;
+        }
+
+        const inviteId = crypto.randomUUID();
+
+        outgoingInvite = { id: inviteId, target };
+
+        if (outgoingStatus) {
+            outgoingStatus.textContent = 'Отправляем вызов игроку ' + target + '…';
+        }
+
+        const result = await chessInviteChannel.send({
+            type: 'broadcast',
+            event: 'chess_invite',
+            payload: {
+                id: inviteId,
+                from: currentUser,
+                target
+            }
+        });
+
+        if (result !== 'ok') {
+            outgoingInvite = null;
+            if (outgoingStatus) {
+                outgoingStatus.textContent = 'Не удалось отправить вызов. Попробуй ещё раз.';
+            }
+            return;
+        }
+
+        if (outgoingStatus) {
+            outgoingStatus.textContent = 'Вызов отправлен игроку ' + target + '. Ждём ответа…';
+        }
+    }
+
+    function handleIncomingInvite(payload) {
+        const data = payload.payload;
+
+        if (!data || data.target !== currentUser || !data.from || !data.id) return;
+
+        incomingInvite = data;
+
+        if (inviteFrom) inviteFrom.textContent = data.from;
+        if (inviteModal) inviteModal.classList.remove('hidden');
+    }
+
+    async function answerChessInvite(accepted) {
+        if (!incomingInvite || !chessInviteChannel) return;
+
+        const invite = incomingInvite;
+        incomingInvite = null;
+
+        if (inviteModal) inviteModal.classList.add('hidden');
+
+        await chessInviteChannel.send({
+            type: 'broadcast',
+            event: 'chess_invite_answer',
+            payload: {
+                id: invite.id,
+                from: currentUser,
+                target: invite.from,
+                accepted
+            }
+        });
+
+        if (status) {
+            status.textContent = accepted
+                ? 'Вызов принят. Следующий этап — создание шахматной комнаты.'
+                : 'Ты отклонил вызов игрока ' + invite.from + '.';
+        }
     }
 
     openButton.addEventListener('click', () => {
@@ -2866,13 +2964,54 @@ document.addEventListener('DOMContentLoaded', () => {
         menu.classList.remove('hidden');
     });
 
-    if (typeof onlineChannel !== 'undefined' && onlineChannel) {
+    if (acceptButton) {
+        acceptButton.addEventListener('click', () => answerChessInvite(true));
+    }
+
+    if (declineButton) {
+        declineButton.addEventListener('click', () => answerChessInvite(false));
+    }
+
+    if (onlineChannel) {
         onlineChannel.on('presence', { event: 'sync' }, () => {
             if (!panel.classList.contains('hidden')) {
                 renderChessOnlinePlayers();
             }
         });
     }
+
+    chessInviteChannel = supabaseClient.channel('chess-invitations', {
+        config: { broadcast: { self: false } }
+    });
+
+    chessInviteChannel
+        .on('broadcast', { event: 'chess_invite' }, handleIncomingInvite)
+        .on('broadcast', { event: 'chess_invite_answer' }, payload => {
+            const data = payload.payload;
+
+            if (!data || !outgoingInvite) return;
+            if (data.id !== outgoingInvite.id) return;
+            if (data.target !== currentUser) return;
+
+            const target = outgoingInvite.target;
+            outgoingInvite = null;
+
+            if (outgoingStatus) {
+                outgoingStatus.textContent = data.accepted
+                    ? target + ' принял вызов! Следующим шагом подключим шахматную доску.'
+                    : target + ' отклонил вызов.';
+            }
+        })
+        .subscribe(result => {
+            if (result === 'SUBSCRIBED') {
+                renderChessOnlinePlayers();
+            } else if (result === 'CHANNEL_ERROR' || result === 'TIMED_OUT') {
+                if (status) {
+                    status.textContent = 'Ошибка подключения шахматных приглашений.';
+                }
+            }
+        });
 });
+
 
 
