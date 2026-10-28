@@ -124,6 +124,27 @@
 <div id="tab-chess" class="panel hidden chess-panel">
     <h2>шахматы: definitive edition</h2>
     <button onclick="switchTab('minigames')">назад</button>
+    <div id="chess-multiplayer-menu">
+    <button type="button" id="chess-multiplayer-open">
+        играть ОНЛАЙН
+    </button>
+</div>
+
+<div id="chess-multiplayer-panel" class="hidden">
+    <h3>ШАХМАТНЫЙ МУЛЬТИПЛЕЕР</h3>
+
+    <p id="chess-multiplayer-status">
+        Подключение к списку игроков…
+    </p>
+
+    <div id="chess-online-players">
+        <!-- Список игроков появится здесь -->
+    </div>
+
+    <button type="button" id="chess-multiplayer-back">
+        назад к ботам
+    </button>
+</div>
     <div id="chess-game-container">
       <div class="chess-setup" id="chess-setup">
         <h3>Выбери соперника</h3>
