@@ -2720,14 +2720,7 @@ if (chatInput && chatSend && !chat.dataset.ready) {
       selectedSquare = null; legalTargets = [];
       $('chess-setup').classList.add('hidden');
       $('chess-play').classList.remove('hidden');
-      joinchessroom
-        const chessChat = document.getElementById('chess-online-chat');
-
-if (chessChat) {
-    chessChat.classList.remove('hidden');
-    chessChat.style.setProperty('display', 'block', 'important');
-    chessChat.style.setProperty('visibility', 'visible', 'important');
-}
+      $('chess-multiplayer-menu')?.classList.add('hidden');
       $('chess-multiplayer-panel')?.classList.add('hidden');
       if ($('chess-opponent-name')) {
         $('chess-opponent-name').textContent = 'СОПЕРНИК: ' + onlineChessOpponent;
@@ -3042,7 +3035,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let outgoingInvite = null;
     let activeChessRoomChannel = null;
 
-    async function joinChessRoom(roomId, color, opponentName) {
+    window.joinChessRoom = async function joinChessRoom(roomId, color, opponentName) {
         if (activeChessRoomChannel) {
             await supabaseClient.removeChannel(activeChessRoomChannel);
             activeChessRoomChannel = null;
@@ -3050,20 +3043,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const room = supabaseClient.channel('chess-room-' + roomId, {
             config: { broadcast: { self: false } }
         });
-        room.on('broadcast', { event: 'chess_chat' }, message => {
-    const data = message.payload;
-
-    if (
-        !data ||
-        data.roomId !== roomId ||
-        data.from === currentUser ||
-        typeof data.text !== 'string'
-    ) return;
-
-    if (data.text.length > 300) return;
-
-    appendOnlineChessChat(data.from, data.text);
-});
         activeChessRoomChannel = room;
         room.on('broadcast', { event: 'chess_move' }, message => {
             const data = message.payload;
@@ -3087,7 +3066,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (outgoingStatus) outgoingStatus.textContent = 'Не удалось подключить шахматную комнату. Попробуй вызвать игрока снова.';
             }
         });
-    }
+    };
 
     function renderChessOnlinePlayers() {
         if (!onlineChannel) {
@@ -3223,7 +3202,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (accepted) {
             switchTab('chess');
-            await joinChessRoom(invite.id, 'b', invite.from);
+            await window.joinChessRoom(invite.id, 'b', invite.from);
         }
     }
 
@@ -3279,7 +3258,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (data.accepted) {
                 switchTab('chess');
-                joinChessRoom(data.id, 'w', target);
+                window.joinChessRoom(data.id, 'w', target);
             }
         })
         .subscribe(result => {
