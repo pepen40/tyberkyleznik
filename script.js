@@ -2329,7 +2329,7 @@ function askEngineMove() {
     }
 
     engineBusy = true;
-    setStatus('Stockfish думает…');
+    setStatus('PEPENAI рассчитывает ход...');
 
     const cfg = levels[level];
     engine.postMessage('position fen ' + game.fen());
