@@ -2667,3 +2667,53 @@ playMoveSound(playedMove);
 })();
 
 
+(() => {
+    const overlay = document.getElementById('performance-overlay');
+    if (!overlay || overlay.dataset.dragReady) return;
+
+    overlay.dataset.dragReady = 'true';
+
+    let dragging = false;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    overlay.addEventListener('mousedown', (event) => {
+        // Перетаскиваем только левой кнопкой мыши
+        if (event.button !== 0) return;
+
+        const rect = overlay.getBoundingClientRect();
+
+        dragging = true;
+        offsetX = event.clientX - rect.left;
+        offsetY = event.clientY - rect.top;
+
+        overlay.classList.add('dragging');
+
+        // Убираем привязку к углу экрана
+        overlay.style.left = `${rect.left}px`;
+        overlay.style.top = `${rect.top}px`;
+        overlay.style.right = 'auto';
+        overlay.style.bottom = 'auto';
+
+        event.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (event) => {
+        if (!dragging) return;
+
+        const maxX = window.innerWidth - overlay.offsetWidth;
+        const maxY = window.innerHeight - overlay.offsetHeight;
+
+        const x = Math.max(0, Math.min(event.clientX - offsetX, maxX));
+        const y = Math.max(0, Math.min(event.clientY - offsetY, maxY));
+
+        overlay.style.left = `${x}px`;
+        overlay.style.top = `${y}px`;
+    });
+
+    document.addEventListener('mouseup', () => {
+        dragging = false;
+        overlay.classList.remove('dragging');
+    });
+})();
+
