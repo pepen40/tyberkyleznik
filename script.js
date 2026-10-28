@@ -2720,7 +2720,14 @@ if (chatInput && chatSend && !chat.dataset.ready) {
       selectedSquare = null; legalTargets = [];
       $('chess-setup').classList.add('hidden');
       $('chess-play').classList.remove('hidden');
-      $('chess-multiplayer-menu')?.classList.add('hidden');
+      joinchessroom
+        const chessChat = document.getElementById('chess-online-chat');
+
+if (chessChat) {
+    chessChat.classList.remove('hidden');
+    chessChat.style.setProperty('display', 'block', 'important');
+    chessChat.style.setProperty('visibility', 'visible', 'important');
+}
       $('chess-multiplayer-panel')?.classList.add('hidden');
       if ($('chess-opponent-name')) {
         $('chess-opponent-name').textContent = 'СОПЕРНИК: ' + onlineChessOpponent;
@@ -3043,6 +3050,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const room = supabaseClient.channel('chess-room-' + roomId, {
             config: { broadcast: { self: false } }
         });
+        room.on('broadcast', { event: 'chess_chat' }, message => {
+    const data = message.payload;
+
+    if (
+        !data ||
+        data.roomId !== roomId ||
+        data.from === currentUser ||
+        typeof data.text !== 'string'
+    ) return;
+
+    if (data.text.length > 300) return;
+
+    appendOnlineChessChat(data.from, data.text);
+});
         activeChessRoomChannel = room;
         room.on('broadcast', { event: 'chess_move' }, message => {
             const data = message.payload;
