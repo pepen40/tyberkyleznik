@@ -2093,6 +2093,66 @@ function updateClock() {
     updateSimulation();
 })();
 </script>
+    
+<script>
+(() => {
+    const overlay = document.getElementById('performance-overlay');
+    if (!overlay || overlay.dataset.dragReady) return;
+
+    overlay.dataset.dragReady = 'true';
+
+    let dragging = false;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    overlay.addEventListener('pointerdown', (event) => {
+        if (event.button !== 0) return;
+
+        // Не начинаем перетаскивание, если нажали на интерактивный элемент
+        if (event.target.closest('button, input, select, a')) return;
+
+        const rect = overlay.getBoundingClientRect();
+
+        dragging = true;
+        offsetX = event.clientX - rect.left;
+        offsetY = event.clientY - rect.top;
+
+        overlay.classList.add('dragging');
+        overlay.setPointerCapture(event.pointerId);
+
+        event.preventDefault();
+    });
+
+    overlay.addEventListener('pointermove', (event) => {
+        if (!dragging) return;
+
+        const maxX = window.innerWidth - overlay.offsetWidth;
+        const maxY = window.innerHeight - overlay.offsetHeight;
+
+        const x = Math.max(0, Math.min(
+            event.clientX - offsetX, Math.max(0, maxX)
+        ));
+        const y = Math.max(0, Math.min(
+            event.clientY - offsetY, Math.max(0, maxY)
+        ));
+
+        // !important нужен, потому что он задан в твоём CSS
+        overlay.style.setProperty('left', x + 'px', 'important');
+        overlay.style.setProperty('top', y + 'px', 'important');
+        overlay.style.setProperty('right', 'auto', 'important');
+        overlay.style.setProperty('bottom', 'auto', 'important');
+    });
+
+    function stopDragging() {
+        dragging = false;
+        overlay.classList.remove('dragging');
+    }
+
+    overlay.addEventListener('pointerup', stopDragging);
+    overlay.addEventListener('pointercancel', stopDragging);
+})();
+</script>
+
 </body>
 
 </body>
