@@ -2400,7 +2400,22 @@ function askEngineMove() {
       cell.addEventListener('click', () => onSquareClick(square));
       board.appendChild(cell);
     }
+
+    updateMaterialCounter();
   }
+function renderBoard() {
+    // существующий код отрисовки доски
+
+    updateMaterialCounter();
+}
+
+function updateMaterialCounter() {
+    // сюда вставляется весь код счётчика
+}
+
+function onSquareClick(square) {
+    // существующий код обработки ходов
+}
   function onSquareClick(square) {
     if (!game || ended || engineBusy || game.turn() !== humanColor) return;
     const piece = game.get(square);
