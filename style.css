@@ -674,3 +674,59 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
 #performance-overlay.dragging {
     cursor: grabbing;
 }
+
+
+/* Счётчик материала в шахматах */
+.chess-material {
+    margin: 12px auto;
+    padding: 10px;
+    max-width: 520px;
+    box-sizing: border-box;
+    background: #c0c0c0;
+    color: #000;
+    border: 3px inset #fff;
+    font-family: Tahoma, Arial, sans-serif;
+    font-size: 12px;
+    text-align: left;
+}
+
+.chess-material-title {
+    margin-bottom: 8px;
+    padding: 5px;
+    background: #000080;
+    color: #fff;
+    font-weight: bold;
+    text-align: center;
+}
+
+.chess-material-row {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin: 8px 0;
+}
+
+.chess-lost-pieces {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    min-height: 30px;
+}
+
+.chess-lost-piece {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    padding: 2px;
+    background: #eee;
+    border: 1px solid #888;
+    image-rendering: auto;
+}
+
+.chess-material-score {
+    margin-top: 8px;
+    padding-top: 7px;
+    border-top: 1px solid #777;
+    font-weight: bold;
+}
