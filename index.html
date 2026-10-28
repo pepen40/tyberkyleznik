@@ -104,6 +104,9 @@
             #pvp-receive-modal .modal-content,
             #chess-invite-modal .modal-content { width: 100% !important; }
         }
+    
+        #chess-opponent-name { display:block; width:100%; font-size:clamp(18px, 2.8vw, 26px); color:#000080; background:#fff; border:2px inset #999; padding:8px 10px; box-sizing:border-box; }
+        #chess-engine-status.online-turn-status { font-weight:900; color:#000080; font-size:clamp(16px, 2.4vw, 22px); }
     </style>
 
 </head>
@@ -275,6 +278,7 @@
       </div>
       <div id="chess-play" class="hidden">
         <div class="chess-toolbar">
+          <strong id="chess-opponent-name" class="chess-opponent-name">Соперник: —</strong>
           <strong id="chess-status" role="status">Подготовка движка…</strong>
           <span id="chess-engine-status">шахматный движок PEPENAI: подключён.</span>
         </div>

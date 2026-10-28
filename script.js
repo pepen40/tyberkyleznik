@@ -2199,12 +2199,17 @@ document.getElementById("freeotp-modal")?.addEventListener("click", function(eve
   };
   let game = null, engine = null, engineReady = false, engineBusy = false;
   let humanColor = 'w', level = 3, selectedSquare = null, legalTargets = [], ended = false;
-  let onlineChessMode = false, onlineChessRoomId = null, onlineChessChannel = null, applyingRemoteChessMove = false;
+  let onlineChessMode = false, onlineChessRoomId = null, onlineChessChannel = null, onlineChessOpponent = '', applyingRemoteChessMove = false;
   const $ = id => document.getElementById(id);
   const boardEl = () => $('chess-board');
 
   function setStatus(text) { if ($('chess-status')) $('chess-status').textContent = text; }
   function setEngineStatus(text) { if ($('chess-engine-status')) $('chess-engine-status').textContent = text; }
+  function setOnlineTurnStatus() {
+    if (!onlineChessMode || !game || ended) return;
+    const statusEl = $('chess-engine-status');
+    if (statusEl) { statusEl.textContent = game.turn() === humanColor ? 'ТВОЙ ХОД' : 'ХОД ПРОТИВНИКА'; statusEl.classList.add('online-turn-status'); }
+  }
     function playMoveSound(move) {
             if (typeof chessSounds === 'undefined') return;
     if (!game || !move) return;
@@ -2236,10 +2241,13 @@ document.getElementById("freeotp-modal")?.addEventListener("click", function(eve
           engine.postMessage('isready');
         } else if (line === 'readyok') {
           engineReady = true;
-          setEngineStatus('PEPENAI: подключён');
-          if (game && !ended && game.turn() !== humanColor) askEngineMove();
+          if (!onlineChessMode) {
+            setEngineStatus('PEPENAI: подключён');
+            if (game && !ended && game.turn() !== humanColor) askEngineMove();
+          }
         } else if (line.startsWith('bestmove')) {
           engineBusy = false;
+          if (onlineChessMode) return;
           const match = line.match(/^bestmove\s+([a-h][1-8][a-h][1-8][qrbn]?)/);
           if (!match || !game || ended) return;
           const uci = match[1];
@@ -2264,13 +2272,15 @@ playMoveSound(playedMove);
             } catch (e) { setStatus('Не удалось применить ход движка. Начни новую партию.'); }
           }, 1000);
         } else if (line.startsWith('id name')) {
-          setEngineStatus('Stockfish: ' + line.slice(7));
+          if (!onlineChessMode) setEngineStatus('Stockfish: ' + line.slice(7));
         }
       };
       engine.onerror = () => {
         engineReady = false;
-        setEngineStatus('PEPENAI: ошибка загрузки');
-        setStatus('Не удалось загрузить PEPENAI. Проверь подключение к интернету и перезагрузи страницу.');
+        if (!onlineChessMode) {
+          setEngineStatus('PEPENAI: ошибка загрузки');
+          setStatus('Не удалось загрузить PEPENAI. Проверь подключение к интернету и перезагрузи страницу.');
+        }
       };
       engine.postMessage('uci');
     } catch (e) {
@@ -2283,6 +2293,8 @@ playMoveSound(playedMove);
       onlineChessMode = false;
       onlineChessRoomId = null;
       onlineChessChannel = null;
+      $('chess-opponent-name')?.classList.add('hidden');
+      $('chess-engine-status')?.classList.remove('online-turn-status');
       setStatus('Загружаю шахматную библиотеку…');
       const chessModule = await import('https://cdn.jsdelivr.net/npm/chess.js@1.0.0/+esm');
       const ChessClass = chessModule.Chess;
@@ -2324,7 +2336,7 @@ playMoveSound(playedMove);
   }
 
 function askEngineMove() {
-    if (!engine || !engineReady || engineBusy || ended ||
+    if (onlineChessMode || !engine || !engineReady || engineBusy || ended ||
         !game || game.turn() === humanColor) return;
 
     // Первый уровень: очень слабый бот со случайными допустимыми ходами.
@@ -2583,9 +2595,17 @@ playMoveSound(playedMove);
     } else if (game.isDraw()) {
       ended = true; setStatus('Ничья.');
     } else if (game.isCheck()) {
-      setStatus(game.turn() === humanColor ? 'Шах! Твой ход.' : 'Шах PEPENAI.');
+      setStatus(onlineChessMode ? (game.turn() === humanColor ? 'Шах! Твой ход.' : 'Тебе шах. Ход противника.') : (game.turn() === humanColor ? 'Шах! Твой ход.' : 'Шах PEPENAI.'));
     } else {
-      setStatus(game.turn() === humanColor ? 'Твой ход.' : 'Ход PEPENAI…');
+      setStatus(onlineChessMode ? (game.turn() === humanColor ? 'Твой ход.' : 'Ход противника.') : (game.turn() === humanColor ? 'Твой ход.' : 'Ход PEPENAI…'));
+    }
+    if (onlineChessMode) {
+      if (ended) {
+        setEngineStatus('ПАРТИЯ ЗАВЕРШЕНА');
+        $('chess-engine-status')?.classList.add('online-turn-status');
+      } else {
+        setOnlineTurnStatus();
+      }
     }
   }
   function resign() {
@@ -2598,30 +2618,40 @@ playMoveSound(playedMove);
     }
     ended = true; engineBusy = false;
     setStatus(onlineChessMode ? 'Ты сдался. Онлайн-партия завершена.' : 'Ты проебал. Нажми «Новая партия / сменить сложность», чтобы сыграть ещё.');
+    if (onlineChessMode) setEngineStatus('ПАРТИЯ ЗАВЕРШЕНА');
   }
   function showSetup() {
     ended = true; engineBusy = false;
-    onlineChessMode = false; onlineChessRoomId = null; onlineChessChannel = null;
+    onlineChessMode = false; onlineChessRoomId = null; onlineChessChannel = null; onlineChessOpponent = '';
+    $('chess-opponent-name')?.classList.add('hidden');
+    $('chess-engine-status')?.classList.remove('online-turn-status');
     $('chess-play').classList.add('hidden');
     $('chess-setup').classList.remove('hidden');
     setStatus('Выбери цвет и сложность.');
   }
 
-  window.startOnlineChessBoard = async function(color, roomId, channel) {
+  window.startOnlineChessBoard = async function(color, roomId, channel, opponentName) {
     try {
       const chessModule = await import('https://cdn.jsdelivr.net/npm/chess.js@1.0.0/+esm');
       const ChessClass = chessModule.Chess;
       if (typeof ChessClass !== 'function') throw new Error('chess.js не загрузилась');
-      onlineChessMode = true; onlineChessRoomId = roomId; onlineChessChannel = channel;
-      humanColor = color; game = new ChessClass(); ended = false; engineBusy = false;
+      onlineChessMode = true; onlineChessRoomId = roomId; onlineChessChannel = channel; onlineChessOpponent = opponentName || 'Соперник';
+      if (engine) { try { engine.postMessage('stop'); } catch (_) {} }
+      engineBusy = false;
+      humanColor = color; game = new ChessClass(); ended = false;
       selectedSquare = null; legalTargets = [];
       $('chess-setup').classList.add('hidden');
       $('chess-play').classList.remove('hidden');
       $('chess-multiplayer-menu')?.classList.add('hidden');
       $('chess-multiplayer-panel')?.classList.add('hidden');
-      if ($('chess-engine-status')) $('chess-engine-status').textContent = 'ОНЛАЙН-ДУЭЛЬ: подключено';
+      if ($('chess-opponent-name')) {
+        $('chess-opponent-name').textContent = 'СОПЕРНИК: ' + onlineChessOpponent;
+        $('chess-opponent-name').classList.remove('hidden');
+      }
+      if ($('chess-engine-status')) { $('chess-engine-status').textContent = ''; $('chess-engine-status').classList.add('online-turn-status'); }
       renderBoard();
-      setStatus(color === 'w' ? 'Онлайн-партия. Твой ход — белые.' : 'Онлайн-партия. Ожидай ход белых.');
+      setStatus(color === 'w' ? 'Твой ход.' : 'Ход противника.');
+      setOnlineTurnStatus();
     } catch (error) { setStatus('Не удалось запустить онлайн-шахматы: ' + error.message); }
   };
 
@@ -2635,7 +2665,9 @@ playMoveSound(playedMove);
       renderBoard(); playMoveSound(move); updateGameStatus();
       setStatus(game.isCheckmate() ? 'Мат! Онлайн-партия завершена.' :
         game.isDraw() ? 'Ничья. Онлайн-партия завершена.' :
-        game.turn() === humanColor ? 'Твой ход.' : 'Ход соперника…');
+        game.isCheck() ? (game.turn() === humanColor ? 'Шах! Твой ход.' : 'Тебе шах. Ход противника.') :
+        game.turn() === humanColor ? 'Твой ход.' : 'Ход противника.');
+      if (!ended) setOnlineTurnStatus();
     } catch (error) { console.warn('Ошибка хода соперника:', error); }
     finally { applyingRemoteChessMove = false; }
   };
@@ -2925,7 +2957,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let outgoingInvite = null;
     let activeChessRoomChannel = null;
 
-    async function joinChessRoom(roomId, color) {
+    async function joinChessRoom(roomId, color, opponentName) {
         if (activeChessRoomChannel) {
             await supabaseClient.removeChannel(activeChessRoomChannel);
             activeChessRoomChannel = null;
@@ -2945,11 +2977,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data && data.roomId === roomId && data.from !== currentUser) {
                 const statusEl = document.getElementById('chess-status');
                 if (statusEl) statusEl.textContent = data.from + ' сдался. Ты победил!';
+                const engineStatusEl = document.getElementById('chess-engine-status');
+                if (engineStatusEl) engineStatusEl.textContent = 'ПАРТИЯ ЗАВЕРШЕНА';
             }
         });
         room.subscribe(async state => {
             if (state === 'SUBSCRIBED') {
-                await window.startOnlineChessBoard?.(color, roomId, room);
+                await window.startOnlineChessBoard?.(color, roomId, room, opponentName);
             } else if (state === 'CHANNEL_ERROR' || state === 'TIMED_OUT') {
                 if (outgoingStatus) outgoingStatus.textContent = 'Не удалось подключить шахматную комнату. Попробуй вызвать игрока снова.';
             }
@@ -3090,7 +3124,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (accepted) {
             switchTab('chess');
-            await joinChessRoom(invite.id, 'b');
+            await joinChessRoom(invite.id, 'b', invite.from);
         }
     }
 
@@ -3146,7 +3180,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (data.accepted) {
                 switchTab('chess');
-                joinChessRoom(data.id, 'w');
+                joinChessRoom(data.id, 'w', target);
             }
         })
         .subscribe(result => {
