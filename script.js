@@ -2204,6 +2204,24 @@ document.getElementById("freeotp-modal")?.addEventListener("click", function(eve
   const boardEl = () => $('chess-board');
 
   function setStatus(text) { if ($('chess-status')) $('chess-status').textContent = text; }
+    function appendOnlineChessChat(nick, text) {
+    const box = document.getElementById('chess-chat-messages');
+    if (!box) return;
+
+    const row = document.createElement('div');
+    row.className = 'chess-chat-message';
+
+    const name = document.createElement('span');
+    name.className = 'chess-chat-nick';
+    name.textContent = nick + ': ';
+
+    const message = document.createElement('span');
+    message.textContent = text;
+
+    row.append(name, message);
+    box.appendChild(row);
+    box.scrollTop = box.scrollHeight;
+}
   function setEngineStatus(text) { if ($('chess-engine-status')) $('chess-engine-status').textContent = text; }
   function setOnlineTurnStatus() {
     if (!onlineChessMode || !game || ended) return;
@@ -2648,6 +2666,54 @@ playMoveSound(playedMove);
       const ChessClass = chessModule.Chess;
       if (typeof ChessClass !== 'function') throw new Error('chess.js не загрузилась');
       onlineChessMode = true; onlineChessRoomId = roomId; onlineChessChannel = channel; onlineChessOpponent = opponentName || 'Соперник';
+        const chat = $('chess-online-chat');
+const chatMessages = $('chess-chat-messages');
+const chatInput = $('chess-chat-input');
+const chatSend = $('chess-chat-send');
+
+if (chat) chat.classList.remove('hidden');
+
+if (chatMessages) {
+    chatMessages.replaceChildren();
+    const info = document.createElement('div');
+    info.textContent = 'Ты подключился к чату с ' + onlineChessOpponent + '.';
+    chatMessages.appendChild(info);
+}
+
+if (chatInput && chatSend && !chat.dataset.ready) {
+    chat.dataset.ready = 'true';
+
+    const sendChatMessage = () => {
+        const text = chatInput.value.trim();
+
+        if (!text || !onlineChessMode || !onlineChessChannel || !onlineChessRoomId) {
+            return;
+        }
+
+        onlineChessChannel.send({
+            type: 'broadcast',
+            event: 'chess_chat',
+            payload: {
+                roomId: onlineChessRoomId,
+                from: currentUser,
+                text: text
+            }
+        });
+
+        appendOnlineChessChat(currentUser, text);
+        chatInput.value = '';
+        chatInput.focus();
+    };
+
+    chatSend.addEventListener('click', sendChatMessage);
+
+    chatInput.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            sendChatMessage();
+        }
+    });
+}
       if (engine) { try { engine.postMessage('stop'); } catch (_) {} }
       engineBusy = false;
       humanColor = color; game = new ChessClass(); ended = false;
