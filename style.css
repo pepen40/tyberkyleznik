@@ -652,3 +652,15 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
 #case-roulette-modal .roulette-viewport {
   background-color: #c0c0c0 !important;
 }
+
+
+#performance-overlay {
+    cursor: move;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+#performance-overlay.dragging {
+    cursor: grabbing;
+}
+
