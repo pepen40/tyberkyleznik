@@ -2487,10 +2487,10 @@ if (difference === 0) {
     scoreBox.textContent = 'Материальный баланс: Равенство';
 } else if (whiteScore > blackScore) {
     scoreBox.textContent =
-        `Материальный перевес: Белые +${difference}`;
+        `Перевес: Материальный план +${difference}`;
 } else {
     scoreBox.textContent =
-        `Материальный перевес: Чёрные +${difference}`;
+        `Перевес: Потусторонний мир +${difference}`;
 }
 }
     
