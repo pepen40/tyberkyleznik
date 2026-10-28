@@ -2481,8 +2481,17 @@ function updateMaterialCounter() {
         (sum, piece) => sum + pieceValues[piece.type], 0
     );
 
+const difference = Math.abs(whiteScore - blackScore);
+
+if (difference === 0) {
+    scoreBox.textContent = 'Материальный баланс: Равенство';
+} else if (whiteScore > blackScore) {
     scoreBox.textContent =
-        `Материальный баланс: Белые +${whiteScore} | Чёрные +${blackScore}`;
+        `Материальный перевес: Белые +${difference}`;
+} else {
+    scoreBox.textContent =
+        `Материальный перевес: Чёрные +${difference}`;
+}
 }
     
   function onSquareClick(square) {
