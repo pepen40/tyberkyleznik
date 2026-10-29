@@ -65,7 +65,7 @@ const itemDatabase = {
     "парашник": { desc: "ставишь его он пускает пары и отравляет противника, также забирает его ману. каждый ход снимает 5% максимального HP и 15% максимальной маны. имеет 30 хп и действует, пока его не уничтожат.", chance: "20%" },
     "boris": { desc: "ставишь его и он поглощает в себя весь урон от врага. но он не вечный. прочность — 40% максимального HP владельца.", chance: "3%" },
     "шприц и лекарство": { desc: "Восстанавливает 45% от максимального здоровья.", chance: "12%" },
-    "Сбриватель хуйни": { desc: "Сбривать надо полезную хуйню противника: Борису срезает половину оставшегося HP, а прочие положительные эффекты убирает полностью. Парашник, которого ты поставил на врага, остаётся!", chance: "7%" },
+    "Сбриватель хуйни": { desc: "Сбривает полезные эффекты ПРОТИВНИКА: Борис теряет половину оставшегося HP, а Парашник противника, отравляющий тебя, удаляется полностью. Твой Борис и твой Парашник на враге не затрагиваются!", chance: "7%" },
     "Вам не повезло": { desc: "вам крупно повезло вам нихуя не выпало!", chance: "6-28%" }
 };
 
@@ -81,7 +81,20 @@ const rarityWeight = { 'Легендарное': 5, 'Сверхредкое': 4,
 
 
 // === RPG: постоянная экипировка ===
-const RPG_GEAR = [{"id": "wood_blade", "name": "Доска возмездия", "slot": "weapon", "slotLabel": "Оружие", "price": 100, "atk": 4, "hp": 0, "crit": 0, "defense": 0, "desc": "+4 к атаке. Дешёвая, но доска — тоже аргумент.", "emoji": "🪵"}, {"id": "iron_edge", "name": "Ржавый тесак", "slot": "weapon", "slotLabel": "Оружие", "price": 450, "atk": 10, "hp": 0, "crit": 0, "defense": 0, "desc": "+10 к атаке.", "emoji": "🗡️"}, {"id": "berserker_axe", "name": "Топор берсерка", "slot": "weapon", "slotLabel": "Оружие", "price": 1200, "atk": 20, "hp": 0, "crit": 3, "defense": 0, "desc": "+20 к атаке и +3% критического удара.", "emoji": "🪓"}, {"id": "void_blade", "name": "Клинок пустоты", "slot": "weapon", "slotLabel": "Оружие", "price": 3500, "atk": 35, "hp": 0, "crit": 7, "defense": 0, "desc": "+35 к атаке и +7% критического удара.", "emoji": "🌌"}, {"id": "patched_vest", "name": "Броня из пакетов", "slot": "armor", "slotLabel": "Броня", "price": 120, "atk": 0, "hp": 25, "crit": 0, "defense": 3, "desc": "+25 к максимальному HP, снижает входящий урон на 3%.", "emoji": "🦺"}, {"id": "iron_plate", "name": "Железная кираса", "slot": "armor", "slotLabel": "Броня", "price": 500, "atk": 0, "hp": 65, "crit": 0, "defense": 8, "desc": "+65 HP и -8% входящего урона.", "emoji": "🛡️"}, {"id": "guardian_shell", "name": "Панцирь хранителя", "slot": "armor", "slotLabel": "Броня", "price": 1500, "atk": 0, "hp": 130, "crit": 0, "defense": 12, "desc": "+130 HP и -12% входящего урона.", "emoji": "🏰"}, {"id": "abyss_armor", "name": "Доспех бездны", "slot": "armor", "slotLabel": "Броня", "price": 3500, "atk": 0, "hp": 220, "crit": 0, "defense": 18, "desc": "+220 HP и -18% входящего урона.", "emoji": "🕳️"}, {"id": "lucky_charm", "name": "Сомнительный амулет", "slot": "charm", "slotLabel": "Амулет", "price": 300, "atk": 0, "hp": 0, "crit": 3, "defense": 0, "desc": "+3% шанс критического удара.", "emoji": "🧿"}, {"id": "wolf_fang", "name": "Клык волка", "slot": "charm", "slotLabel": "Амулет", "price": 950, "atk": 5, "hp": 15, "crit": 5, "defense": 0, "desc": "+5 атаки, +15 HP и +5% критического удара.", "emoji": "🐺"}, {"id": "phoenix_heart", "name": "Сердце феникса", "slot": "charm", "slotLabel": "Амулет", "price": 2200, "atk": 0, "hp": 50, "crit": 0, "defense": 0, "desc": "+50 HP. После победы восстанавливает 20% HP перед следующим этажом.", "emoji": "🔥"}, {"id": "king_relic", "name": "Реликвия мясорубки", "slot": "charm", "slotLabel": "Амулет", "price": 5000, "atk": 12, "hp": 80, "crit": 8, "defense": 5, "desc": "+12 атаки, +80 HP, +8% крит и -5% урона.", "emoji": "👑"}];
+const RPG_GEAR = [
+ {id:'wood_blade',name:'дрын',slot:'weapon',slotLabel:'Оружие',price:100,atkPercent:6,hp:0,crit:0,defense:0,desc:'+6% к атаке. Дешёвая, но доска — тоже аргумент.',emoji:'🪵'},
+ {id:'iron_edge',name:'ну нихуевенький такой ножик',slot:'weapon',slotLabel:'Оружие',price:450,atkPercent:10,hp:0,crit:0,defense:0,desc:'+10% к атаке.',emoji:'🗡️'},
+ {id:'berserker_axe',name:'кувалда пидора',slot:'weapon',slotLabel:'Оружие',price:1200,atkPercent:13,hp:0,crit:3,defense:0,desc:'+13% к атаке и +3% критического удара.',emoji:'🪓'},
+ {id:'void_blade',name:'хуйня ( мощная)',slot:'weapon',slotLabel:'Оружие',price:3500,atkPercent:15,hp:0,crit:9,defense:0,desc:'+15% к атаке и +9% критического удара.',emoji:'🌌'},
+ {id:'patched_vest',name:'накидка пидора',slot:'armor',slotLabel:'Броня',price:120,atkPercent:0,hp:25,crit:0,defense:3,desc:'+25 к максимальному HP, снижает входящий урон на 3%.',emoji:'🦺'},
+ {id:'iron_plate',name:'костюм для игры в бодминтон',slot:'armor',slotLabel:'Броня',price:500,atkPercent:0,hp:65,crit:0,defense:8,desc:'+65 HP и -8% входящего урона.',emoji:'🛡️'},
+ {id:'guardian_shell',name:'наряд хуйни',slot:'armor',slotLabel:'Броня',price:1500,atkPercent:0,hp:130,crit:0,defense:12,desc:'+130 HP и -12% входящего урона.',emoji:'🏰'},
+ {id:'abyss_armor',name:'фембойский костюмчик',slot:'armor',slotLabel:'Броня',price:3500,atkPercent:0,hp:220,crit:0,defense:18,desc:'+220 HP и -18% входящего урона.',emoji:'🕳️'},
+ {id:'lucky_charm',name:'мочевой пузырь дельфина',slot:'charm',slotLabel:'Амулет',price:300,atkPercent:0,atk:0,hp:0,crit:3,defense:0,desc:'+3% шанс критического удара.',emoji:'🧿'},
+ {id:'wolf_fang',name:'окоченелости амжана жолтого',slot:'charm',slotLabel:'Амулет',price:950,atkPercent:0,atk:5,hp:15,crit:5,defense:0,desc:'+5 атаки, +15 HP и +5% критического удара.',emoji:'🐺'},
+ {id:'phoenix_heart',name:'щенячий цобот',slot:'charm',slotLabel:'Амулет',price:2200,atkPercent:0,atk:0,hp:50,crit:0,defense:0,desc:'+50 HP. После победы восстанавливает 20% HP перед следующим этажом.',emoji:'🐾'},
+ {id:'king_relic',name:'мясо пидора с изюмом',slot:'charm',slotLabel:'Амулет',price:5000,atkPercent:0,atk:12,hp:80,crit:8,defense:5,desc:'+12 атаки, +80 HP, +8% крит и -5% урона.',emoji:'👑'}
+];
 let rpgGearFilter = 'all';
 
 const RPG_DAILY_QUESTS = [
@@ -170,17 +183,19 @@ function ensureRpgGear() {
 function getGearBonuses(charType) {
     const gear = ensureRpgGear();
     const equipped = gear.equipped[charType] || {};
-    const total = { hp: 0, atk: 0, crit: 0, defense: 0 };
+    const total = { hp: 0, atk: 0, atkPercent: 0, crit: 0, defense: 0 };
     Object.values(equipped).forEach(id => {
         const item = RPG_GEAR.find(g => g.id === id);
         if (!item) return;
         total.hp += item.hp || 0;
         total.atk += item.atk || 0;
+        total.atkPercent += item.atkPercent || 0;
         total.crit += item.crit || 0;
         total.defense += item.defense || 0;
     });
-    total.crit = Math.min(35, total.crit);
+    total.crit = Math.min(50, total.crit);
     total.defense = Math.min(35, total.defense);
+    total.atkPercent = Math.min(50, total.atkPercent);
     return total;
 }
 
@@ -220,10 +235,11 @@ function renderGearCabinet() {
         const owned = gear.owned.includes(item.id);
         const isEquipped = equipped[item.slot] === item.id;
         const stats = [
+            item.atkPercent ? `АТК +${item.atkPercent}%` : '',
             item.atk ? `АТК +${item.atk}` : '',
             item.hp ? `HP +${item.hp}` : '',
             item.crit ? `Крит +${item.crit}%` : '',
-            item.defense ? `Защита +${item.defense}%` : ''
+            item.defense ? `Снижение урона −${item.defense}%` : ''
         ].filter(Boolean).join(' · ');
         let action = '';
         if (isEquipped) action = `<button type="button" class="gear-equipped-btn" disabled>✓ Надето</button>`;
@@ -657,8 +673,9 @@ async function executeChallenge() {
     const charType = document.getElementById('pvp-challenge-char-select').value;
     let baseHp = charType === 'ashab' ? 150 : (charType === 'apostol' ? 80 : 110);
     let baseAtk = charType === 'ashab' ? 20 : (charType === 'apostol' ? 30 : 18);
-    let hp = baseHp + (currentUpgrades[charType].hp * 20);
-    let atk = baseAtk + (currentUpgrades[charType].atk * 5);
+    const gearBonus = getGearBonuses(charType);
+    let hp = baseHp + (currentUpgrades[charType].hp * 20) + gearBonus.hp;
+    let atk = Math.round((baseAtk + (currentUpgrades[charType].atk * 5) + gearBonus.atk) * (1 + (gearBonus.atkPercent || 0) / 100));
     let charName = charType === 'ashab' ? "Ашаб" : (charType === 'apostol' ? "Апостол" : "Мээ");
     let img = charType === 'ashab' ? "IMG_3545.jpeg" : (charType === 'apostol' ? "IMG_3544.jpeg" : "IMG_3546.jpeg");
 
@@ -675,8 +692,8 @@ async function executeChallenge() {
     roomChannel = supabaseClient.channel(myRoomId, { config: { broadcast: { self: false } } });
     roomChannel.on('broadcast', { event: 'join_request' }, (payload) => {
         const guest = payload.payload;
-        startPvpBattle(guest.charName, guest.hp, guest.atk, guest.username, guest.charType);
-        roomChannel.send({ type: 'broadcast', event: 'start_game', payload: { charName: charName, hp, atk, username: currentUser, charType: charType } });
+        startPvpBattle(guest.charName, guest.hp, guest.atk, guest.username, guest.charType, guest.crit || 0, guest.defense || 0);
+        roomChannel.send({ type: 'broadcast', event: 'start_game', payload: { charName: charName, hp, atk, username: currentUser, charType: charType, crit: gearBonus.crit || 0, defense: gearBonus.defense || 0 } });
     });
     roomChannel.on('broadcast', { event: 'enemy_action' }, (payload) => { handlePvpEnemyAction(payload.payload); });
     roomChannel.on('broadcast', { event: 'leave' }, () => handlePvpOpponentLeave());
@@ -775,8 +792,9 @@ async function createPvpRoom() {
     const charType = document.getElementById('pvp-char-select').value;
     let baseHp = charType === 'ashab' ? 150 : (charType === 'apostol' ? 80 : 110);
     let baseAtk = charType === 'ashab' ? 20 : (charType === 'apostol' ? 30 : 18);
-    let hp = baseHp + (currentUpgrades[charType].hp * 20);
-    let atk = baseAtk + (currentUpgrades[charType].atk * 5);
+    const gearBonus = getGearBonuses(charType);
+    let hp = baseHp + (currentUpgrades[charType].hp * 20) + gearBonus.hp;
+    let atk = Math.round((baseAtk + (currentUpgrades[charType].atk * 5) + gearBonus.atk) * (1 + (gearBonus.atkPercent || 0) / 100));
     let charName = charType === 'ashab' ? "Ашаб" : (charType === 'apostol' ? "Апостол" : "Мээ");
     let img = charType === 'ashab' ? "IMG_3545.jpeg" : (charType === 'apostol' ? "IMG_3544.jpeg" : "IMG_3546.jpeg");
 
@@ -790,8 +808,8 @@ async function createPvpRoom() {
     roomChannel = supabaseClient.channel(myRoomId, { config: { broadcast: { self: false } } });
     roomChannel.on('broadcast', { event: 'join_request' }, (payload) => {
         const guest = payload.payload;
-        startPvpBattle(guest.charName, guest.hp, guest.atk, guest.username, guest.charType);
-        roomChannel.send({ type: 'broadcast', event: 'start_game', payload: { charName: charName, hp, atk, username: currentUser, charType: charType } });
+        startPvpBattle(guest.charName, guest.hp, guest.atk, guest.username, guest.charType, guest.crit || 0, guest.defense || 0);
+        roomChannel.send({ type: 'broadcast', event: 'start_game', payload: { charName: charName, hp, atk, username: currentUser, charType: charType, crit: gearBonus.crit || 0, defense: gearBonus.defense || 0 } });
     });
     roomChannel.on('broadcast', { event: 'enemy_action' }, (payload) => { handlePvpEnemyAction(payload.payload); });
     roomChannel.on('broadcast', { event: 'leave' }, () => handlePvpOpponentLeave());
@@ -820,8 +838,9 @@ async function joinPvpRoom(roomId, charType) {
     myRoomId = roomId;
     let baseHp = charType === 'ashab' ? 150 : (charType === 'apostol' ? 80 : 110);
     let baseAtk = charType === 'ashab' ? 20 : (charType === 'apostol' ? 30 : 18);
-    let hp = baseHp + (currentUpgrades[charType].hp * 20);
-    let atk = baseAtk + (currentUpgrades[charType].atk * 5);
+    const gearBonus = getGearBonuses(charType);
+    let hp = baseHp + (currentUpgrades[charType].hp * 20) + gearBonus.hp;
+    let atk = Math.round((baseAtk + (currentUpgrades[charType].atk * 5) + gearBonus.atk) * (1 + (gearBonus.atkPercent || 0) / 100));
     let charName = charType === 'ashab' ? "Ашаб" : (charType === 'apostol' ? "Апостол" : "Мээ");
     let img = charType === 'ashab' ? "IMG_3545.jpeg" : (charType === 'apostol' ? "IMG_3544.jpeg" : "IMG_3546.jpeg");
     
@@ -840,7 +859,7 @@ async function joinPvpRoom(roomId, charType) {
     roomChannel = supabaseClient.channel(roomId, { config: { broadcast: { self: false } } });
     roomChannel.on('broadcast', { event: 'start_game' }, (payload) => {
         const host = payload.payload;
-        startPvpBattle(host.charName, host.hp, host.atk, host.username, host.charType);
+        startPvpBattle(host.charName, host.hp, host.atk, host.username, host.charType, host.crit || 0, host.defense || 0);
         setPvpTurn(false);
     });
     roomChannel.on('broadcast', { event: 'enemy_action' }, (payload) => { handlePvpEnemyAction(payload.payload); });
@@ -848,21 +867,21 @@ async function joinPvpRoom(roomId, charType) {
         addPvpChatMessage(payload.payload.nick || '???', payload.payload.text || '');
     });
     roomChannel.subscribe((status) => {
-        if (status === 'SUBSCRIBED') { roomChannel.send({ type: 'broadcast', event: 'join_request', payload: { username: currentUser, charName, hp, atk, charType } }); }
+        if (status === 'SUBSCRIBED') { roomChannel.send({ type: 'broadcast', event: 'join_request', payload: { username: currentUser, charName, hp, atk, charType, crit: getGearBonuses(charType).crit || 0, defense: getGearBonuses(charType).defense || 0 } }); }
     });
     initPvpChat(roomId);
 }
 
-function startPvpBattle(enemyName, enemyHp, enemyAtk, enemyUsername, enemyCharType) {
+function startPvpBattle(enemyName, enemyHp, enemyAtk, enemyUsername, enemyCharType, enemyCrit = 0, enemyDefense = 0) {
     pvpBattleStarted = true;
     pvpBattleFinished = false;
     const charType = currentPvpChar;
     let baseHp = charType === 'ashab' ? 150 : (charType === 'apostol' ? 80 : 110);
     let baseAtk = charType === 'ashab' ? 20 : (charType === 'apostol' ? 30 : 18);
-    let hp = baseHp + (currentUpgrades[charType].hp * 20);
-    let atk = baseAtk + (currentUpgrades[charType].atk * 5);
-    
-    pvpGameState = { myHp: hp, myMaxHp: hp, myAtk: atk, myMp: 0, enemyHp: enemyHp, enemyMaxHp: enemyHp, enemyName: enemyName, enemyMp: 0, isMyTurn: isPvpHost, myBorisHp: 0, enemyBorisHp: 0, myParashnikHp: 0, enemyParashnikHp: 0, myDefending: false, enemyDefending: false, myItemUsed: false, myBonusAttacks: 0, myPotatoBuff: false };
+    const myGear = getGearBonuses(charType);
+    let hp = baseHp + (currentUpgrades[charType].hp * 20) + myGear.hp;
+    let atk = Math.round((baseAtk + (currentUpgrades[charType].atk * 5) + myGear.atk) * (1 + (myGear.atkPercent || 0) / 100));
+    pvpGameState = { myHp: hp, myMaxHp: hp, myAtk: atk, myCrit: myGear.crit || 0, myDefense: myGear.defense || 0, myFlatAtkBonus: myGear.atk || 0, myAtkPercent: myGear.atkPercent || 0, enemyDefense: Number(enemyDefense) || 0, enemyCrit: Number(enemyCrit) || 0, myMp: 0, enemyHp: enemyHp, enemyMaxHp: enemyHp, enemyName: enemyName, enemyMp: 0, isMyTurn: isPvpHost, myBorisHp: 0, enemyBorisHp: 0, myParashnikHp: 0, enemyParashnikHp: 0, myDefending: false, enemyDefending: false, myItemUsed: false, myBonusAttacks: 0, myPotatoBuff: false };
     
     let enemyImg = enemyCharType === 'ashab' ? "IMG_3545.jpeg" : (enemyCharType === 'apostol' ? "IMG_3544.jpeg" : "IMG_3546.jpeg");
     if (!enemyCharType) enemyImg = "https://via.placeholder.com/100?text=ENEMY";
@@ -896,8 +915,9 @@ function handlePvpEnemyAction(payload) {
                 logPvp(`Враг бьет Бориса на ${dmg}. Осталось ${Math.max(0, pvpGameState.myBorisHp)} HP.`);
                 if(pvpGameState.myBorisHp <= 0) { logPvp("Борис разрушен!"); pvpGameState.myBorisHp = 0; }
             } else {
+                const rawDamage = dmg; if (!payload.armorApplied) dmg = Math.max(1, Math.round(dmg * (1 - (pvpGameState.myDefense || 0) / 100)));
                 pvpGameState.myHp -= dmg;
-                logPvp(`Враг бьет на ${dmg} урона!`);
+                logPvp(`Враг бьет на ${dmg} урона${dmg < rawDamage ? ` (броня спасла ${rawDamage - dmg} HP)` : ''}!`);
             }
         }
     } else if (payload.type === 'defend') {
@@ -916,7 +936,8 @@ function handlePvpEnemyAction(payload) {
                 pvpGameState.myBorisHp -= dmg; logPvp(`Враг бьет Бориса способностью на ${dmg}.`);
                 if(pvpGameState.myBorisHp <= 0) { logPvp("Борис разрушен!"); pvpGameState.myBorisHp = 0; }
             } else {
-                pvpGameState.myHp -= dmg; logPvp(`Враг использует способность! Урон: ${dmg}`);
+                const rawDamage = dmg; if (!payload.armorApplied) dmg = Math.max(1, Math.round(dmg * (1 - (pvpGameState.myDefense || 0) / 100)));
+                pvpGameState.myHp -= dmg; logPvp(`Враг использует способность! Урон: ${dmg}${dmg < rawDamage ? ` (броня спасла ${rawDamage - dmg} HP)` : ''}`);
             }
         }
     } else if (payload.type === 'item') {
@@ -930,12 +951,12 @@ function handlePvpEnemyAction(payload) {
             let dmg = payload.val;
             if (pvpGameState.myDefending) { pvpGameState.myDefending = false; logPvp(`Защита сработала против предмета (урон уже уменьшен).`); if (!payload.defenseApplied) dmg = Math.floor(dmg * 0.35); }
             if (pvpGameState.myBorisHp > 0) { pvpGameState.myBorisHp -= dmg; logPvp(`Враг швыряет предмет в Бориса! Урон: ${dmg}`); if(pvpGameState.myBorisHp <= 0) { logPvp("Борис разрушен!"); pvpGameState.myBorisHp = 0; } }
-            else { pvpGameState.myHp -= dmg; logPvp(`Враг швыряет предмет! Урон: ${dmg}`); }
+            else { const rawDamage = dmg; if (!payload.armorApplied) dmg = Math.max(1, Math.round(dmg * (1 - (pvpGameState.myDefense || 0) / 100))); pvpGameState.myHp -= dmg; logPvp(`Враг швыряет предмет! Урон: ${dmg}${dmg < rawDamage ? ` (броня спасла ${rawDamage - dmg} HP)` : ''}`); }
         }
         else if (payload.effect === 'atk' || payload.effect === 'potatoBuff') { logPvp(payload.effect === 'potatoBuff' ? 'Враг съел картофель: его следующий удар усилен на 15%.' : `Враг юзает бафф на атаку!`); }
         else if (payload.effect === 'boris') { playSoundEffect('thing'); pvpGameState.enemyBorisHp += (payload.val || percentOf(pvpGameState.enemyMaxHp, 40)); logPvp(`Враг поставил Бориса!`); }
         else if (payload.effect === 'parashnik') { playSoundEffect('thing'); pvpGameState.myParashnikHp += 30; logPvp(`Враг поставил Парашника!`); }
-        else if (payload.effect === 'shaver') { playSoundEffect('shaver'); if (pvpGameState.myBorisHp > 0) pvpGameState.myBorisHp = Math.ceil(pvpGameState.myBorisHp / 2); pvpGameState.myParashnikHp = 0; logPvp('Враг сбрил половину HP твоего Бориса и убрал Парашника, наложенного на тебя.'); }
+        else if (payload.effect === 'shaver') { playSoundEffect('shaver'); if (pvpGameState.myBorisHp > 0) { pvpGameState.myBorisHp = Math.ceil(pvpGameState.myBorisHp / 2); logPvp('Враг сбрил половину HP твоего Бориса.'); } if (pvpGameState.enemyParashnikHp > 0) { pvpGameState.enemyParashnikHp = 0; logPvp('Враг сбрил своего Парашника, который отравлял тебя.'); } logPvp('Твой Борис и твой Парашник на враге не затронуты.'); }
         updatePvpUI();
         return; 
     }
@@ -943,7 +964,8 @@ function handlePvpEnemyAction(payload) {
     if (pvpGameState.myHp <= 0) { endPvpBattle(false); } 
     else { 
         if (pvpGameState.myParashnikHp > 0) {
-            const poisonDmg = percentOf(pvpGameState.myMaxHp, 5);
+            const poisonBase = percentOf(pvpGameState.myMaxHp, 5);
+            const poisonDmg = Math.max(1, Math.round(poisonBase * (1 - (pvpGameState.myDefense || 0) / 100)));
             const poisonMana = 15; // 15% от стандартной максимальной маны (100)
             pvpGameState.myHp -= poisonDmg;
             pvpGameState.myMp = Math.max(0, pvpGameState.myMp - poisonMana);
@@ -967,9 +989,12 @@ function pvpAttack() {
     pvpGameState.isMyTurn = false; pvpGameState.myItemUsed = false; disablePvpButtons(); setPvpTurn(false);
     triggerScreenShake();
     let dmg = Math.floor(Math.random() * 10) + pvpGameState.myAtk;
+    const isCrit = Math.random() * 100 < (pvpGameState.myCrit || 0);
+    if (isCrit) { dmg = Math.round(dmg * 1.75); playSoundEffect('crit'); logPvp(`КРИТИЧЕСКИЙ УДАР! x1.75 — ${dmg} урона.`); }
     if (pvpGameState.myPotatoBuff) { dmg = Math.round(dmg * 1.15); pvpGameState.myPotatoBuff = false; logPvp(`Картофель усилил удар на 15%: ${dmg} урона.`); }
     let attackTarget = 'player';
     let defenseApplied = false;
+    let armorApplied = false;
     if (pvpGameState.myParashnikHp > 0) {
         pvpGameState.myParashnikHp = Math.max(0, pvpGameState.myParashnikHp - dmg);
         attackTarget = 'ownParashnik';
@@ -983,15 +1008,16 @@ function pvpAttack() {
         logPvp(`Ты бьешь Бориса на ${dmg}. Осталось ${pvpGameState.enemyBorisHp} HP.`);
         if (!pvpGameState.enemyBorisHp) logPvp('Борис врага разрушен!');
     } else {
+        const rawDamage = dmg; dmg = Math.max(1, Math.round(dmg * (1 - (pvpGameState.enemyDefense || 0) / 100))); if (dmg < rawDamage) armorApplied = true;
         pvpGameState.enemyHp -= dmg;
-        logPvp(`Ты бьешь на ${dmg} урона!`);
+        logPvp(`Ты бьешь на ${dmg} урона${dmg < rawDamage ? ` (броня врага поглотила ${rawDamage - dmg})` : ''}!`);
     }
     const manaGain = currentPvpChar === 'apostol' ? 35 : (currentPvpChar === 'mee' ? 25 : 20);
     pvpGameState.myMp = Math.min(100, pvpGameState.myMp + manaGain);
     if (pvpGameState.myBonusAttacks > 0) pvpGameState.myBonusAttacks--;
     const keepAttackTurn = pvpGameState.myBonusAttacks > 0;
     updatePvpUI();
-    if (roomChannel) roomChannel.send({ type: 'broadcast', event: 'enemy_action', payload: { type: 'attack', dmg, target: attackTarget, defenseApplied, extraAttack: keepAttackTurn } });
+    if (roomChannel) roomChannel.send({ type: 'broadcast', event: 'enemy_action', payload: { type: 'attack', dmg, target: attackTarget, defenseApplied, armorApplied, extraAttack: keepAttackTurn } });
     if (keepAttackTurn) { pvpGameState.isMyTurn = true; setPvpTurn(true); enablePvpButtons(); }
     if (pvpGameState.enemyHp <= 0) { endPvpBattle(true); return; }
     if (pvpGameState.enemyParashnikHp > 0) {
@@ -1034,7 +1060,10 @@ function pvpSkill() {
     }
     let skillTarget = 'player';
     let defenseApplied = false;
+    let armorApplied = false;
     if (dmg > 0) {
+        dmg = Math.round((dmg + (pvpGameState.myFlatAtkBonus || 0)) * (1 + (pvpGameState.myAtkPercent || 0) / 100));
+        if (Math.random() * 100 < (pvpGameState.myCrit || 0)) { dmg = Math.round(dmg * 1.75); playSoundEffect('crit'); logPvp(`Крит способности! Урон ${dmg}.`); }
         if (pvpGameState.myParashnikHp > 0) {
             pvpGameState.myParashnikHp = Math.max(0, pvpGameState.myParashnikHp - dmg);
             skillTarget = 'ownParashnik';
@@ -1048,12 +1077,13 @@ function pvpSkill() {
             logPvp(`Ты бьешь Бориса способностью на ${dmg}.`);
             if (!pvpGameState.enemyBorisHp) logPvp('Борис врага разрушен!');
         } else {
+            const rawDamage = dmg; dmg = Math.max(1, Math.round(dmg * (1 - (pvpGameState.enemyDefense || 0) / 100))); if (dmg < rawDamage) armorApplied = true;
             pvpGameState.enemyHp -= dmg;
-            logPvp(`Ты ебашишь способностью на ${dmg} урона!`);
+            logPvp(`Ты ебашишь способностью на ${dmg} урона${dmg < rawDamage ? ` (броня врага поглотила ${rawDamage - dmg})` : ''}!`);
         }
     }
     updatePvpUI();
-    if (roomChannel) roomChannel.send({ type: 'broadcast', event: 'enemy_action', payload: { type: 'skill', dmg, target: skillTarget, defenseApplied } });
+    if (roomChannel) roomChannel.send({ type: 'broadcast', event: 'enemy_action', payload: { type: 'skill', dmg, target: skillTarget, defenseApplied, armorApplied } });
     if (pvpGameState.enemyHp <= 0) endPvpBattle(true);
 }
 
@@ -1075,7 +1105,7 @@ function openPvpItemMenu() {
             if (item.name === 'парашник') effectText = "Яд: 5% HP и 15% маны/ход";
             if (item.name === 'boris') effectText = "Щит на 40% макс. HP";
             if (item.name === 'шприц и лекарство') effectText = "Лечит 45% макс. HP";
-            if (item.name === 'Сбриватель хуйни') effectText = "Борису −50% HP, сносит Парашника на тебе";
+            if (item.name === 'Сбриватель хуйни') effectText = "Борис врага −50% HP; удаляет Парашника врага, который отравляет тебя";
             const div = document.createElement('div'); div.className = 'inv-card';
             if (item.qty > 1) div.innerHTML += `<div class="qty-badge">x${item.qty}</div>`;
             div.innerHTML += `
@@ -1125,6 +1155,7 @@ async function pvpUseItem(itemName) {
         else if (item.name === 'голова барана') { 
             let dmg = percentOf(pvpGameState.enemyMaxHp, 20);
             if (pvpGameState.enemyDefending) { dmg = Math.floor(dmg * 0.35); pvpGameState.enemyDefending = false; payload.defenseApplied = true; logPvp(`Враг заблокировал голову, получив ${dmg} (65% срезано).`); }
+            if (pvpGameState.enemyBorisHp <= 0) { const beforeArmor = dmg; dmg = Math.max(1, Math.round(dmg * (1 - (pvpGameState.enemyDefense || 0) / 100))); if (dmg < beforeArmor) { payload.armorApplied = true; logPvp(`Броня врага поглотила ${beforeArmor - dmg} урона.`); } }
             if(pvpGameState.enemyBorisHp > 0) { pvpGameState.enemyBorisHp -= dmg; logPvp(`Швырнул голову в Бориса!`); if(pvpGameState.enemyBorisHp <= 0) pvpGameState.enemyBorisHp=0; }
             else { pvpGameState.enemyHp -= dmg; logPvp(`${dmg} урона!`); }
             payload.effect='damage'; payload.val=dmg; 
@@ -1133,6 +1164,7 @@ async function pvpUseItem(itemName) {
         else if (item.name === 'apostol') { 
             let dmg = percentOf(pvpGameState.enemyMaxHp, 55);
             if (pvpGameState.enemyDefending) { dmg = Math.floor(dmg * 0.35); pvpGameState.enemyDefending = false; payload.defenseApplied = true; logPvp(`Враг заблокировал Apostol, получив ${dmg} (65% срезано).`); }
+            if (pvpGameState.enemyBorisHp <= 0) { const beforeArmor = dmg; dmg = Math.max(1, Math.round(dmg * (1 - (pvpGameState.enemyDefense || 0) / 100))); if (dmg < beforeArmor) { payload.armorApplied = true; logPvp(`Броня врага поглотила ${beforeArmor - dmg} урона.`); } }
             if(pvpGameState.enemyBorisHp > 0) { pvpGameState.enemyBorisHp -= dmg; logPvp(`Швырнул Apostol в Бориса!`); if(pvpGameState.enemyBorisHp <= 0) pvpGameState.enemyBorisHp=0; }
             else { pvpGameState.enemyHp -= dmg; logPvp(`${dmg} УРОНА!`); }
             payload.effect='damage'; payload.val=dmg; 
@@ -1142,8 +1174,8 @@ async function pvpUseItem(itemName) {
         else if (item.name === 'парашник') { pvpGameState.enemyParashnikHp += 30; logPvp(`Ты поставил Парашника врагу!`); payload.effect='parashnik'; }
         else if (item.name === 'Сбриватель хуйни') { 
             if (pvpGameState.enemyBorisHp > 0) { pvpGameState.enemyBorisHp = Math.ceil(pvpGameState.enemyBorisHp / 2); logPvp(`Сбриватель срезал половину HP Бориса врага. Осталось ${pvpGameState.enemyBorisHp} HP.`); }
-            if (pvpGameState.myParashnikHp > 0) { pvpGameState.myParashnikHp = 0; logPvp('Сбрил Парашника, которого враг поставил на тебя.'); }
-            logPvp('Твой Парашник на враге остался нетронутым!'); payload.effect='shaver'; 
+            if (pvpGameState.myParashnikHp > 0) { pvpGameState.myParashnikHp = 0; logPvp('Сбрил Парашника врага, который отравлял тебя.'); }
+            logPvp('Твой Борис и твой Парашник на враге остались нетронуты!'); payload.effect='shaver'; 
         }
         else if (item.name === 'Вам не повезло') { logPvp(`Вы нихуя не сделали.`); payload.effect='nothing'; }
         updatePvpUI();
@@ -1313,7 +1345,8 @@ function selectChar(type) {
     let u = currentUpgrades[type];
     const gearBonus = getGearBonuses(type);
     const equippedHp = baseHp + (u.hp * 20) + gearBonus.hp;
-    rpgChar = { name, class: charClass, maxHp: equippedHp, hp: equippedHp, atk: baseAtk + (u.atk * 5) + gearBonus.atk, mpGain, img: imgUrl, gearBonus };
+    const rawAtk = baseAtk + (u.atk * 5) + gearBonus.atk;
+    rpgChar = { name, class: charClass, maxHp: equippedHp, hp: equippedHp, atk: Math.max(1, Math.round(rawAtk * (1 + (gearBonus.atkPercent || 0) / 100))), mpGain, img: imgUrl, gearBonus };
     rpgFloorMain = 1; rpgFloorSub = 1; rpgMana = 0; rpgPlayerBorisHp = 0; rpgPlayerParashnikHp = 0; rpgEnemyBorisHp = 0; rpgEnemyParashnikHp = 0; rpgItemUsed = false; rpgPlayerDefending = false; rpgEnemyStunned = false;
     document.getElementById('rpg-char-select').classList.add('hidden');
     document.getElementById('rpg-battle-screen').classList.remove('hidden');
@@ -1462,6 +1495,8 @@ function rpgSkill() {
     else if (rpgChar.class === "Чернокнижник") { dmg = Math.floor(Math.random() * 30) + 70 + (currentUpgrades[currentCharType].atk * 10); addLog(`Тёмный ритуал. Урон: ${dmg}!`); }
     else if (rpgChar.class === "Друид") { let heal = percentOf(rpgChar.maxHp, 25) + (currentUpgrades[currentCharType].hp * 5); rpgChar.hp = Math.min(rpgChar.maxHp, rpgChar.hp + heal); addLog(`Исцеление на ${heal} HP!`); playSoundEffect('heal'); }
     if (dmg > 0) {
+        dmg = Math.round((dmg + (rpgChar.gearBonus?.atk || 0)) * (1 + (rpgChar.gearBonus?.atkPercent || 0) / 100));
+        if (rpgChar.gearBonus?.crit && Math.random() * 100 < rpgChar.gearBonus.crit) { dmg = Math.round(dmg * 1.75); addLog(`КРИТИЧЕСКАЯ СПОСОБНОСТЬ! Урон ${dmg}.`); playSoundEffect('crit'); }
         if (rpgPlayerParashnikHp > 0) { rpgPlayerParashnikHp = Math.max(0, rpgPlayerParashnikHp - dmg); addLog(rpgPlayerParashnikHp ? 'Способность повреждает установленного врагом парашника.' : 'Ты уничтожил парашника, установленного врагом!'); }
         else if(rpgEnemyBorisHp > 0) {
             rpgEnemyBorisHp -= dmg; addLog(`Ты бьешь Бориса способностью.`); if(rpgEnemyBorisHp <= 0) { rpgEnemyBorisHp = 0; addLog("Борис разрушен!"); }
@@ -1550,7 +1585,7 @@ function enemyTurn(isPlayerDefending = false) {
         addLog(`Ты сдох...`); isPlayerTurn = false; checkButtons(); document.getElementById('battle-music').pause(); setTimeout(() => { document.getElementById('rpg-char-select').classList.remove('hidden'); document.getElementById('rpg-battle-screen').classList.add('hidden'); renderCharStats(); updateUI(); }, 3000); 
     } else { 
         if(rpgPlayerParashnikHp > 0) {
-            const poisonDmg = percentOf(rpgChar.maxHp, 5); const poisonMana = 15;
+            const poisonBase = percentOf(rpgChar.maxHp, 5); const poisonDmg = Math.max(1, Math.round(poisonBase * (1 - (rpgChar.gearBonus?.defense || 0) / 100))); const poisonMana = 15;
             rpgChar.hp -= poisonDmg; rpgMana = Math.max(0, rpgMana - poisonMana);
             addLog(`Тебя отравил парашник! -${poisonDmg} HP (5%), -${poisonMana} маны (15%).`);
             rpgPlayerParashnikHp = Math.max(0, rpgPlayerParashnikHp - 10); if (rpgPlayerParashnikHp === 0) addLog('Парашник на тебе развалился сам!');
@@ -2206,7 +2241,7 @@ function openItemMenu() {
             if(item.name === 'парашник') effectText = "Яд: 5% HP и 15% маны/ход";
             if(item.name === 'boris') effectText = "Щит на 40% макс. HP";
             if(item.name === 'шприц и лекарство') effectText = "Лечит 45% макс. HP";
-            if(item.name === 'Сбриватель хуйни') effectText = "Борису −50% HP, сносит Парашника на тебе";
+            if(item.name === 'Сбриватель хуйни') effectText = "Борис врага −50% HP; удаляет его Парашника на тебе";
             const div = document.createElement('div'); div.className = 'inv-card';
             if (item.qty > 1) div.innerHTML += `<div class="qty-badge">x${item.qty}</div>`;
             div.innerHTML += `
@@ -2265,7 +2300,7 @@ async function useItemInBattle(itemName) {
         else if (item.name === 'шприц и лекарство') { const heal = percentOf(rpgChar.maxHp, 45); rpgChar.hp = Math.min(rpgChar.maxHp, rpgChar.hp + heal); addLog(`Шприц восстановил ${heal} HP (45% максимального здоровья).`); playSoundEffect('heal'); }
         else if (item.name === 'boris') { rpgPlayerBorisHp += percentOf(rpgChar.maxHp, 40); addLog(`Ты поставил Бориса!`); }
         else if (item.name === 'парашник') { rpgEnemyParashnikHp += 30; addLog(`Ты поставил Парашника врагу!`); }
-        else if (item.name === 'Сбриватель хуйни') { if (rpgEnemyBorisHp > 0) { rpgEnemyBorisHp = Math.ceil(rpgEnemyBorisHp / 2); addLog(`Сбриватель срезал половину HP Бориса врага. Осталось ${rpgEnemyBorisHp} HP.`); } if (rpgPlayerParashnikHp > 0) { rpgPlayerParashnikHp = 0; addLog('Сбрил Парашника, которого враг поставил на тебя.'); } addLog('Твой Парашник на враге остался нетронутым!'); }
+        else if (item.name === 'Сбриватель хуйни') { if (rpgEnemyBorisHp > 0) { rpgEnemyBorisHp = Math.ceil(rpgEnemyBorisHp / 2); addLog(`Сбриватель срезал половину HP Бориса врага. Осталось ${rpgEnemyBorisHp} HP.`); } if (rpgPlayerParashnikHp > 0) { rpgPlayerParashnikHp = 0; addLog('Сбрил Парашника врага, который отравлял тебя.'); } addLog('Твой Борис и твой Парашник на враге остались нетронуты!'); }
         else if (item.name === 'Вам не повезло') { addLog(`Вы нихуя не сделали.`); }
         updateRpgUI(); 
         if (rpgEnemy.hp <= 0) winRpg(); else {
