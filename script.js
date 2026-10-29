@@ -3338,7 +3338,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { text: 'Семь раз отмерь, один раз отрежь.', author: 'Народная мудрость' },
         { text: 'Мудрый меняет мнение, глупец — никогда.', author: 'Приписывается Иммануилу Канту' },
         { text: 'У кого есть зачем жить, тот выдержит почти любое как.', author: 'Фридрих Ницше' },
-        { text: 'Порядок — это удовольствие для разума.', author: 'Приписывается Полю Клодель' },
+        { text: 'КОЛОРИТНАЯ ЖИРУХА РАЗДВИГАЙ ПИЗДУ.', author: 'Фридрих Ницше' },
         { text: 'Иногда молчание — лучший ответ.', author: 'Далай-лама XIV' },
         { text: 'Самая большая ошибка — бояться ошибиться.', author: 'Элберт Хаббард' },
         { text: 'Делай что можешь, с тем, что имеешь, там, где ты есть.', author: 'Теодор Рузвельт' },
@@ -3370,15 +3370,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let hideStartedAt = 0;
     let showing = false;
 
-    const enabledToggle = document.getElementById('aphorism-enabled');
-    try {
-        if (enabledToggle) enabledToggle.checked = localStorage.getItem('pepen-aphorisms-enabled') !== 'false';
-    } catch (_) {}
-
     function eligible() {
         return document.visibilityState === 'visible' &&
-            !mainScreen.classList.contains('hidden') &&
-            (!enabledToggle || enabledToggle.checked);
+            !mainScreen.classList.contains('hidden');
     }
 
     function pickQuote() {
@@ -3465,23 +3459,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             pauseTimers();
         }
-    }
-
-    if (enabledToggle) {
-        enabledToggle.addEventListener('change', () => {
-            try { localStorage.setItem('pepen-aphorisms-enabled', enabledToggle.checked ? 'true' : 'false'); } catch (_) {}
-            if (!enabledToggle.checked) {
-                clearNextTimer();
-                clearHideTimer();
-                nextRemaining = INTERVAL_MS;
-                hideRemaining = DISPLAY_MS;
-                showing = false;
-                popup.classList.add('hidden');
-            } else {
-                nextRemaining = INTERVAL_MS;
-            }
-            syncTimers();
-        });
     }
 
     document.addEventListener('visibilitychange', syncTimers);

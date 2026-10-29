@@ -1004,7 +1004,7 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
     right: 18px;
     bottom: 18px;
     width: min(360px, calc(100vw - 28px));
-    z-index: 850;
+    z-index: 20000;
     box-sizing: border-box;
     color: #3e3526;
     background: #f5edda;
