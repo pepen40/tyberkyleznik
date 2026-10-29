@@ -1078,3 +1078,92 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
     .aphorism-body { padding: 13px; }
     .aphorism-text { font-size: 15px; }
 }
+
+
+/* === RPG: шкаф снаряжения === */
+.rpg-meta-actions {
+    display:flex; flex-direction:column; align-items:center; gap:5px;
+    margin: 10px 0 14px; padding: 10px; background:#d8d8d8;
+    border:2px inset #fff;
+}
+.rpg-meta-actions button { width:100%; max-width:440px; background:#000080; color:#fff; }
+.rpg-meta-actions span { font-size:12px; color:#333; }
+.rpg-gear-window {
+    width:min(760px, 94vw); max-width:760px; max-height:88vh;
+    overflow:auto; padding:0; text-align:left; box-sizing:border-box;
+}
+.rpg-gear-titlebar {
+    display:flex; justify-content:space-between; align-items:center;
+    background:linear-gradient(90deg,#000080,#1084d0); color:#fff;
+    padding:9px 12px; font-family:Tahoma,Arial,sans-serif;
+}
+.rpg-gear-titlebar strong { font-size:16px; }
+.rpg-gear-titlebar .rpg-gear-close {
+    margin:0; padding:1px 7px; font-size:15px; background:#c0c0c0; color:#000;
+}
+.rpg-gear-intro { margin:12px; font-size:13px; }
+.rpg-gear-controls {
+    margin:10px 12px; padding:10px; background:#eee; border:2px inset #fff;
+    display:flex; gap:8px; align-items:center; flex-wrap:wrap; font-size:13px;
+}
+.rpg-gear-controls select { padding:5px; max-width:100%; }
+.rpg-gear-equipped {
+    display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:12px;
+}
+.rpg-equipped-slot {
+    background:#fff; border:2px inset #aaa; padding:8px; min-height:68px;
+    font-size:12px; overflow-wrap:anywhere;
+}
+.rpg-equipped-slot strong { display:block; color:#000080; margin-bottom:4px; }
+.rpg-gear-tabs { display:flex; flex-wrap:wrap; gap:5px; padding:0 12px 10px; }
+.rpg-gear-tabs button { margin:0; padding:5px 9px; font-size:12px; }
+.rpg-gear-tabs button.active { background:#000080; color:#fff; border-style:inset; }
+.rpg-gear-list {
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(205px,1fr)); gap:8px;
+    padding:0 12px 12px;
+}
+.rpg-gear-card {
+    display:flex; flex-direction:column; gap:6px; background:#fff;
+    border:2px solid #333; padding:9px; text-align:left; min-width:0;
+}
+.rpg-gear-card.owned { border-color:#187b2c; }
+.rpg-gear-card.equipped { background:#e5ffe5; border-color:#008000; }
+.rpg-gear-card-head { display:flex; gap:8px; align-items:center; }
+.rpg-gear-emoji { font-size:26px; width:34px; text-align:center; }
+.rpg-gear-name { font-size:13px; font-weight:bold; overflow-wrap:anywhere; }
+.rpg-gear-type { font-size:10px; color:#555; text-transform:uppercase; }
+.rpg-gear-desc { font-size:12px; line-height:1.35; flex:1; }
+.rpg-gear-stats { font-size:11px; color:#006400; font-weight:bold; }
+.rpg-gear-card button { margin:2px 0 0; padding:5px; font-size:12px; width:100%; }
+.rpg-gear-card .gear-buy { background:#90ee90; }
+.rpg-gear-card .gear-equip { background:#add8e6; }
+.rpg-gear-card .gear-equipped-btn { background:#ddd; }
+.rpg-gear-message { min-height:18px; margin:0 12px 8px; color:#000080; font-weight:bold; font-size:12px; }
+@media(max-width:520px) {
+    .rpg-gear-equipped { grid-template-columns:1fr; }
+    .rpg-gear-controls { align-items:stretch; flex-direction:column; }
+    .rpg-gear-window { width:96vw; max-height:92vh; }
+}
+
+
+/* RPG progression: daily contracts, achievements and boss floors */
+.rpg-contract-board { margin: 16px 0; padding: 12px; border: 3px ridge #fff; background: #d4d0c8; text-align: left; box-shadow: 4px 4px 0 rgba(0,0,0,.18); }
+.rpg-contract-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 10px; background:#000080; color:#fff; font-family:Tahoma,Arial,sans-serif; font-weight:900; }
+.rpg-contract-heading small { font-size:11px; color:#ffff80; font-weight:normal; }
+.rpg-contract-subtitle { margin:8px 0 12px; font-size:13px; }
+.rpg-contract-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:8px; }
+.rpg-contract-card { padding:10px; border:2px outset #fff; background:#f4f4f4; color:#111; min-width:0; }
+.rpg-contract-card.is-complete { border-color:#2f7d32; background:#e4f5e4; }
+.rpg-contract-card.is-claimed { opacity:.72; background:#ddd; }
+.rpg-contract-title { font-weight:bold; font-size:13px; margin-bottom:5px; }
+.rpg-contract-desc { font-size:12px; min-height:30px; }
+.rpg-contract-progress { margin-top:8px; height:8px; background:#777; border:1px inset #fff; }
+.rpg-contract-progress > span { display:block; height:100%; background:#00a000; transition:width .2s; }
+.rpg-contract-foot { display:flex; justify-content:space-between; align-items:center; gap:6px; margin-top:7px; font-size:12px; font-weight:bold; }
+.rpg-contract-card button { margin:0; padding:4px 8px; font-size:12px; }
+.rpg-contract-card button.claim-ready { background:#90ee90; }
+.rpg-achievement-heading { margin-top:16px; }
+.rpg-contract-status { min-height:18px; margin:8px 0 0; color:#000080; font-weight:bold; font-size:13px; }
+.boss-floor-banner { background:#650000; color:#fff; padding:8px; border:3px ridge #ffcc00; text-align:center; font-weight:900; letter-spacing:1px; animation:boss-pulse 1s infinite alternate; }
+@keyframes boss-pulse { from { box-shadow:0 0 2px #ff0; } to { box-shadow:0 0 12px #f00; } }
+@media(max-width:520px){ .rpg-contract-heading { align-items:flex-start; flex-direction:column; } .rpg-contract-grid { grid-template-columns:1fr; } }

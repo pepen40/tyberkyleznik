@@ -79,6 +79,219 @@ let currentUpgrades = {"ashab":{"hp":0,"atk":0},"apostol":{"hp":0,"atk":0},"mee"
 let currentMaxFloors = {"ashab":0,"apostol":0,"mee":0};
 const rarityWeight = { 'Легендарное': 5, 'Сверхредкое': 4, 'Эпическое': 3, 'Редкое': 2, 'Обычное': 1, 'Мусор': 0 };
 
+
+// === RPG: постоянная экипировка ===
+const RPG_GEAR = [{"id": "wood_blade", "name": "Доска возмездия", "slot": "weapon", "slotLabel": "Оружие", "price": 100, "atk": 4, "hp": 0, "crit": 0, "defense": 0, "desc": "+4 к атаке. Дешёвая, но доска — тоже аргумент.", "emoji": "🪵"}, {"id": "iron_edge", "name": "Ржавый тесак", "slot": "weapon", "slotLabel": "Оружие", "price": 450, "atk": 10, "hp": 0, "crit": 0, "defense": 0, "desc": "+10 к атаке.", "emoji": "🗡️"}, {"id": "berserker_axe", "name": "Топор берсерка", "slot": "weapon", "slotLabel": "Оружие", "price": 1200, "atk": 20, "hp": 0, "crit": 3, "defense": 0, "desc": "+20 к атаке и +3% критического удара.", "emoji": "🪓"}, {"id": "void_blade", "name": "Клинок пустоты", "slot": "weapon", "slotLabel": "Оружие", "price": 3500, "atk": 35, "hp": 0, "crit": 7, "defense": 0, "desc": "+35 к атаке и +7% критического удара.", "emoji": "🌌"}, {"id": "patched_vest", "name": "Броня из пакетов", "slot": "armor", "slotLabel": "Броня", "price": 120, "atk": 0, "hp": 25, "crit": 0, "defense": 3, "desc": "+25 к максимальному HP, снижает входящий урон на 3%.", "emoji": "🦺"}, {"id": "iron_plate", "name": "Железная кираса", "slot": "armor", "slotLabel": "Броня", "price": 500, "atk": 0, "hp": 65, "crit": 0, "defense": 8, "desc": "+65 HP и -8% входящего урона.", "emoji": "🛡️"}, {"id": "guardian_shell", "name": "Панцирь хранителя", "slot": "armor", "slotLabel": "Броня", "price": 1500, "atk": 0, "hp": 130, "crit": 0, "defense": 12, "desc": "+130 HP и -12% входящего урона.", "emoji": "🏰"}, {"id": "abyss_armor", "name": "Доспех бездны", "slot": "armor", "slotLabel": "Броня", "price": 3500, "atk": 0, "hp": 220, "crit": 0, "defense": 18, "desc": "+220 HP и -18% входящего урона.", "emoji": "🕳️"}, {"id": "lucky_charm", "name": "Сомнительный амулет", "slot": "charm", "slotLabel": "Амулет", "price": 300, "atk": 0, "hp": 0, "crit": 3, "defense": 0, "desc": "+3% шанс критического удара.", "emoji": "🧿"}, {"id": "wolf_fang", "name": "Клык волка", "slot": "charm", "slotLabel": "Амулет", "price": 950, "atk": 5, "hp": 15, "crit": 5, "defense": 0, "desc": "+5 атаки, +15 HP и +5% критического удара.", "emoji": "🐺"}, {"id": "phoenix_heart", "name": "Сердце феникса", "slot": "charm", "slotLabel": "Амулет", "price": 2200, "atk": 0, "hp": 50, "crit": 0, "defense": 0, "desc": "+50 HP. После победы восстанавливает 20% HP перед следующим этажом.", "emoji": "🔥"}, {"id": "king_relic", "name": "Реликвия мясорубки", "slot": "charm", "slotLabel": "Амулет", "price": 5000, "atk": 12, "hp": 80, "crit": 8, "defense": 5, "desc": "+12 атаки, +80 HP, +8% крит и -5% урона.", "emoji": "👑"}];
+let rpgGearFilter = 'all';
+
+const RPG_DAILY_QUESTS = [
+    { id: 'wins3', title: 'Разогрев мясорубки', desc: 'Победи 3 врагов в офлайн-RPG.', target: 3, reward: 120, metric: 'wins' },
+    { id: 'boss1', title: 'Охотник на боссов', desc: 'Одолей босса на пятом подэтаже.', target: 1, reward: 250, metric: 'bosses' },
+    { id: 'spend500', title: 'Деньги должны работать', desc: 'Потрать 500 монет на прокачку или экипировку.', target: 500, reward: 100, metric: 'spent' }
+];
+const RPG_ACHIEVEMENTS = [
+    { id: 'first_win', title: 'Первый труп', desc: 'Победи первого врага.', target: 1, reward: 100, metric: 'totalWins' },
+    { id: 'ten_wins', title: 'Мясник-стажёр', desc: 'Победи 10 врагов суммарно.', target: 10, reward: 350, metric: 'totalWins' },
+    { id: 'fifty_wins', title: 'Конвейер смерти', desc: 'Победи 50 врагов суммарно.', target: 50, reward: 1200, metric: 'totalWins' },
+    { id: 'first_boss', title: 'Снял корону', desc: 'Победи первого босса.', target: 1, reward: 300, metric: 'totalBosses' },
+    { id: 'ten_bosses', title: 'Босс — это просто работа', desc: 'Победи 10 боссов суммарно.', target: 10, reward: 1500, metric: 'totalBosses' }
+];
+let rpgContractBusy = false;
+function getLocalRpgProgress() {
+    const state = currentUpgrades && currentUpgrades.rpgDaily;
+    return state && typeof state === 'object' ? state : { date: '', wins: 0, bosses: 0, spent: 0, claimed: [], totalWins: 0, totalBosses: 0, achievementsClaimed: [] };
+}
+async function loadRpgContracts() {
+    const dailyEl = document.getElementById('rpg-daily-contracts');
+    const achEl = document.getElementById('rpg-achievements');
+    if (!dailyEl || !achEl || !currentUser) return;
+    dailyEl.innerHTML = '<p>Обновляем контракты...</p>';
+    try {
+        const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'daily_status', username: currentUser, data: {} } });
+        if (error) throw error;
+        if (!data || !data.success) throw new Error(data?.error || 'Не удалось загрузить контракты');
+        currentUpgrades = data.newUpgrades || currentUpgrades;
+        currentCoins = Number(data.newCoins ?? currentCoins);
+        updateUI();
+        renderRpgContracts(data.progress || getLocalRpgProgress());
+    } catch (e) {
+        dailyEl.innerHTML = '<p>Не удалось загрузить доску. Проверь соединение и открой вкладку снова.</p>';
+        achEl.innerHTML = '';
+    }
+}
+function renderRpgContracts(progress) {
+    const dailyEl = document.getElementById('rpg-daily-contracts');
+    const achEl = document.getElementById('rpg-achievements');
+    if (!dailyEl || !achEl) return;
+    const claimed = Array.isArray(progress.claimed) ? progress.claimed : [];
+    dailyEl.innerHTML = RPG_DAILY_QUESTS.map(q => {
+        const value = Math.min(q.target, Math.max(0, Number(progress[q.metric]) || 0));
+        const done = value >= q.target; const got = claimed.includes(q.id);
+        const action = got ? '<button disabled>✓ Получено</button>' : done ? `<button class="claim-ready" onclick="claimRpgReward('daily','${q.id}')">Забрать</button>` : '<button disabled>В процессе</button>';
+        return `<article class="rpg-contract-card ${done ? 'is-complete' : ''} ${got ? 'is-claimed' : ''}"><div class="rpg-contract-title">${q.title}</div><div class="rpg-contract-desc">${q.desc}</div><div class="rpg-contract-progress"><span style="width:${Math.round(value/q.target*100)}%"></span></div><div class="rpg-contract-foot"><span>${value}/${q.target} · +${q.reward} 🪙</span>${action}</div></article>`;
+    }).join('');
+    const achClaimed = Array.isArray(progress.achievementsClaimed) ? progress.achievementsClaimed : [];
+    achEl.innerHTML = RPG_ACHIEVEMENTS.map(a => {
+        const value = Math.min(a.target, Math.max(0, Number(progress[a.metric]) || 0));
+        const done = value >= a.target; const got = achClaimed.includes(a.id);
+        const action = got ? '<button disabled>✓ Получено</button>' : done ? `<button class="claim-ready" onclick="claimRpgReward('achievement','${a.id}')">Забрать</button>` : '<button disabled>Закрыто</button>';
+        return `<article class="rpg-contract-card ${done ? 'is-complete' : ''} ${got ? 'is-claimed' : ''}"><div class="rpg-contract-title">🏆 ${a.title}</div><div class="rpg-contract-desc">${a.desc}</div><div class="rpg-contract-progress"><span style="width:${Math.round(value/a.target*100)}%"></span></div><div class="rpg-contract-foot"><span>${value}/${a.target} · +${a.reward} 🪙</span>${action}</div></article>`;
+    }).join('');
+}
+async function claimRpgReward(kind, id) {
+    if (rpgContractBusy) return; rpgContractBusy = true;
+    const status = document.getElementById('rpg-contract-status'); if (status) status.textContent = 'Проверяем награду...';
+    try {
+        const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'claim_rpg_reward', username: currentUser, data: { kind, id } } });
+        if (error) throw error;
+        if (!data || !data.success) throw new Error(data?.error || 'Награда недоступна');
+        currentCoins = Number(data.newCoins ?? currentCoins); currentUpgrades = data.newUpgrades || currentUpgrades; updateUI(); renderRpgContracts(data.progress || getLocalRpgProgress());
+        if (status) status.textContent = `Забрано +${data.earned} монет. Так держать, мясник!`;
+    } catch (e) { if (status) status.textContent = e.message || 'Не удалось забрать награду.'; }
+    finally { rpgContractBusy = false; }
+}
+
+function ensureRpgGear() {
+    if (!currentUpgrades || typeof currentUpgrades !== 'object') currentUpgrades = {};
+    if (!currentUpgrades.rpgGear || typeof currentUpgrades.rpgGear !== 'object') {
+        currentUpgrades.rpgGear = { owned: [], equipped: { ashab: { weapon: null, armor: null, charm: null }, apostol: { weapon: null, armor: null, charm: null }, mee: { weapon: null, armor: null, charm: null } } };
+    }
+    if (!Array.isArray(currentUpgrades.rpgGear.owned)) currentUpgrades.rpgGear.owned = [];
+    if (!currentUpgrades.rpgGear.equipped || typeof currentUpgrades.rpgGear.equipped !== 'object') currentUpgrades.rpgGear.equipped = {};
+    ['ashab', 'apostol', 'mee'].forEach(char => {
+        if (!currentUpgrades.rpgGear.equipped[char]) currentUpgrades.rpgGear.equipped[char] = { weapon: null, armor: null, charm: null };
+        ['weapon', 'armor', 'charm'].forEach(slot => {
+            if (!(slot in currentUpgrades.rpgGear.equipped[char])) currentUpgrades.rpgGear.equipped[char][slot] = null;
+        });
+    });
+    return currentUpgrades.rpgGear;
+}
+
+function getGearBonuses(charType) {
+    const gear = ensureRpgGear();
+    const equipped = gear.equipped[charType] || {};
+    const total = { hp: 0, atk: 0, crit: 0, defense: 0 };
+    Object.values(equipped).forEach(id => {
+        const item = RPG_GEAR.find(g => g.id === id);
+        if (!item) return;
+        total.hp += item.hp || 0;
+        total.atk += item.atk || 0;
+        total.crit += item.crit || 0;
+        total.defense += item.defense || 0;
+    });
+    total.crit = Math.min(35, total.crit);
+    total.defense = Math.min(35, total.defense);
+    return total;
+}
+
+function openGearCabinet() {
+    ensureRpgGear();
+    const modal = document.getElementById('rpg-gear-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    renderGearCabinet();
+}
+function closeGearCabinet() {
+    const modal = document.getElementById('rpg-gear-modal');
+    if (modal) modal.classList.add('hidden');
+}
+function setGearFilter(filter) {
+    rpgGearFilter = ['all', 'weapon', 'armor', 'charm'].includes(filter) ? filter : 'all';
+    document.querySelectorAll('[data-gear-filter]').forEach(btn => btn.classList.toggle('active', btn.dataset.gearFilter === rpgGearFilter));
+    renderGearCabinet();
+}
+
+function renderGearCabinet() {
+    const list = document.getElementById('rpg-gear-list');
+    const equippedEl = document.getElementById('rpg-gear-equipped');
+    const charSelect = document.getElementById('rpg-gear-char');
+    if (!list || !equippedEl || !charSelect) return;
+    const gear = ensureRpgGear();
+    const charType = charSelect.value || 'ashab';
+    const equipped = gear.equipped[charType];
+    const slotNames = { weapon: '⚔️ Оружие', armor: '🛡️ Броня', charm: '🧿 Амулет' };
+    document.getElementById('rpg-gear-coins').textContent = Number(currentCoins || 0).toLocaleString('ru-RU');
+    equippedEl.innerHTML = ['weapon', 'armor', 'charm'].map(slot => {
+        const item = RPG_GEAR.find(g => g.id === equipped[slot]);
+        return `<div class="rpg-equipped-slot"><strong>${slotNames[slot]}</strong>${item ? `${item.emoji} ${item.name}<br><button type="button" onclick="equipGear('${item.id}', true)">Снять</button>` : 'Пусто'}</div>`;
+    }).join('');
+    const shown = RPG_GEAR.filter(item => rpgGearFilter === 'all' || item.slot === rpgGearFilter);
+    list.innerHTML = shown.map(item => {
+        const owned = gear.owned.includes(item.id);
+        const isEquipped = equipped[item.slot] === item.id;
+        const stats = [
+            item.atk ? `АТК +${item.atk}` : '',
+            item.hp ? `HP +${item.hp}` : '',
+            item.crit ? `Крит +${item.crit}%` : '',
+            item.defense ? `Защита +${item.defense}%` : ''
+        ].filter(Boolean).join(' · ');
+        let action = '';
+        if (isEquipped) action = `<button type="button" class="gear-equipped-btn" disabled>✓ Надето</button>`;
+        else if (owned) action = `<button type="button" class="gear-equip" onclick="equipGear('${item.id}')">Надеть на ${charSelect.options[charSelect.selectedIndex].text.split(' — ')[0]}</button>`;
+        else action = `<button type="button" class="gear-buy" onclick="buyGear('${item.id}')">Купить · ${item.price.toLocaleString('ru-RU')} монет</button>`;
+        return `<article class="rpg-gear-card ${owned ? 'owned' : ''} ${isEquipped ? 'equipped' : ''}">
+            <div class="rpg-gear-card-head"><span class="rpg-gear-emoji">${item.emoji}</span><div><div class="rpg-gear-name">${item.name}</div><div class="rpg-gear-type">${item.slotLabel}</div></div></div>
+            <div class="rpg-gear-desc">${item.desc}</div><div class="rpg-gear-stats">${stats}</div>${action}
+        </article>`;
+    }).join('');
+    document.querySelectorAll('[data-gear-filter]').forEach(btn => btn.classList.toggle('active', btn.dataset.gearFilter === rpgGearFilter));
+}
+
+async function buyGear(itemId) {
+    const item = RPG_GEAR.find(g => g.id === itemId);
+    if (!item) return;
+    const gear = ensureRpgGear();
+    if (gear.owned.includes(itemId)) { showGearMessage('Этот предмет уже есть в коллекции.'); return; }
+    if (currentCoins < item.price) { showGearMessage(`Не хватает ${item.price - currentCoins} монет.`); return; }
+    const button = document.querySelector(`button[onclick="buyGear('${itemId}')"]`);
+    if (button) button.disabled = true;
+    try {
+        const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
+            body: { action: 'buy_gear', username: currentUser, data: { itemId } }
+        });
+        if (error) throw error;
+        if (!data || !data.success) { showGearMessage(data?.error || 'Покупка не удалась.'); return; }
+        currentCoins = data.newCoins;
+        currentUpgrades = data.newUpgrades;
+        ensureRpgGear();
+        updateUI();
+        renderGearCabinet();
+        showGearMessage(`Приобретено: ${item.name}! Теперь надень его на бойца.`);
+    } catch (e) {
+        showGearMessage('Ошибка покупки: ' + (e.message || e));
+    } finally {
+        if (button) button.disabled = false;
+    }
+}
+
+async function equipGear(itemId, unequip = false) {
+    const item = RPG_GEAR.find(g => g.id === itemId);
+    const charSelect = document.getElementById('rpg-gear-char');
+    const charType = charSelect ? charSelect.value : 'ashab';
+    const gear = ensureRpgGear();
+    if (!unequip && (!item || !gear.owned.includes(itemId))) { showGearMessage('Сначала получи предмет.'); return; }
+    try {
+        const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
+            body: { action: 'equip_gear', username: currentUser, data: { itemId, charType, unequip: !!unequip } }
+        });
+        if (error) throw error;
+        if (!data || !data.success) { showGearMessage(data?.error || 'Не удалось изменить экипировку.'); return; }
+        currentUpgrades = data.newUpgrades;
+        ensureRpgGear();
+        renderGearCabinet();
+        renderCharStats();
+        showGearMessage(unequip ? 'Предмет снят.' : `${item.name} надет на выбранного бойца.`);
+    } catch (e) {
+        showGearMessage('Ошибка экипировки: ' + (e.message || e));
+    }
+}
+
+function showGearMessage(message) {
+    const el = document.getElementById('rpg-gear-message');
+    if (el) el.textContent = message;
+}
+
+
 function percentOf(maxValue, percent) { return Math.max(1, Math.round((Number(maxValue) || 0) * percent / 100)); }
 
 let onlineChannel = null;
@@ -238,6 +451,7 @@ async function login() {
         currentItemPoints = data.item_points || 0;
         currentPvpPts = data.pvp_pts || 0;
         currentUpgrades = data.rpg_upgrades || {"ashab":{"hp":0,"atk":0},"apostol":{"hp":0,"atk":0},"mee":{"hp":0,"atk":0}};
+        ensureRpgGear();
         currentMaxFloors = data.rpg_max_floors || {"ashab":0,"apostol":0,"mee":0};
         await supabaseClient.from('players').update({ last_online: new Date().toISOString() }).eq('username', u);
 
@@ -280,6 +494,18 @@ function renderCharStats() {
         let maxF = currentMaxFloors[c] || 0;
         let el = document.getElementById(`max-floor-${c}`);
         if (el) el.innerText = `Рекорд: ${maxF > 0 ? maxF.toFixed(1) : '0.0'} этаж`;
+        const card = document.querySelector(`#max-floor-${c}`)?.closest('.rpg-char-card');
+        if (card) {
+            let gearLine = card.querySelector('.rpg-gear-summary');
+            if (!gearLine) {
+                gearLine = document.createElement('div');
+                gearLine.className = 'rpg-gear-summary';
+                card.querySelector('.char-info')?.appendChild(gearLine);
+            }
+            const b = getGearBonuses(c);
+            const count = Object.values(ensureRpgGear().equipped[c] || {}).filter(Boolean).length;
+            gearLine.textContent = count ? `Экипировка: ${count}/3 · +${b.atk} АТК · +${b.hp} HP · ${b.defense}% защиты · ${b.crit}% крит` : 'Экипировка: пусто';
+        }
     });
 }
 
@@ -295,7 +521,7 @@ function switchTab(tab) {
     if (tab === 'inventory') renderInventory();
     if (tab === 'market') renderMarket();
     if (tab === 'leaderboard') renderLeaderboard();
-    if (tab === 'rpg') renderCharStats();
+    if (tab === 'rpg') { renderCharStats(); loadRpgContracts(); }
 }
 function openMiniGame(game) {
     if (game === 'game') {
@@ -1085,7 +1311,9 @@ function selectChar(type) {
     else if (type === 'apostol') { baseHp = 80; baseAtk = 30; mpGain = 35; name = "Apostol"; charClass = "Чернокнижник"; imgUrl = "IMG_3544.jpeg"; }
     else if (type === 'mee') { baseHp = 110; baseAtk = 18; mpGain = 25; name = "Мээ"; charClass = "Друид"; imgUrl = "IMG_3546.jpeg"; }
     let u = currentUpgrades[type];
-    rpgChar = { name, class: charClass, maxHp: baseHp + (u.hp * 20), hp: baseHp + (u.hp * 20), atk: baseAtk + (u.atk * 5), mpGain, img: imgUrl };
+    const gearBonus = getGearBonuses(type);
+    const equippedHp = baseHp + (u.hp * 20) + gearBonus.hp;
+    rpgChar = { name, class: charClass, maxHp: equippedHp, hp: equippedHp, atk: baseAtk + (u.atk * 5) + gearBonus.atk, mpGain, img: imgUrl, gearBonus };
     rpgFloorMain = 1; rpgFloorSub = 1; rpgMana = 0; rpgPlayerBorisHp = 0; rpgPlayerParashnikHp = 0; rpgEnemyBorisHp = 0; rpgEnemyParashnikHp = 0; rpgItemUsed = false; rpgPlayerDefending = false; rpgEnemyStunned = false;
     document.getElementById('rpg-char-select').classList.add('hidden');
     document.getElementById('rpg-battle-screen').classList.remove('hidden');
@@ -1115,10 +1343,13 @@ function spawnEnemy() {
         { name: "Голый чювак", hpMult: 1, atkMult: 1.3, img: "enemy_chuvak.png" },
         { name: "Бедуин", hpMult: 1.5, atkMult: 0.8, img: "enemy_beduin.png" }
     ];
-    let eType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)]; let eHp = Math.floor(baseHp * eType.hpMult);
-    rpgEnemy = { name: `${eType.name} (Ур. ${rpgFloorMain}.${rpgFloorSub})`, hp: eHp, maxHp: eHp, atk: Math.floor(baseAtk * eType.atkMult), img: eType.img };
+    const isBoss = rpgFloorSub === 5;
+    let eType = isBoss ? { name: 'КОЛЛЕКТОР МЯСОРУБКИ', hpMult: 2.25, atkMult: 1.45, img: 'enemy_beduin.png' } : enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+    let eHp = Math.floor(baseHp * eType.hpMult);
+    rpgEnemy = { name: `${isBoss ? '👑 БОСС: ' : ''}${eType.name} (Ур. ${rpgFloorMain}.${rpgFloorSub})`, hp: eHp, maxHp: eHp, atk: Math.floor(baseAtk * eType.atkMult), img: eType.img, isBoss };
     rpgEnemyBorisHp = 0; rpgEnemyParashnikHp = 0; rpgItemUsed = false; rpgPlayerDefending = false; rpgEnemyStunned = false;
-    document.getElementById('rpg-floor').innerText = `ЭТАЖ ${rpgFloorMain}.${rpgFloorSub}`;
+    document.getElementById('rpg-floor').innerText = isBoss ? `👑 БОСС-ЭТАЖ ${rpgFloorMain}.${rpgFloorSub} · НАГРАДА УВЕЛИЧЕНА` : `ЭТАЖ ${rpgFloorMain}.${rpgFloorSub}`;
+    document.getElementById('rpg-floor').classList.toggle('boss-floor-banner', isBoss);
     document.getElementById('rpg-enemy-img').src = rpgEnemy.img;
     updateRpgUI(); addLog(`На арене появился ${rpgEnemy.name}!`);
     isPlayerTurn = true; enemyIsCharging = false; setTurnIndicator(true); checkButtons();
@@ -1179,6 +1410,12 @@ function rpgAttack() {
     isPlayerTurn = false; rpgItemUsed = false; setTurnIndicator(false); checkButtons(); animateAttack(true);
     triggerScreenShake();
     let dmg = Math.floor(Math.random() * 10) + rpgChar.atk;
+    const critChance = (rpgChar.gearBonus && rpgChar.gearBonus.crit) || 0;
+    if (critChance > 0 && Math.random() * 100 < critChance) {
+        dmg = Math.round(dmg * 1.75);
+        addLog(`КРИТИЧЕСКИЙ УДАР! Экипировка усилила атаку до ${dmg} урона.`);
+        playSoundEffect('crit');
+    }
     if (rpgPotatoBuff) { dmg = Math.round(dmg * 1.15); rpgPotatoBuff = false; addLog(`Картофель усилил удар на 15%: ${dmg} урона.`); }
     if (rpgPlayerParashnikHp > 0) {
         rpgPlayerParashnikHp = Math.max(0, rpgPlayerParashnikHp - dmg);
@@ -1267,6 +1504,8 @@ function enemyTurn(isPlayerDefending = false) {
         } else {
             playSoundEffect('harmful');
             let dmg = percentOf(rpgChar.maxHp, 20);
+            const gearDefense = (getGearBonuses(currentCharType).defense || 0);
+            if (gearDefense > 0) { dmg = Math.max(1, Math.floor(dmg * (1 - gearDefense / 100))); addLog(`Броня поглотила часть урона (${gearDefense}%).`); }
             if (isPlayerDefending) { dmg = Math.floor(dmg * 0.35); addLog(`Ты заблокировал предмет, получив ${dmg} (65% срезано).`); }
             if (rpgPlayerBorisHp > 0) { rpgPlayerBorisHp -= dmg; addLog(`Враг швырнул голову барана в Бориса!`); if(rpgPlayerBorisHp<=0){rpgPlayerBorisHp=0; addLog("Твой Борис разрушен!");} }
             else { rpgChar.hp -= dmg; addLog(`Враг швырнул голову барана на ${dmg} урона!`); }
@@ -1281,6 +1520,8 @@ function enemyTurn(isPlayerDefending = false) {
     }
     
     let dmg = Math.floor(Math.random() * 10) + rpgEnemy.atk;
+    const gearDefense = (getGearBonuses(currentCharType).defense || 0);
+    if (gearDefense > 0) { dmg = Math.max(1, Math.floor(dmg * (1 - gearDefense / 100))); }
     let isUlt = false;
     
     if (!isPlayerDefending && Math.random() < 0.3 && !enemyIsCharging) {
@@ -1324,14 +1565,20 @@ async function winRpg() {
     let reward = 15 + (rpgFloorMain * 10);
     const wonFloorMain = rpgFloorMain;
     try {
-        const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'rpg_win', username: currentUser, data: { floorMain: wonFloorMain } } });
-        if (!error && data && data.success) { currentCoins = data.newCoins; updateUI(); addLog(`Победа! +${data.earned} монет.`); }
+        const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'rpg_win', username: currentUser, data: { floorMain: wonFloorMain, floorSub: rpgFloorSub } } });
+        if (!error && data && data.success) { currentCoins = data.newCoins; if (data.newUpgrades) currentUpgrades = data.newUpgrades; updateUI(); addLog(`Победа! +${data.earned} монет.${data.bossBonus ? ` БОНУС БОССА: +${data.bossBonus}!` : ''}`); }
         else if (data && data.error) { addLog(`Сервер: ${data.error}`); }
     } catch(e) { addLog(`Ошибка сети: ${e.message}`); }
     finally {
         try {
             await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'update_floor', username: currentUser, data: { charType: currentCharType, floor: wonFloorMain } } });
         } catch(e) { console.error(e); }
+        const gearState = ensureRpgGear();
+        const equippedCharm = gearState.equipped[currentCharType]?.charm;
+        if (equippedCharm === 'phoenix_heart' && rpgChar && rpgChar.hp > 0) {
+            const phoenixHeal = Math.min(rpgChar.maxHp - rpgChar.hp, Math.round(rpgChar.maxHp * 0.20));
+            if (phoenixHeal > 0) { rpgChar.hp += phoenixHeal; addLog(`Сердце феникса восстановило ${phoenixHeal} HP перед следующим этажом.`); }
+        }
         rpgFloorSub++;
         if (rpgFloorSub > 5) { rpgFloorSub = 1; rpgFloorMain++; changeBackground(); }
         rpgMana = Math.min(rpgMaxMana, rpgMana + 30);

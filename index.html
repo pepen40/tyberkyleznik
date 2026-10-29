@@ -339,6 +339,18 @@
             <div id="rpg-char-select">
                 <button onclick="openPvpLobby()" style="background-color: #ff4500; color: #fff; font-size: 20px; width: 100%; margin-bottom: 15px;">⚔️ PVP ОНЛАЙН</button>
                 <p>Выбери бойца для оффлайн мясорубки:</p>
+                <div class="rpg-meta-actions">
+                    <button type="button" onclick="openGearCabinet()">🧰 ШКАФ СНАРЯЖЕНИЯ</button>
+                    <span>Собирай экипировку, усиливай бойцов и пробивайся дальше.</span>
+                </div>
+                <section id="rpg-contract-board" class="rpg-contract-board">
+                    <div class="rpg-contract-heading"><span>📜 ДОСКА КОНТРАКТОВ</span><small>Обновление каждый день</small></div>
+                    <p class="rpg-contract-subtitle">Закрывай контракты, забирай монеты и готовься к следующему забегу.</p>
+                    <div id="rpg-daily-contracts" class="rpg-contract-grid"><p>Загружаем контракты...</p></div>
+                    <div class="rpg-contract-heading rpg-achievement-heading"><span>🏆 ДОСТИЖЕНИЯ</span><small>Постоянные награды</small></div>
+                    <div id="rpg-achievements" class="rpg-contract-grid"><p>Загружаем достижения...</p></div>
+                    <p id="rpg-contract-status" class="rpg-contract-status" aria-live="polite"></p>
+                </section>
                 <div class="rpg-char-card">
                     <img src="IMG_3545.jpeg" class="char-avatar">
                     <div class="char-info">
@@ -377,6 +389,36 @@
                             <button style="background:#90ee90;" onclick="selectChar('mee')">В БОЙ!</button>
                         </div>
                     </div>
+                </div>
+            </div>
+
+
+            <div id="rpg-gear-modal" class="overlay-modal hidden" role="dialog" aria-modal="true" aria-labelledby="rpg-gear-title">
+                <div class="modal-content rpg-gear-window">
+                    <div class="rpg-gear-titlebar">
+                        <strong id="rpg-gear-title">ШКАФ СНАРЯЖЕНИЯ</strong>
+                        <button type="button" class="rpg-gear-close" onclick="closeGearCabinet()" aria-label="Закрыть">✕</button>
+                    </div>
+                    <p class="rpg-gear-intro">Покупай оружие, броню и амулеты. Экипировка сохраняется и даёт бонусы выбранному бойцу.</p>
+                    <div class="rpg-gear-controls">
+                        <label for="rpg-gear-char">Боец:</label>
+                        <select id="rpg-gear-char" onchange="renderGearCabinet()">
+                            <option value="ashab">Ashab — Берсерк</option>
+                            <option value="apostol">Apostol — Чернокнижник</option>
+                            <option value="mee">Мээ — Друид</option>
+                        </select>
+                        <span>Баланс: <b id="rpg-gear-coins">0</b> монет</span>
+                    </div>
+                    <div id="rpg-gear-equipped" class="rpg-gear-equipped"></div>
+                    <div class="rpg-gear-tabs">
+                        <button type="button" class="active" data-gear-filter="all" onclick="setGearFilter('all')">Всё</button>
+                        <button type="button" data-gear-filter="weapon" onclick="setGearFilter('weapon')">Оружие</button>
+                        <button type="button" data-gear-filter="armor" onclick="setGearFilter('armor')">Броня</button>
+                        <button type="button" data-gear-filter="charm" onclick="setGearFilter('charm')">Амулеты</button>
+                    </div>
+                    <div id="rpg-gear-list" class="rpg-gear-list"></div>
+                    <p id="rpg-gear-message" class="rpg-gear-message" aria-live="polite"></p>
+                    <button type="button" class="modal-cancel-btn" onclick="closeGearCabinet()">Закрыть шкаф</button>
                 </div>
             </div>
 
