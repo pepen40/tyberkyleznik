@@ -57,16 +57,16 @@ function logout() {
 }
 
 const itemDatabase = {
-    "хуйня": { desc: "Восстанавливает 15% от максимального здоровья.", chance: "30-40%" },
+    "хуйня": { desc: "На самом деле это не хуйня это аппарат жизнеобеспечения. Восстанавливает 15% от максимального здоровья.", chance: "30-40%" },
     "картофель": { desc: "когда то давно влад пошел мыть картошку но так как леха занял все ведра головами рыб ,окурками, говном, щинячьими цоботами, цокольной хуйней, пастой, дрыном, рырями и прочим хламом ему пришлось мыть ее в ванне , но случилось так что он о ней забыл она проросла и синтезировала в себе ебанутый допинг который придает сил. Сожрал — и следующий обычный удар нанесёт на 15% больше урона. Бафф действует ровно на один удар!", chance: "25%" },
-    "голова барана": { desc: "Наносит 20% от максимального здоровья цели.", chance: "15%" },
-    "коала": { desc: "коала. восстановит ману на 100%.", chance: "10%" },
-    "apostol": { desc: "Наносит 55% от максимального здоровья цели.", chance: "3%" },
+    "голова барана": { desc: "эту голову удалось спиздить у дяди альшада если ее ебануть в кого нибудь то будет больно. Наносит 20% от максимального здоровья цели.", chance: "15%" },
+    "коала": { desc: "домашнее животное которое привез дядя кумиби из африки. восстановит ману на 100%.", chance: "10%" },
+    "apostol": { desc: "apostol!!! Apoostool!! Apoooostooooooolll!!!", chance: "3%" },
     "парашник": { desc: "ставишь его он пускает пары и отравляет противника, также забирает его ману. каждый ход снимает 5% максимального HP и 15% максимальной маны. имеет 30 хп и действует, пока его не уничтожат.", chance: "20%" },
-    "boris": { desc: "ставишь его и он поглощает в себя весь урон от врага. но он не вечный. прочность — 40% максимального HP владельца.", chance: "3%" },
-    "шприц и лекарство": { desc: "Восстанавливает 45% от максимального здоровья.", chance: "12%" },
-    "Сбриватель хуйни": { desc: "Сбривает полезные эффекты ПРОТИВНИКА: Борис теряет половину оставшегося HP, а Парашник противника, отравляющий тебя, удаляется полностью. Твой Борис и твой Парашник на враге не затрагиваются!", chance: "7%" },
-    "Вам не повезло": { desc: "вам крупно повезло вам нихуя не выпало!", chance: "6-28%" }
+    "boris": { desc: "слышьте кто у меня эту хуйню на подоконнике оставил? ставишь его и он поглощает в себя весь урон от врага. но он не вечный. прочность — 40% максимального HP владельца.", chance: "3%" },
+    "шприц и лекарство": { desc: "влад нашел эту хуйню за больницей в заводоуковске. думаю оно должно лечить. Восстанавливает 45% от максимального здоровья.", chance: "12%" },
+    "Сбриватель хуйни": { desc: "гозонокосилка уберет хуйню которая положительно влияет на ход игры противника. сбреет отравляющие вас парашники уберет boris с оппонента.", chance: "7%" },
+    "Вам не повезло": { desc: "вам крупно повезло вам нихуя не выпало! НИХУЯШЕНЬКИ.", chance: "6-28%" }
 };
 
 let currentUser = null;
@@ -98,16 +98,16 @@ const RPG_GEAR = [
 let rpgGearFilter = 'all';
 
 const RPG_DAILY_QUESTS = [
-    { id: 'wins3', title: 'Разогрев мясорубки', desc: 'Победи 3 врагов в офлайн-RPG.', target: 3, reward: 120, metric: 'wins' },
-    { id: 'boss1', title: 'Охотник на боссов', desc: 'Одолей босса на пятом подэтаже.', target: 1, reward: 250, metric: 'bosses' },
-    { id: 'spend500', title: 'Деньги должны работать', desc: 'Потрать 500 монет на прокачку или экипировку.', target: 500, reward: 100, metric: 'spent' }
+    { id: 'wins3', title: 'istrebitel', desc: 'Победи 3 врагов в офлайн-RPG.', target: 3, reward: 120, metric: 'wins' },
+    { id: 'boss1', title: 'опасный чювак', desc: 'Одолей босса на пятом подэтаже.', target: 1, reward: 250, metric: 'bosses' },
+    { id: 'spend500', title: 'лионель месси', desc: 'Потрать 500 монет на прокачку или экипировку.', target: 500, reward: 100, metric: 'spent' }
 ];
 const RPG_ACHIEVEMENTS = [
-    { id: 'first_win', title: 'Первый труп', desc: 'Победи первого врага.', target: 1, reward: 100, metric: 'totalWins' },
-    { id: 'ten_wins', title: 'Мясник-стажёр', desc: 'Победи 10 врагов суммарно.', target: 10, reward: 350, metric: 'totalWins' },
-    { id: 'fifty_wins', title: 'Конвейер смерти', desc: 'Победи 50 врагов суммарно.', target: 50, reward: 1200, metric: 'totalWins' },
-    { id: 'first_boss', title: 'Снял корону', desc: 'Победи первого босса.', target: 1, reward: 300, metric: 'totalBosses' },
-    { id: 'ten_bosses', title: 'Босс — это просто работа', desc: 'Победи 10 боссов суммарно.', target: 10, reward: 1500, metric: 'totalBosses' }
+    { id: 'first_win', title: 'Начало start', desc: 'Победи первого врага.', target: 1, reward: 100, metric: 'totalWins' },
+    { id: 'ten_wins', title: 'gustav', desc: 'Победи 10 врагов суммарно.', target: 10, reward: 350, metric: 'totalWins' },
+    { id: 'fifty_wins', title: 'VLADIMIR', desc: 'Победи 50 врагов суммарно.', target: 50, reward: 1200, metric: 'totalWins' },
+    { id: 'first_boss', title: 'серьезный поцан', desc: 'Победи первого босса.', target: 1, reward: 300, metric: 'totalBosses' },
+    { id: 'ten_bosses', title: 'да мне похуй', desc: 'Победи 10 боссов суммарно.', target: 10, reward: 1500, metric: 'totalBosses' }
 ];
 let rpgContractBusy = false;
 function getLocalRpgProgress() {
@@ -122,7 +122,7 @@ async function loadRpgContracts() {
     try {
         const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'daily_status', username: currentUser, data: {} } });
         if (error) throw error;
-        if (!data || !data.success) throw new Error(data?.error || 'Не удалось загрузить контракты');
+        if (!data || !data.success) throw new Error(data?.error || 'Не удалось загрузить доску. Проверь соединение и открой вкладку снова.');
         currentUpgrades = data.newUpgrades || currentUpgrades;
         currentCoins = Number(data.newCoins ?? currentCoins);
         updateUI();
@@ -159,7 +159,7 @@ async function claimRpgReward(kind, id) {
         if (error) throw error;
         if (!data || !data.success) throw new Error(data?.error || 'Награда недоступна');
         currentCoins = Number(data.newCoins ?? currentCoins); currentUpgrades = data.newUpgrades || currentUpgrades; updateUI(); renderRpgContracts(data.progress || getLocalRpgProgress());
-        if (status) status.textContent = `Забрано +${data.earned} монет. Так держать, мясник!`;
+        if (status) status.textContent = `Забрано +${data.earned} монет.`;
     } catch (e) { if (status) status.textContent = e.message || 'Не удалось забрать награду.'; }
     finally { rpgContractBusy = false; }
 }

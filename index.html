@@ -1,11 +1,12 @@
 <!DOCTYPE html>
+
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <title>пепен клуб: экономика</title>
-    <link rel="stylesheet" href="style.css?v=win98-case">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
+<meta charset="utf-8"/>
+<title>RPG скотобойня 1998</title>
+<link href="style.css?v=win98-case" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
         /* Большие входящие окна дуэлей: всегда поверх интерфейса */
         #pvp-receive-modal,
         #chess-invite-modal {
@@ -108,491 +109,429 @@
         #chess-opponent-name { display:block; width:100%; font-size:clamp(18px, 2.8vw, 26px); color:#000080; background:#fff; border:2px inset #999; padding:8px 10px; box-sizing:border-box; }
         #chess-engine-status.online-turn-status { font-weight:900; color:#000080; font-size:clamp(16px, 2.4vw, 22px); }
     </style>
-
 </head>
 <body>
-
-    <audio id="battle-music" src="ambient.mp3" loop onerror="console.log('Нет музыки')"></audio>
-
-    <!-- ВИДЖЕТ ПОГОДЫ -->
-    <div id="weather-widget">
-        <iframe frameborder="0" scrolling="no" width="250" height="170" style="border:0px solid #000000"
-                src="https://pogodnik.com/informer/horizontal/01/12346-pogoda-v-zavodoukovske-tyumenskaya-oblast-rossiya">
-            <a href="https://pogodnik.com/12346-pogoda-v-zavodoukovske-tyumenskaya-oblast-rossiya">
-                <img alt="prognoz pogody" src="https://pogodnik.com/images/prognoz-pogody-200x240.png">
-            </a>
-        </iframe>
-    </div>
-
-    <div id="auth-screen" class="panel hidden">
-        <h1>добро пожаловать</h1>
-        <input type="text" id="username" placeholder="Твой ник">
-        <input type="password" id="password" placeholder="Пароль">
-        <br>
-        <button onclick="register()">Зарегаться</button>
-        <button onclick="login()">Войти</button>
-        
-        <div class="gosuslugi-container">
-            <img src="gosyslygi.png" alt="Вход через Госуслуги" class="gosuslugi-btn" onclick="window.open('https://www.gosuslugi.ru', '_blank')">
-        </div>
-
-        <p id="auth-msg"></p>
-        <div class="version-text" style="margin-top: 15px;">версия игры beta 5.6</div>
-    </div>
-
-    <div id="main-screen" class="hidden">
-        <div class="top-info">
-            <span>Онлайн: <span id="ui-online" style="color: #ff00ff;">0</span></span>
-            <span>Игрок: <span id="ui-username" style="color: #fff;"></span></span>
-            <span>Бабки: <span id="ui-coins" style="color: yellow;"></span></span>
-            <span>Очки вещей: <span id="ui-item-points" style="color: magenta;"></span></span>
-            <span>PTS: <span id="ui-pvp" style="color: #ff4500;"></span></span>
-            <span>Рекорд: <span id="ui-highscore" style="color: cyan;"></span></span>
-            <button onclick="logout()" style="margin: 0 0 0 10px; padding: 2px 8px; font-size: 12px; background: #ff4500; color: #fff;">🚪 Выйти</button>
-        </div>
-
-        <div class="nav-bar">
-            <button onclick="switchTab('minigames')">торрент игруха</button>
-            <button onclick="switchTab('rpg')">Играть</button>
-            <button onclick="switchTab('cases')">Кейсы</button>
-            <button onclick="switchTab('inventory')">Инвентарь</button>
-            <button onclick="switchTab('market')">Рынок</button>
-            <button onclick="switchTab('leaderboard')">Зал славы</button>
-            <button onclick="switchTab('howto')">Как играть</button>
-            <button onclick="switchTab('settings')">Настройки</button>
-        </div>
-
-        <div class="tg-promo">
-            ПОДПИШИСЬ НА НАШ ТЕЛЕГРАМ КАНАЛ <a href="https://t.me/pepen40" target="_blank">@pepen40</a> 
-            <span class="arrow-blink">-></span> 
-            <a href="https://t.me/pepen40" target="_blank" class="tg-link">t.me/pepen40</a> 
-            <span class="arrow-blink"><-</span>
-        </div>
-
+<audio id="battle-music" loop="" onerror="console.log('Нет музыки')" src="ambient.mp3"></audio>
+<!-- ВИДЖЕТ ПОГОДЫ -->
+<div id="weather-widget">
+<iframe frameborder="0" height="170" scrolling="no" src="https://pogodnik.com/informer/horizontal/01/12346-pogoda-v-zavodoukovske-tyumenskaya-oblast-rossiya" style="border:0px solid #000000" width="250">
+<a href="https://pogodnik.com/12346-pogoda-v-zavodoukovske-tyumenskaya-oblast-rossiya">
+<img alt="prognoz pogody" src="https://pogodnik.com/images/prognoz-pogody-200x240.png"/>
+</a>
+</iframe>
+</div>
+<div class="panel hidden" id="auth-screen">
+<h1>добро пожаловать</h1>
+<input id="username" placeholder="Твой ник" type="text"/>
+<input id="password" placeholder="Пароль" type="password"/>
+<br/>
+<button onclick="register()">Зарегаться</button>
+<button onclick="login()">Войти</button>
+<div class="gosuslugi-container">
+<img alt="Вход через Госуслуги" class="gosuslugi-btn" onclick="window.open('https://www.gosuslugi.ru', '_blank')" src="gosyslygi.png"/>
+</div>
+<p id="auth-msg"></p>
+<div class="version-text" style="margin-top: 15px;">версия игры beta 5.6</div>
+</div>
+<div class="hidden" id="main-screen">
+<div class="top-info">
+<span>Онлайн: <span id="ui-online" style="color: #ff00ff;">0</span></span>
+<span>Игрок: <span id="ui-username" style="color: #fff;"></span></span>
+<span>Бабки: <span id="ui-coins" style="color: yellow;"></span></span>
+<span>Очки вещей: <span id="ui-item-points" style="color: magenta;"></span></span>
+<span>PTS: <span id="ui-pvp" style="color: #ff4500;"></span></span>
+<span>Рекорд: <span id="ui-highscore" style="color: cyan;"></span></span>
+<button onclick="logout()" style="margin: 0 0 0 10px; padding: 2px 8px; font-size: 12px; background: #ff4500; color: #fff;">Выйти</button>
+</div>
+<div class="nav-bar">
+<button onclick="switchTab('minigames')">торрент игруха</button>
+<button onclick="switchTab('rpg')">Играть</button>
+<button onclick="switchTab('cases')">Кейсы</button>
+<button onclick="switchTab('inventory')">Инвентарь</button>
+<button onclick="switchTab('market')">Рынок</button>
+<button onclick="switchTab('leaderboard')">Зал славы</button>
+<button onclick="switchTab('howto')">Как играть</button>
+<button onclick="switchTab('settings')">Настройки</button>
+</div>
+<div class="tg-promo">
+            ПОДПИШИСЬ НА НАШ ТЕЛЕГРАМ КАНАЛ <a href="https://t.me/pepen40" target="_blank">@pepen40</a>
+<span class="arrow-blink">-&gt;</span>
+<a class="tg-link" href="https://t.me/pepen40" target="_blank">t.me/pepen40</a>
+<span class="arrow-blink">&lt;-</span>
+</div>
 <!-- КАТАЛОГ МИНИ-ИГР -->
-<div id="tab-minigames" class="panel hidden">
-    <h2>каталог игрух</h2>
-    <p>выбери какую игруху запустить</p>
-
-    <div class="minigames-grid">
-
-        <!-- Старая мини-игра -->
-        <div class="minigame-card">
-            <div class="minigame-preview memory-preview">
-                <img src="Screenshot_1.jpg" alt="">
-
-            </div>
-            <h3>пидоры и тугарин змей</h3>
-            <p>повторяй последовательность персонажей и зарубай баблище.</p>
-            <button onclick="openMiniGame('game')">
-                РУБИТЬСЯ
-            </button>
-        </div>
-
-        <!-- Шахматы -->
-        <div class="minigame-card">
-            <div class="minigame-preview chess-preview">
-                <span>♜ ♞ ♝ ♛ ♚ ♝ ♞ ♜</span>
-                <span>♟ ♟ ♟ ♟ ♟ ♟ ♟ ♟</span>
-                <span>♙ ♙ ♙ ♙ ♙ ♙ ♙ ♙</span>
-                <span>♖ ♘ ♗ ♕ ♔ ♗ ♘ ♖</span>
-            </div>
-            <h3>шахматы: definitive edition</h3>
-            <p>обыграй самую сильную хуйню в истории и зарубай за это бабос!</p>
-            <button onclick="openMiniGame('chess')">
+<div class="panel hidden" id="tab-minigames">
+<h2>каталог игрух</h2>
+<p>выбери какую игруху запустить</p>
+<div class="minigames-grid">
+<!-- Старая мини-игра -->
+<div class="minigame-card">
+<div class="minigame-preview memory-preview">
+<img alt="" src="Screenshot_1.jpg"/>
+</div>
+<h3>пидоры и тугарин змей</h3>
+<p>повторяй последовательность персонажей и зарубай баблище.</p>
+<button onclick="openMiniGame('game')">РУБИТЬСЯ</button>
+</div>
+<!-- Шахматы -->
+<div class="minigame-card">
+<div class="minigame-preview chess-preview">
+<span>♜ ♞ ♝ ♛ ♚ ♝ ♞ ♜</span>
+<span>♟ ♟ ♟ ♟ ♟ ♟ ♟ ♟</span>
+<span>♙ ♙ ♙ ♙ ♙ ♙ ♙ ♙</span>
+<span>♖ ♘ ♗ ♕ ♔ ♗ ♘ ♖</span>
+</div>
+<h3>шахматы: definitive edition</h3>
+<p>обыграй самую сильную хуйню в истории и зарубай за это бабос!</p>
+<button onclick="openMiniGame('chess')">
                 Играть
             </button>
-        </div>
-
-    </div>
+</div>
+</div>
 </div>
 <!-- КОНЕЦ КАТАЛОГА -->
-
-        <div id="tab-game" class="panel hidden">
-            <h2>мини игра "пидоры и тугарин змей"</h2>
-            <p style="font-size: 14px; margin-top: -10px; color: darkred; font-weight: bold;">Награда: 20 монет, только если прошёл хотя бы 1 раунд!</p>
-            <div id="status">привет ножми</div>
-            <table>
-                <tr>
-                    <td><div class="pad disabled" data-id="1"><img src="IMG_3544.jpeg" alt="1"></div></td>
-                    <td><div class="pad disabled" data-id="2"><img src="IMG_3545.jpeg" alt="2"></div></td>
-                </tr>
-                <tr>
-                    <td><div class="pad disabled" data-id="3"><img src="IMG_3546.jpeg" alt="3"></div></td>
-                    <td><div class="pad disabled" data-id="4"><img src="IMG_3547.jpeg" alt="4"></div></td>
-                </tr>
-            </table>
-            <button id="restart-btn" class="hidden" style="margin-top: 20px;">Рестарт</button>
-        </div>
-        <!-- ВКЛАДКА ШАХМАТ -->
-<div id="tab-chess" class="panel hidden chess-panel">
-    <h2>шахматы: definitive edition</h2>
-    <button onclick="switchTab('minigames')">назад</button>
-    <div id="chess-multiplayer-menu">
-    <button type="button" id="chess-multiplayer-open">
+<div class="panel hidden" id="tab-game">
+<h2>мини игра "пидоры и тугарин змей"</h2>
+<p style="font-size: 14px; margin-top: -10px; color: darkred; font-weight: bold;">Награда: 20 монет, только если прошёл хотя бы 1 раунд!</p>
+<div id="status">привет ножми</div>
+<table>
+<tr>
+<td><div class="pad disabled" data-id="1"><img alt="1" src="IMG_3544.jpeg"/></div></td>
+<td><div class="pad disabled" data-id="2"><img alt="2" src="IMG_3545.jpeg"/></div></td>
+</tr>
+<tr>
+<td><div class="pad disabled" data-id="3"><img alt="3" src="IMG_3546.jpeg"/></div></td>
+<td><div class="pad disabled" data-id="4"><img alt="4" src="IMG_3547.jpeg"/></div></td>
+</tr>
+</table>
+<button class="hidden" id="restart-btn" style="margin-top: 20px;">Рестарт</button>
+</div>
+<!-- ВКЛАДКА ШАХМАТ -->
+<div class="panel hidden chess-panel" id="tab-chess">
+<h2>шахматы: definitive edition</h2>
+<button onclick="switchTab('minigames')">назад</button>
+<div id="chess-multiplayer-menu">
+<button id="chess-multiplayer-open" type="button">
         играть ОНЛАЙН
     </button>
 </div>
-
-<div id="chess-multiplayer-panel" class="hidden">
-    <h3>ШАХМАТНЫЙ МУЛЬТИПЛЕЕР</h3>
-
-    <p id="chess-multiplayer-status">
+<div class="hidden" id="chess-multiplayer-panel">
+<h3>ШАХМАТНЫЙ МУЛЬТИПЛЕЕР</h3>
+<p id="chess-multiplayer-status">
         Подключение к списку игроков…
     </p>
-
-    <div id="chess-online-players">
-        <!-- Список игроков появится здесь -->
-    </div>
-
-    
-
-
-<div id="chess-outgoing-status" aria-live="polite"></div>
-
-
-    <button type="button" id="chess-multiplayer-back">
+<div id="chess-online-players">
+<!-- Список игроков появится здесь -->
+</div>
+<div aria-live="polite" id="chess-outgoing-status"></div>
+<button id="chess-multiplayer-back" type="button">
         назад к ботам
     </button>
 </div>
-    <div id="chess-game-container">
-      <div class="chess-setup" id="chess-setup">
-        <h3>Выбери соперника</h3>
-        <p class="chess-note">нажми на аватар чтобы узнать кто это нахуй и че он умеет</p>
-        <div class="chess-bot-grid" id="chess-bot-grid">
-          <button type="button" class="chess-bot-card" data-level="1" aria-pressed="false"><span class="chess-bot-avatar">🐣</span><strong>ебаный нахуй даун</strong><small>Уровень 1</small></button>
-          <button type="button" class="chess-bot-card" data-level="2" aria-pressed="false"><span class="chess-bot-avatar">🧑‍🎓</span><strong>чето умеющий</strong><small>Уровень 2</small></button>
-          <button type="button" class="chess-bot-card is-selected" data-level="3" aria-pressed="true"><span class="chess-bot-avatar">🤖</span><strong>силач</strong><small>Уровень 3</small></button>
-          <button type="button" class="chess-bot-card" data-level="4" aria-pressed="false"><span class="chess-bot-avatar">🧙</span><strong>анатолий карпов</strong><small>Уровень 4</small></button>
-          <button type="button" class="chess-bot-card" data-level="5" aria-pressed="false"><span class="chess-bot-avatar">👑</span><strong>ГАРРИ КАСПАРОВ*</strong><small>Уровень 5</small></button>
-        </div>
-        <div class="chess-bot-details" id="chess-bot-details" aria-live="polite">
-          <div class="chess-bot-detail-avatar" id="chess-bot-detail-avatar">🤖</div>
-          <div><h4 id="chess-bot-detail-name">Тактик</h4><p id="chess-bot-detail-text">Сбалансированный соперник: замечает тактические возможности и наказывает за невнимательные ходы.</p></div>
-        </div>
-        <input type="hidden" id="chess-level" value="3">
-        <label for="chess-color">Играть за:</label>
-        <select id="chess-color"><option value="w">представителей нашего плана</option><option value="b">потусторонний мир</option></select>
-        <button id="chess-start">начать партию</button>
-        <p class="chess-note">никакого времени нахуй тут нет нажмите на фигуру чтобы увидеть возможные ходы</p>
-      </div>
-      <div id="chess-play" class="hidden">
-        <div class="chess-toolbar">
-          <strong id="chess-opponent-name" class="chess-opponent-name">Соперник: —</strong>
-          <strong id="chess-status" role="status">Подготовка движка…</strong>
-          <span id="chess-engine-status">шахматный движок PEPENAI: подключён.</span>
-        </div>
-        <div id="chess-board" aria-label="Шахматная доска"></div>
-          <div id="chess-online-chat" class="hidden">
-    <h3>ЧАТ С СОПЕРНИКОМ</h3>
-
-    <div id="chess-chat-messages" aria-live="polite">
-        <div>Сообщения появятся здесь.</div>
-    </div>
-
-    <div id="chess-chat-input-row">
-        <input
-            id="chess-chat-input"
-            type="text"
-            maxlength="300"
-            placeholder="Напиши сопернику..."
-            autocomplete="off"
-        >
-        <button type="button" id="chess-chat-send">Отправить</button>
-    </div>
+<div id="chess-game-container">
+<div class="chess-setup" id="chess-setup">
+<h3>Выбери соперника</h3>
+<p class="chess-note">нажми на аватар чтобы узнать кто это нахуй и че он умеет</p>
+<div class="chess-bot-grid" id="chess-bot-grid">
+<button aria-pressed="false" class="chess-bot-card" data-level="1" type="button"><span class="chess-bot-avatar">🐣</span><strong>ебаный нахуй даун</strong><small>Уровень 1</small></button>
+<button aria-pressed="false" class="chess-bot-card" data-level="2" type="button"><span class="chess-bot-avatar">🧑‍🎓</span><strong>чето умеющий</strong><small>Уровень 2</small></button>
+<button aria-pressed="true" class="chess-bot-card is-selected" data-level="3" type="button"><span class="chess-bot-avatar">🤖</span><strong>силач</strong><small>Уровень 3</small></button>
+<button aria-pressed="false" class="chess-bot-card" data-level="4" type="button"><span class="chess-bot-avatar">🧙</span><strong>анатолий карпов</strong><small>Уровень 4</small></button>
+<button aria-pressed="false" class="chess-bot-card" data-level="5" type="button"><span class="chess-bot-avatar">👑</span><strong>ГАРРИ КАСПАРОВ*</strong><small>Уровень 5</small></button>
 </div>
-          
-<div id="chess-material" class="chess-material">
-    <div class="chess-material-title">МАТЕРИАЛЬНЫЕ ПОТЕРИ</div>
-
-    <div class="chess-material-row">
-        <strong>потери материального мира:</strong>
-        <div id="chess-white-lost" class="chess-lost-pieces">
+<div aria-live="polite" class="chess-bot-details" id="chess-bot-details">
+<div class="chess-bot-detail-avatar" id="chess-bot-detail-avatar">🤖</div>
+<div><h4 id="chess-bot-detail-name">Тактик</h4><p id="chess-bot-detail-text">Сбалансированный соперник: замечает тактические возможности и наказывает за невнимательные ходы.</p></div>
+</div>
+<input id="chess-level" type="hidden" value="3"/>
+<label for="chess-color">Играть за:</label>
+<select id="chess-color"><option value="w">представителей нашего плана</option><option value="b">потусторонний мир</option></select>
+<button id="chess-start">начать партию</button>
+<p class="chess-note">никакого времени нахуй тут нет нажмите на фигуру чтобы увидеть возможные ходы</p>
+</div>
+<div class="hidden" id="chess-play">
+<div class="chess-toolbar">
+<strong class="chess-opponent-name" id="chess-opponent-name">Соперник: —</strong>
+<strong id="chess-status" role="status">Подготовка движка…</strong>
+<span id="chess-engine-status">шахматный движок PEPENAI: подключён.</span>
+</div>
+<div aria-label="Шахматная доска" id="chess-board"></div>
+<div class="hidden" id="chess-online-chat">
+<h3>ЧАТ С СОПЕРНИКОМ</h3>
+<div aria-live="polite" id="chess-chat-messages">
+<div>Сообщения появятся здесь.</div>
+</div>
+<div id="chess-chat-input-row">
+<input autocomplete="off" id="chess-chat-input" maxlength="300" placeholder="Напиши сопернику..." type="text"/>
+<button id="chess-chat-send" type="button">Отправить</button>
+</div>
+</div>
+<div class="chess-material" id="chess-material">
+<div class="chess-material-title">МАТЕРИАЛЬНЫЕ ПОТЕРИ</div>
+<div class="chess-material-row">
+<strong>потери материального мира:</strong>
+<div class="chess-lost-pieces" id="chess-white-lost">
             —
         </div>
-    </div>
-
-    <div class="chess-material-row">
-        <strong>потери потусторонних сил:</strong>
-        <div id="chess-black-lost" class="chess-lost-pieces">
+</div>
+<div class="chess-material-row">
+<strong>потери потусторонних сил:</strong>
+<div class="chess-lost-pieces" id="chess-black-lost">
             —
         </div>
-    </div>
-
-    <div id="chess-material-score" class="chess-material-score">
+</div>
+<div class="chess-material-score" id="chess-material-score">
         Кто скоко проебал короч: 0 — 0
     </div>
 </div>
-
-        <div class="chess-actions">
-          <button id="chess-resign">всё проебал я нахуй</button>
-          <button id="chess-new">новая партия</button>
-        </div>
-        <p class="chess-note">Зелёные клетки — возможные ходы; точка — тихий ход, красный круг — взятие.</p>
-      </div>
-    </div>
+<div class="chess-actions">
+<button id="chess-resign">всё проебал я нахуй</button>
+<button id="chess-new">новая партия</button>
 </div>
-
-        <div id="tab-rpg" class="panel hidden">
-            <h2>РПГ МЯСОРУБКА</h2>
-            
-            <div id="rpg-char-select">
-                <button onclick="openPvpLobby()" style="background-color: #ff4500; color: #fff; font-size: 20px; width: 100%; margin-bottom: 15px;">⚔️ PVP ОНЛАЙН</button>
-                <p>Выбери бойца для оффлайн мясорубки:</p>
-                <div class="rpg-meta-actions">
-                    <button type="button" onclick="openGearCabinet()">🧰 ШКАФ СНАРЯЖЕНИЯ</button>
-                    <span>Собирай экипировку, усиливай бойцов и пробивайся дальше.</span>
-                </div>
-                <section id="rpg-contract-board" class="rpg-contract-board">
-                    <div class="rpg-contract-heading"><span>📜 ДОСКА КОНТРАКТОВ</span><small>Обновление каждый день</small></div>
-                    <p class="rpg-contract-subtitle">Закрывай контракты, забирай монеты и готовься к следующему забегу.</p>
-                    <div id="rpg-daily-contracts" class="rpg-contract-grid"><p>Загружаем контракты...</p></div>
-                    <div class="rpg-contract-heading rpg-achievement-heading"><span>🏆 ДОСТИЖЕНИЯ</span><small>Постоянные награды</small></div>
-                    <div id="rpg-achievements" class="rpg-contract-grid"><p>Загружаем достижения...</p></div>
-                    <p id="rpg-contract-status" class="rpg-contract-status" aria-live="polite"></p>
-                </section>
-                <div class="rpg-char-card">
-                    <img src="IMG_3545.jpeg" class="char-avatar">
-                    <div class="char-info">
-                        <h3>Ashab Tamaev (Берсерк)</h3>
-                        <div class="char-record" id="max-floor-ashab">Рекорд: 0.0 этаж</div>
-                        <div class="upgrade-block">
-                            Ур. HP: <b id="lvl-ashab-hp">0</b> | Ур. АТК: <b id="lvl-ashab-atk">0</b><br>
-                            <button onclick="buyUpgrade('ashab', 'hp')" id="btn-ashab-hp">Качать HP</button>
-                            <button onclick="buyUpgrade('ashab', 'atk')" id="btn-ashab-atk">Качать АТК</button>
-                            <button style="background:#90ee90;" onclick="selectChar('ashab')">В БОЙ!</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="rpg-char-card">
-                    <img src="IMG_3544.jpeg" class="char-avatar">
-                    <div class="char-info">
-                        <h3>Apostol (Чернокнижник)</h3>
-                        <div class="char-record" id="max-floor-apostol">Рекорд: 0.0 этаж</div>
-                        <div class="upgrade-block">
-                            Ур. HP: <b id="lvl-apostol-hp">0</b> | Ур. АТК: <b id="lvl-apostol-atk">0</b><br>
-                            <button onclick="buyUpgrade('apostol', 'hp')" id="btn-apostol-hp">Качать HP</button>
-                            <button onclick="buyUpgrade('apostol', 'atk')" id="btn-apostol-atk">Качать АТК</button>
-                            <button style="background:#90ee90;" onclick="selectChar('apostol')">В БОЙ!</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="rpg-char-card">
-                    <img src="IMG_3546.jpeg" class="char-avatar">
-                    <div class="char-info">
-                        <h3>Мээ (Друид)</h3>
-                        <div class="char-record" id="max-floor-mee">Рекорд: 0.0 этаж</div>
-                        <div class="upgrade-block">
-                            Ур. HP: <b id="lvl-mee-hp">0</b> | Ур. АТК: <b id="lvl-mee-atk">0</b><br>
-                            <button onclick="buyUpgrade('mee', 'hp')" id="btn-mee-hp">Качать HP</button>
-                            <button onclick="buyUpgrade('mee', 'atk')" id="btn-mee-atk">Качать АТК</button>
-                            <button style="background:#90ee90;" onclick="selectChar('mee')">В БОЙ!</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-
-            <div id="rpg-gear-modal" class="overlay-modal hidden" role="dialog" aria-modal="true" aria-labelledby="rpg-gear-title">
-                <div class="modal-content rpg-gear-window">
-                    <div class="rpg-gear-titlebar">
-                        <strong id="rpg-gear-title">ШКАФ СНАРЯЖЕНИЯ</strong>
-                        <button type="button" class="rpg-gear-close" onclick="closeGearCabinet()" aria-label="Закрыть">✕</button>
-                    </div>
-                    <p class="rpg-gear-intro">Покупай оружие, броню и амулеты. Экипировка сохраняется и даёт бонусы выбранному бойцу.</p>
-                    <div class="rpg-gear-controls">
-                        <label for="rpg-gear-char">Боец:</label>
-                        <select id="rpg-gear-char" onchange="renderGearCabinet()">
-                            <option value="ashab">Ashab — Берсерк</option>
-                            <option value="apostol">Apostol — Чернокнижник</option>
-                            <option value="mee">Мээ — Друид</option>
-                        </select>
-                        <span>Баланс: <b id="rpg-gear-coins">0</b> монет</span>
-                    </div>
-                    <div id="rpg-gear-equipped" class="rpg-gear-equipped"></div>
-                    <div class="rpg-gear-tabs">
-                        <button type="button" class="active" data-gear-filter="all" onclick="setGearFilter('all')">Всё</button>
-                        <button type="button" data-gear-filter="weapon" onclick="setGearFilter('weapon')">Оружие</button>
-                        <button type="button" data-gear-filter="armor" onclick="setGearFilter('armor')">Броня</button>
-                        <button type="button" data-gear-filter="charm" onclick="setGearFilter('charm')">Амулеты</button>
-                    </div>
-                    <div id="rpg-gear-list" class="rpg-gear-list"></div>
-                    <p id="rpg-gear-message" class="rpg-gear-message" aria-live="polite"></p>
-                    <button type="button" class="modal-cancel-btn" onclick="closeGearCabinet()">Закрыть шкаф</button>
-                </div>
-            </div>
-
-            <div id="rpg-battle-screen" class="hidden">
-                <div id="rpg-turn-indicator" class="turn-indicator turn-player">ВАШ ХОД</div>
-                <h3 id="rpg-floor" style="margin: 0 0 10px 0; color: #000080;">ЭТАЖ 1.1</h3>
-                
-                <div class="battlefield" id="battlefield-bg">
-                    <div class="deployed-items-container left" id="rpg-player-deployed"></div>
-                    <div class="deployed-items-container right" id="rpg-enemy-deployed"></div>
-                    <div class="combatant">
-                        <div class="combatant-stats">
-                            <b id="rpg-player-name">Игрок</b><br>
+<p class="chess-note">Зелёные клетки — возможные ходы; точка — тихий ход, красный круг — взятие.</p>
+</div>
+</div>
+</div>
+<div class="panel hidden" id="tab-rpg">
+<h2>RPG СКОТОБОЙНЯ</h2>
+<div id="rpg-char-select">
+<button onclick="openPvpLobby()" style="background-color: #ff4500; color: #fff; font-size: 20px; width: 100%; margin-bottom: 15px;">⚔️PVP Онлайн</button>
+<p>Выбери бойца для оффлайн скотобойни:</p>
+<div class="rpg-meta-actions">
+<button onclick="openGearCabinet()" type="button">🧰 ШКАФ С ХУЙНЕЙ</button>
+<span>Собирай экипировку, усиливай бойцов и пробивайся дальше.</span>
+</div>
+<section class="rpg-contract-board" id="rpg-contract-board">
+<div class="rpg-contract-heading"><span>📜 ДОСКА КОНТРАКТОВ</span><small>Обновление каждый день</small></div>
+<p class="rpg-contract-subtitle">Закрывай контракты, забирай монеты и готовься к следующему забегу.</p>
+<div class="rpg-contract-grid" id="rpg-daily-contracts"><p>Загружаем контракты...</p></div>
+<div class="rpg-contract-heading rpg-achievement-heading"><span>🏆 ДОСТИЖЕНИЯ</span><small>Постоянные награды</small></div>
+<div class="rpg-contract-grid" id="rpg-achievements"><p>Загружаем достижения...</p></div>
+<p aria-live="polite" class="rpg-contract-status" id="rpg-contract-status"></p>
+</section>
+<div class="rpg-char-card">
+<img class="char-avatar" src="IMG_3545.jpeg"/>
+<div class="char-info">
+<h3>Ashab Tamaev (Берсерк)</h3>
+<div class="char-record" id="max-floor-ashab">Рекорд: 0.0 этаж</div>
+<div class="upgrade-block">
+                            Ур. HP: <b id="lvl-ashab-hp">0</b> | Ур. АТК: <b id="lvl-ashab-atk">0</b><br/>
+<button id="btn-ashab-hp" onclick="buyUpgrade('ashab', 'hp')">Качать HP</button>
+<button id="btn-ashab-atk" onclick="buyUpgrade('ashab', 'atk')">Качать АТК</button>
+<button onclick="selectChar('ashab')" style="background:#90ee90;">В БОЙ!</button>
+</div>
+</div>
+</div>
+<div class="rpg-char-card">
+<img class="char-avatar" src="IMG_3544.jpeg"/>
+<div class="char-info">
+<h3>Apostol (Чернокнижник)</h3>
+<div class="char-record" id="max-floor-apostol">Рекорд: 0.0 этаж</div>
+<div class="upgrade-block">
+                            Ур. HP: <b id="lvl-apostol-hp">0</b> | Ур. АТК: <b id="lvl-apostol-atk">0</b><br/>
+<button id="btn-apostol-hp" onclick="buyUpgrade('apostol', 'hp')">Качать HP</button>
+<button id="btn-apostol-atk" onclick="buyUpgrade('apostol', 'atk')">Качать АТК</button>
+<button onclick="selectChar('apostol')" style="background:#90ee90;">В БОЙ!</button>
+</div>
+</div>
+</div>
+<div class="rpg-char-card">
+<img class="char-avatar" src="IMG_3546.jpeg"/>
+<div class="char-info">
+<h3>Мээ (Друид)</h3>
+<div class="char-record" id="max-floor-mee">Рекорд: 0.0 этаж</div>
+<div class="upgrade-block">
+                            Ур. HP: <b id="lvl-mee-hp">0</b> | Ур. АТК: <b id="lvl-mee-atk">0</b><br/>
+<button id="btn-mee-hp" onclick="buyUpgrade('mee', 'hp')">Качать HP</button>
+<button id="btn-mee-atk" onclick="buyUpgrade('mee', 'atk')">Качать АТК</button>
+<button onclick="selectChar('mee')" style="background:#90ee90;">В БОЙ!</button>
+</div>
+</div>
+</div>
+</div>
+<div aria-labelledby="rpg-gear-title" aria-modal="true" class="overlay-modal hidden" id="rpg-gear-modal" role="dialog">
+<div class="modal-content rpg-gear-window">
+<div class="rpg-gear-titlebar">
+<strong id="rpg-gear-title">ШКАФ СНАРЯЖЕНИЯ</strong>
+<button aria-label="Закрыть" class="rpg-gear-close" onclick="closeGearCabinet()" type="button">✕</button>
+</div>
+<p class="rpg-gear-intro">покупай рзаличную снорягу чтоб тип топ было</p>
+<div class="rpg-gear-controls">
+<label for="rpg-gear-char">Боец:</label>
+<select id="rpg-gear-char" onchange="renderGearCabinet()">
+<option value="ashab">Ashab — Берсерк</option>
+<option value="apostol">Apostol — Чернокнижник</option>
+<option value="mee">Мээ — Друид</option>
+</select>
+<span>Баланс: <b id="rpg-gear-coins">0</b> монет</span>
+</div>
+<div class="rpg-gear-equipped" id="rpg-gear-equipped"></div>
+<div class="rpg-gear-tabs">
+<button class="active" data-gear-filter="all" onclick="setGearFilter('all')" type="button">Всё</button>
+<button data-gear-filter="weapon" onclick="setGearFilter('weapon')" type="button">Оружие</button>
+<button data-gear-filter="armor" onclick="setGearFilter('armor')" type="button">Броня</button>
+<button data-gear-filter="charm" onclick="setGearFilter('charm')" type="button">Амулеты</button>
+</div>
+<div class="rpg-gear-list" id="rpg-gear-list"></div>
+<p aria-live="polite" class="rpg-gear-message" id="rpg-gear-message"></p>
+<button class="modal-cancel-btn" onclick="closeGearCabinet()" type="button">Закрыть шкаф</button>
+</div>
+</div>
+<div class="hidden" id="rpg-battle-screen">
+<div class="turn-indicator turn-player" id="rpg-turn-indicator">ВАШ ХОД</div>
+<h3 id="rpg-floor" style="margin: 0 0 10px 0; color: #000080;">ЭТАЖ 1.1</h3>
+<div class="battlefield" id="battlefield-bg">
+<div class="deployed-items-container left" id="rpg-player-deployed"></div>
+<div class="deployed-items-container right" id="rpg-enemy-deployed"></div>
+<div class="combatant">
+<div class="combatant-stats">
+<b id="rpg-player-name">Игрок</b><br/>
                             HP: <span id="rpg-player-hp-text">100/100</span>
-                            <div class="bar-container"><div id="rpg-player-hp-bar" class="bar-fill hp-fill" style="width: 100%;"></div></div>
+<div class="bar-container"><div class="bar-fill hp-fill" id="rpg-player-hp-bar" style="width: 100%;"></div></div>
                             Мана: <span id="rpg-player-mp-text">0/100</span>
-                            <div class="bar-container"><div id="rpg-player-mp-bar" class="bar-fill mp-fill" style="width: 0%;"></div></div>
-                        </div>
-                        <img id="rpg-player-img" src="https://via.placeholder.com/100?text=CHAR" class="char-sprite">
-                    </div>
-                    <div class="combatant">
-                        <div class="combatant-stats" style="text-align: right;">
-                            <b id="rpg-enemy-name">Враг</b><br>
+<div class="bar-container"><div class="bar-fill mp-fill" id="rpg-player-mp-bar" style="width: 0%;"></div></div>
+</div>
+<img class="char-sprite" id="rpg-player-img" src="https://via.placeholder.com/100?text=CHAR"/>
+</div>
+<div class="combatant">
+<div class="combatant-stats" style="text-align: right;">
+<b id="rpg-enemy-name">Враг</b><br/>
                             HP: <span id="rpg-enemy-hp-text">100/100</span>
-                            <div class="bar-container"><div id="rpg-enemy-hp-bar" class="bar-fill hp-fill" style="width: 100%;"></div></div>
-                        </div>
-                        <img id="rpg-enemy-img" src="https://via.placeholder.com/100?text=ENEMY" class="char-sprite">
-                    </div>
-                </div>
-                
-                <div class="rpg-log" id="rpg-log">Бой начался!</div>
-                
-                <div class="rpg-actions">
-                    <button class="btn-atk" style="width:48%;" onclick="rpgAttack()">Обычный удар (+25 маны)</button>
-                    <button class="btn-def" style="width:48%;" onclick="rpgDefend()">Защита (-40 маны)</button>
-                    <button id="rpg-skill-btn" class="btn-skill" style="width:100%;" onclick="rpgSkill()" disabled>Способность (100 маны)</button>
-                    <button class="btn-item" style="width:100%;" onclick="openItemMenu()">🎒 Инвентарь</button>
-                    <button class="btn-def" style="width:100%; background:#ffcccb;" onclick="fleeOfflineBattle()">Съебаться с поля боя</button>
-                </div>
-            </div>
-            
-            <div id="pvp-battle-screen" class="hidden">
-                <div id="pvp-turn-indicator" class="turn-indicator">ОЖИДАНИЕ</div>
-                <h3 style="margin: 0 0 10px 0; color: #000080;">PVP БОЙ</h3>
-                
-                <div class="battlefield" id="pvp-battlefield-bg">
-                    <div class="deployed-items-container left" id="pvp-player-deployed"></div>
-                    <div class="deployed-items-container right" id="pvp-enemy-deployed"></div>
-                    <div class="combatant">
-                        <div class="combatant-stats">
-                            <b id="pvp-player-name">Ты</b><br>
+<div class="bar-container"><div class="bar-fill hp-fill" id="rpg-enemy-hp-bar" style="width: 100%;"></div></div>
+</div>
+<img class="char-sprite" id="rpg-enemy-img" src="https://via.placeholder.com/100?text=ENEMY"/>
+</div>
+</div>
+<div class="rpg-log" id="rpg-log">Бой начался!</div>
+<div class="rpg-actions">
+<button class="btn-atk" onclick="rpgAttack()" style="width:48%;">Обычный удар (+25 маны)</button>
+<button class="btn-def" onclick="rpgDefend()" style="width:48%;">Защита (-40 маны)</button>
+<button class="btn-skill" disabled="" id="rpg-skill-btn" onclick="rpgSkill()" style="width:100%;">Способность (100 маны)</button>
+<button class="btn-item" onclick="openItemMenu()" style="width:100%;">🎒 Инвентарь</button>
+<button class="btn-def" onclick="fleeOfflineBattle()" style="width:100%; background:#ffcccb;">Съебаться с поля боя</button>
+</div>
+</div>
+<div class="hidden" id="pvp-battle-screen">
+<div class="turn-indicator" id="pvp-turn-indicator">ОЖИДАНИЕ</div>
+<h3 style="margin: 0 0 10px 0; color: #000080;">PVP БОЙ</h3>
+<div class="battlefield" id="pvp-battlefield-bg">
+<div class="deployed-items-container left" id="pvp-player-deployed"></div>
+<div class="deployed-items-container right" id="pvp-enemy-deployed"></div>
+<div class="combatant">
+<div class="combatant-stats">
+<b id="pvp-player-name">Ты</b><br/>
                             HP: <span id="pvp-player-hp-text">100/100</span>
-                            <div class="bar-container"><div id="pvp-player-hp-bar" class="bar-fill hp-fill" style="width: 100%;"></div></div>
+<div class="bar-container"><div class="bar-fill hp-fill" id="pvp-player-hp-bar" style="width: 100%;"></div></div>
                             Мана: <span id="pvp-player-mp-text">0/100</span>
-                            <div class="bar-container"><div id="pvp-player-mp-bar" class="bar-fill mp-fill" style="width: 0%;"></div></div>
-                        </div>
-                        <img id="pvp-player-img" src="https://via.placeholder.com/100?text=YOU" class="char-sprite">
-                    </div>
-                    <div class="combatant">
-                        <div class="combatant-stats" style="text-align: right;">
-                            <b id="pvp-enemy-name">Враг</b><br>
+<div class="bar-container"><div class="bar-fill mp-fill" id="pvp-player-mp-bar" style="width: 0%;"></div></div>
+</div>
+<img class="char-sprite" id="pvp-player-img" src="https://via.placeholder.com/100?text=YOU"/>
+</div>
+<div class="combatant">
+<div class="combatant-stats" style="text-align: right;">
+<b id="pvp-enemy-name">Враг</b><br/>
                             HP: <span id="pvp-enemy-hp-text">100/100</span>
-                            <div class="bar-container"><div id="pvp-enemy-hp-bar" class="bar-fill hp-fill" style="width: 100%;"></div></div>
-                        </div>
-                        <img id="pvp-enemy-img" src="https://via.placeholder.com/100?text=ENEMY" class="char-sprite">
-                    </div>
-                </div>
-                
-                <div class="rpg-log" id="pvp-log">Ожидание соперника...</div>
-                <div class="pvp-chat-input-row">
-                    <input type="text" id="pvp-chat-input" placeholder="Напиши в чат боя..." onkeypress="if(event.key === 'Enter') sendPvpMessage()">
-                    <button onclick="sendPvpMessage()">Отправить</button>
-                </div>
-                
-                <div class="rpg-actions">
-                    <button class="btn-atk" style="width:48%;" id="pvp-atk-btn" onclick="pvpAttack()" disabled>Атака</button>
-                    <button class="btn-def" style="width:48%;" id="pvp-def-btn" onclick="pvpDefend()" disabled>Защита (-40 маны)</button>
-                    <button class="btn-skill" style="width:100%;" id="pvp-skill-btn" onclick="pvpSkill()" disabled>Способность (100 маны)</button>
-                    <button class="btn-item" style="width:100%;" id="pvp-item-btn" onclick="openPvpItemMenu()" disabled>🎒 Использовать предмет</button>
-                    <button class="btn-def" style="width:100%; background:#ffcccb;" id="pvp-leave-btn" onclick="leavePvpRoom()">Свалить</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="tab-cases" class="panel hidden">
-            <h2>Кейсы</h2>
-            <div class="shop-item case-box">
-                <div class="case-box-title"><b>Стандартный кейс</b><br><small>Шанс выбить Apostol: 3%</small></div>
-                <div>
-                    <button onclick="openCase(250)">Открыть (250 монет)</button>
-                    <button onclick="openCaseContents(250)" style="background-color: #ffd700;">Содержимое</button>
-                </div>
-            </div>
-            <div class="shop-item case-box case-box-premium">
-                <div class="case-box-title"><b style="color: purple;">Премиум Кейс</b><br><small>Шанс выбить Boris: 3%</small></div>
-                <div>
-                    <button onclick="openCase(390)" style="background-color: #d8bfd8;">Открыть (390 монет)</button>
-                    <button onclick="openCaseContents(390)" style="background-color: #ffd700;">Содержимое</button>
-                </div>
-            </div>
-            <div id="case-result"></div>
-        </div>
-
-        <div id="tab-inventory" class="panel hidden">
-            <h2>склад с хуйней</h2>
-            <div id="inventory-list" class="inv-grid"></div>
-        </div>
-
-        <div id="tab-market" class="panel hidden">
-            <h2>Торговая площадка</h2>
-            <div id="market-list" class="market-list"></div>
-        </div>
-
-        <div id="tab-leaderboard" class="panel hidden">
-            <h2>зал славы</h2>
-            <table class="leaderboard-table">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Игрок</th>
-                        <th>PTS</th>
-                        <th>Игра</th>
-                        <th>Вещи</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody id="leaderboard-body"></tbody>
-            </table>
-        </div>
-
-        <div id="tab-howto" class="panel hidden">
-            <h2>Как играть</h2>
-            <div class="howto-text">
+<div class="bar-container"><div class="bar-fill hp-fill" id="pvp-enemy-hp-bar" style="width: 100%;"></div></div>
+</div>
+<img class="char-sprite" id="pvp-enemy-img" src="https://via.placeholder.com/100?text=ENEMY"/>
+</div>
+</div>
+<div class="rpg-log" id="pvp-log">Ожидание соперника...</div>
+<div class="pvp-chat-input-row">
+<input id="pvp-chat-input" onkeypress="if(event.key === 'Enter') sendPvpMessage()" placeholder="Напиши в чат боя..." type="text"/>
+<button onclick="sendPvpMessage()">Отправить</button>
+</div>
+<div class="rpg-actions">
+<button class="btn-atk" disabled="" id="pvp-atk-btn" onclick="pvpAttack()" style="width:48%;">Атака</button>
+<button class="btn-def" disabled="" id="pvp-def-btn" onclick="pvpDefend()" style="width:48%;">Защита (-40 маны)</button>
+<button class="btn-skill" disabled="" id="pvp-skill-btn" onclick="pvpSkill()" style="width:100%;">Способность (100 маны)</button>
+<button class="btn-item" disabled="" id="pvp-item-btn" onclick="openPvpItemMenu()" style="width:100%;">🎒 Использовать предмет</button>
+<button class="btn-def" id="pvp-leave-btn" onclick="leavePvpRoom()" style="width:100%; background:#ffcccb;">Свалить</button>
+</div>
+</div>
+</div>
+<div class="panel hidden" id="tab-cases">
+<h2>кейсы ксго</h2>
+<div class="shop-item case-box">
+<div class="case-box-title"><b>Стандартный кейс</b><br/><small>Шанс выбить Apostol: 3%</small></div>
+<div>
+<button onclick="openCase(250)">Открыть (250 монет)</button>
+<button onclick="openCaseContents(250)" style="background-color: #ffd700;">Содержимое</button>
+</div>
+</div>
+<div class="shop-item case-box case-box-premium">
+<div class="case-box-title"><b style="color: purple;">Премиум Кейс</b><br/><small>Шанс выбить Boris: 3%</small></div>
+<div>
+<button onclick="openCase(390)" style="background-color: #d8bfd8;">Открыть (390 монет)</button>
+<button onclick="openCaseContents(390)" style="background-color: #ffd700;">Содержимое</button>
+</div>
+</div>
+<div id="case-result"></div>
+</div>
+<div class="panel hidden" id="tab-inventory">
+<h2>склад с хуйней</h2>
+<div class="inv-grid" id="inventory-list"></div>
+</div>
+<div class="panel hidden" id="tab-market">
+<h2>Торговая площадка</h2>
+<div class="market-list" id="market-list"></div>
+</div>
+<div class="panel hidden" id="tab-leaderboard">
+<h2>зал славы</h2>
+<table class="leaderboard-table">
+<thead>
+<tr>
+<th>#</th>
+<th>Игрок</th>
+<th>PTS</th>
+<th>Игра</th>
+<th>Вещи</th>
+<th></th>
+</tr>
+</thead>
+<tbody id="leaderboard-body"></tbody>
+</table>
+</div>
+<div class="panel hidden" id="tab-howto">
+<h2>Как играть</h2>
+<div class="howto-text">
                 привет представляем вашему вниманию новомую игру pepen40 games . У вас наверняка возник вопрос что это за хуйня как в это играть? смотрите нужно нажимать на пидорасов поочередно в соответствии с тем с какой последовательностью каждый из них пищит. Ну там пропищал apostol 2 раза потом амжан желтый 3 раза . Значит надо нажать на apostol 3 раза и потом амжан желтый 3 раза. Также тут представлены кейсы как в ксго . Покупаете вам выпадает всякая хуйня которая в соответствии со своей редкостью выводит вас в топ в Leaderboard на определенный уровень. За хуйню вам маленько дадут баллов за apostol - дохуя. Вы также можете продавать эти хуйни которые выбили. Да да нахуй не ослышались продавать. На торговой площадке. И зарабатывать за это бабки нахуй. В РПГ защита теперь жрет 40 маны и режет урон. А если ты защитился, враг в следующем ходу споткнется и пропустит ход, так что можно ебнуть его с кулака!
             </div>
-            <br><br><br>
-            <div class="version-text">версия игры beta 5.6</div>
-        </div>
-
-        <div id="tab-settings" class="panel hidden">
-            <h2>Настройки</h2>
-            <div class="settings-text">
+<br/><br/><br/>
+<div class="version-text">версия игры beta 5.6</div>
+</div>
+<div class="panel hidden" id="tab-settings">
+<h2>Настройки</h2>
+<div class="settings-text">
              эта вкладка на случай если кто то зайдет на сайт и подумает а хули эта хуйня не фурычит как я хочю нахуй или просто хочет обезопасить свой аккаунт тут вы можете почти все что угодно нахуй разгуляться есть где
             </div>
-
-            <div class="site-background-settings" style="background:#fff;border:2px inset #999;padding:15px;margin:0 0 20px;text-align:left;">
-                <h3 style="margin-top:0;">Цвет фона сайта</h3>
-                <label for="site-background-select">Выбери оформление:</label>
-                <select id="site-background-select" onchange="applySiteBackground(this.value)" style="display:block;width:100%;max-width:360px;padding:7px;margin-top:8px;font-size:16px;">
-                    <option value="teal">Классический бирюзовый</option>
-                    <option value="black">Чёрный</option>
-                    <option value="white">Белый</option>
-                    <option value="gray">Серый</option>
-                    <option value="dark">Тёмно-серый</option>
-                    <option value="navy">Тёмно-синий</option>
-                    <option value="purple">Фиолетовый</option>
-                    <option value="blue">Стальной синий</option>
-                    <option value="green">Лесной зелёный</option>
-                    <option value="burgundy">Бордовый</option>
-                    <option value="cream">Кремовый</option>
-                </select>
-                <small style="display:block;margin-top:6px;color:#555;">Выбор сохраняется на этом устройстве.</small>
-            </div>
-
-            <div class="aphorism-settings" style="background:#fff;border:2px inset #999;padding:15px;margin:0 0 20px;text-align:left;">
-                <h3 style="margin-top:0;">Афоризмы</h3>
-                <label for="aphorism-enabled" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-                    <input type="checkbox" id="aphorism-enabled" checked>
+<div class="site-background-settings" style="background:#fff;border:2px inset #999;padding:15px;margin:0 0 20px;text-align:left;">
+<h3 style="margin-top:0;">Цвет фона сайта</h3>
+<label for="site-background-select">Выбери оформление:</label>
+<select id="site-background-select" onchange="applySiteBackground(this.value)" style="display:block;width:100%;max-width:360px;padding:7px;margin-top:8px;font-size:16px;">
+<option value="teal">Классический бирюзовый</option>
+<option value="black">Чёрный</option>
+<option value="white">Белый</option>
+<option value="gray">Серый</option>
+<option value="dark">Тёмно-серый</option>
+<option value="navy">Тёмно-синий</option>
+<option value="purple">Фиолетовый</option>
+<option value="blue">Стальной синий</option>
+<option value="green">Лесной зелёный</option>
+<option value="burgundy">Бордовый</option>
+<option value="cream">Кремовый</option>
+</select>
+<small style="display:block;margin-top:6px;color:#555;">Выбор сохраняется на этом устройстве.</small>
+</div>
+<div class="aphorism-settings" style="background:#fff;border:2px inset #999;padding:15px;margin:0 0 20px;text-align:left;">
+<h3 style="margin-top:0;">Афоризмы</h3>
+<label for="aphorism-enabled" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+<input checked="" id="aphorism-enabled" type="checkbox"/>
                     Показывать случайные афоризмы
                 </label>
-                <small style="display:block;margin-top:6px;color:#555;">Если выключить, всплывающие цитаты полностью отключатся. Настройка сохранится на этом устройстве.</small>
-            </div>
-
-            <style>
+<small style="display:block;margin-top:6px;color:#555;">Если выключить, всплывающие цитаты полностью отключатся. Настройка сохранится на этом устройстве.</small>
+</div>
+<style>
 /* Панель «Аура» — элементы интерфейса */
 #aura-mock {
   box-sizing: border-box;
@@ -681,317 +620,268 @@
   #aura-mock .aura-title { font-size: 19px; }
 }
 </style>
-
-
-<div id="aura-mock" aria-label="Настройки программы Аура">
-  <div class="aura-title">настройка звука</div>
-  <div id="aura-sound-status" role="status" style="font-size:12px;margin:0 0 6px;">Звуки готовы — включи нужную галочку</div>
-  <div class="aura-layout">
-    <div class="aura-column">
-      <fieldset>
-        <legend>ЛЕС ДНЕВНОЙ</legend>
-        <label><input type="checkbox" checked> Звучание</label>
-        <label><input type="checkbox" checked> Автосмена аур</label>
-        <select aria-label="Режим ауры"><option>лес по времени суток</option><option>дневной лес</option><option>ночной лес</option></select>
-        <div class="aura-row"><input type="time" value="08:35"><span>Рассвет сегодня</span></div>
-        <div class="aura-row"><input type="time" value="16:01"><span>Закат сегодня</span></div>
-      </fieldset>
-      <fieldset>
-        <legend>Запуск и расписание</legend>
-        <label><input type="checkbox"> Автостарт с Windows</label>
-        <select><option>со звуками леса по времени суток</option><option>без звука</option></select>
-        <label><input type="checkbox"> Время начала звучания</label>
-        <input type="time" value="10:00">
-        <label><input type="checkbox" checked> Время замолкания</label>
-        <div class="aura-row"><input type="time" value="01:00"><select><option>только замолкание</option><option>полная остановка</option></select></div>
-      </fieldset>
-      <fieldset>
-        <legend>Будильник</legend>
-        <label><input type="checkbox" checked> Будильник</label>
-        <div class="aura-row"><input type="time" value="06:30"><button type="button">◷</button></div>
-        <label><input type="radio" name="aura-alarm" checked> Встроенные звуки</label>
-        <label><input type="radio" name="aura-alarm"> Файл:</label>
-        <button type="button">...</button>
-      </fieldset>
-      <fieldset>
-        <legend>Язык программы</legend>
-        <select><option>Русский</option><option>English</option><option>Deutsch</option></select>
-      </fieldset>
-    </div>
-
-    <div class="aura-column">
-      <fieldset>
-        <legend>Активность птиц</legend>
-        <div class="aura-row"><label><input type="checkbox" checked> Дождь</label><label><input type="checkbox" checked> с грозой</label></div>
-        <select><option>Очень редко</option><option>Редко</option><option>Часто</option></select>
-        <div class="aura-sliderbox"><label>Кузнечики <input type="checkbox"></label><input type="range" min="0" max="100" value="25"></div>
-        <div class="aura-sliderbox"><label><input type="checkbox" checked> Ручей</label><input type="range" min="0" max="100" value="12"></div>
-        <div class="aura-sliderbox"><label><input type="checkbox" checked> Дятлы</label><input type="range" min="0" max="100" value="20"></div>
-        <div class="aura-sliderbox"><label><input type="checkbox" checked> Кукушки</label><input type="range" min="0" max="100" value="15"></div>
-        <div class="aura-sliderbox"><label><input type="checkbox"> Грачи, вороны</label><input type="range" min="0" max="100" value="5"></div>
-      </fieldset>
-
-      <fieldset id="aura-compressor-panel">
-        <legend>Компрессия звука</legend>
-        <label><input type="checkbox" id="aura-compressor-toggle"> Компрессия звука</label>
-        <div class="aura-meter" id="aura-compressor-meter" role="img" aria-label="Индикатор компрессии"></div>
-        <label for="aura-compressor-strength">Сила компрессии: <span id="aura-compressor-value">65%</span></label>
-        <input type="range" id="aura-compressor-strength" min="0" max="100" value="65">
-        <small id="aura-compressor-status" aria-live="polite">Выключена</small>
-      </fieldset>
-      <fieldset>
-        <legend>Близкие пролёты</legend>
-        <label><input type="checkbox" checked> Птицы</label><input type="range" min="0" max="100" value="45">
-        <select><option>Очень редко</option><option>Редко</option><option>Часто</option></select>
-        <label><input type="checkbox" checked> Насекомые</label><input type="range" min="0" max="100" value="55">
-        <select><option>Очень редко</option><option>Редко</option><option>Часто</option></select>
-        <label><input type="checkbox"> Ветер</label>
-        <label><input type="checkbox"> Мухи</label>
-        <select><option>Очень редко</option><option>Редко</option></select>
-      </fieldset>
-      <fieldset>
-        <legend>Ежечасные звуки</legend>
-        <div class="aura-row"><span>Часы работают:</span><span>с</span><select><option>0</option><option>1</option><option>2</option></select><span>до</span><select><option>2</option><option>3</option><option>4</option></select></div>
-        <label><input type="checkbox"> Минуты срабатывания: :00</label>
-        <label><input type="checkbox"> :30</label>
-      </fieldset>
-      <fieldset>
-        <legend>Музыка для дневного леса</legend>
-        <label><input type="checkbox" checked> Гитара <select><option>Очень редко</option><option>Редко</option></select></label>
-        <label><input type="checkbox"> Гармонь <select><option>Очень редко</option><option>Редко</option></select></label>
-        <label><input type="checkbox" checked> Флейта <select><option>Очень редко</option><option>Редко</option></select></label>
-        <label><input type="checkbox"> Мухи</label>
-      </fieldset>
-    </div>
-  </div>
-  <div class="aura-bottom">
-    <label><input type="checkbox"> HMix</label>
-    <label><input type="checkbox" checked> Автоочистка памяти</label>
-    <button type="button">⬇</button><button type="button">⬆</button><button type="button">Инфо</button>
-  </div>
+<div aria-label="Настройки программы Аура" id="aura-mock">
+<div class="aura-title">настройка звука</div>
+<div id="aura-sound-status" role="status" style="font-size:12px;margin:0 0 6px;">Звуки готовы — включи нужную галочку</div>
+<div class="aura-layout">
+<div class="aura-column">
+<fieldset>
+<legend>ЛЕС ДНЕВНОЙ</legend>
+<label><input checked="" type="checkbox"/> Звучание</label>
+<label><input checked="" type="checkbox"/> Автосмена аур</label>
+<select aria-label="Режим ауры"><option>лес по времени суток</option><option>дневной лес</option><option>ночной лес</option></select>
+<div class="aura-row"><input type="time" value="08:35"/><span>Рассвет сегодня</span></div>
+<div class="aura-row"><input type="time" value="16:01"/><span>Закат сегодня</span></div>
+</fieldset>
+<fieldset>
+<legend>Запуск и расписание</legend>
+<label><input type="checkbox"/> Автостарт с Windows</label>
+<select><option>со звуками леса по времени суток</option><option>без звука</option></select>
+<label><input type="checkbox"/> Время начала звучания</label>
+<input type="time" value="10:00"/>
+<label><input checked="" type="checkbox"/> Время замолкания</label>
+<div class="aura-row"><input type="time" value="01:00"/><select><option>только замолкание</option><option>полная остановка</option></select></div>
+</fieldset>
+<fieldset>
+<legend>Будильник</legend>
+<label><input checked="" type="checkbox"/> Будильник</label>
+<div class="aura-row"><input type="time" value="06:30"/><button type="button">◷</button></div>
+<label><input checked="" name="aura-alarm" type="radio"/> Встроенные звуки</label>
+<label><input name="aura-alarm" type="radio"/> Файл:</label>
+<button type="button">...</button>
+</fieldset>
+<fieldset>
+<legend>Язык программы</legend>
+<select><option>Русский</option><option>English</option><option>Deutsch</option></select>
+</fieldset>
 </div>
-
-
-            <div class="site-background-settings" style="background:#fff;border:2px inset #999;padding:15px;margin:0 0 20px;text-align:left;">
-    <h3 style="margin-top:0;">Приглашения на дуэли</h3>
-
-    <label style="display:flex;align-items:center;gap:10px;margin:12px 0;">
-        <input type="checkbox" id="rpg-invites-toggle" checked>
-        <span>Получать приглашения на дуэли RPG</span>
-    </label>
-
-    <label style="display:flex;align-items:center;gap:10px;margin:12px 0;">
-        <input type="checkbox" id="chess-invites-toggle" checked>
-        <span>Получать приглашения на шахматы</span>
-    </label>
-
-    <small style="display:block;margin-top:10px;color:#555;">
+<div class="aura-column">
+<fieldset>
+<legend>Активность птиц</legend>
+<div class="aura-row"><label><input checked="" type="checkbox"/> Дождь</label><label><input checked="" type="checkbox"/> с грозой</label></div>
+<select><option>Очень редко</option><option>Редко</option><option>Часто</option></select>
+<div class="aura-sliderbox"><label>Кузнечики <input type="checkbox"/></label><input max="100" min="0" type="range" value="25"/></div>
+<div class="aura-sliderbox"><label><input checked="" type="checkbox"/> Ручей</label><input max="100" min="0" type="range" value="12"/></div>
+<div class="aura-sliderbox"><label><input checked="" type="checkbox"/> Дятлы</label><input max="100" min="0" type="range" value="20"/></div>
+<div class="aura-sliderbox"><label><input checked="" type="checkbox"/> Кукушки</label><input max="100" min="0" type="range" value="15"/></div>
+<div class="aura-sliderbox"><label><input type="checkbox"/> Грачи, вороны</label><input max="100" min="0" type="range" value="5"/></div>
+</fieldset>
+<fieldset id="aura-compressor-panel">
+<legend>Компрессия звука</legend>
+<label><input id="aura-compressor-toggle" type="checkbox"/> Компрессия звука</label>
+<div aria-label="Индикатор компрессии" class="aura-meter" id="aura-compressor-meter" role="img"></div>
+<label for="aura-compressor-strength">Сила компрессии: <span id="aura-compressor-value">65%</span></label>
+<input id="aura-compressor-strength" max="100" min="0" type="range" value="65"/>
+<small aria-live="polite" id="aura-compressor-status">Выключена</small>
+</fieldset>
+<fieldset>
+<legend>Близкие пролёты</legend>
+<label><input checked="" type="checkbox"/> Птицы</label><input max="100" min="0" type="range" value="45"/>
+<select><option>Очень редко</option><option>Редко</option><option>Часто</option></select>
+<label><input checked="" type="checkbox"/> Насекомые</label><input max="100" min="0" type="range" value="55"/>
+<select><option>Очень редко</option><option>Редко</option><option>Часто</option></select>
+<label><input type="checkbox"/> Ветер</label>
+<label><input type="checkbox"/> Мухи</label>
+<select><option>Очень редко</option><option>Редко</option></select>
+</fieldset>
+<fieldset>
+<legend>Ежечасные звуки</legend>
+<div class="aura-row"><span>Часы работают:</span><span>с</span><select><option>0</option><option>1</option><option>2</option></select><span>до</span><select><option>2</option><option>3</option><option>4</option></select></div>
+<label><input type="checkbox"/> Минуты срабатывания: :00</label>
+<label><input type="checkbox"/> :30</label>
+</fieldset>
+<fieldset>
+<legend>Музыка для дневного леса</legend>
+<label><input checked="" type="checkbox"/> Гитара <select><option>Очень редко</option><option>Редко</option></select></label>
+<label><input type="checkbox"/> Гармонь <select><option>Очень редко</option><option>Редко</option></select></label>
+<label><input checked="" type="checkbox"/> Флейта <select><option>Очень редко</option><option>Редко</option></select></label>
+<label><input type="checkbox"/> Мухи</label>
+</fieldset>
+</div>
+</div>
+<div class="aura-bottom">
+<label><input type="checkbox"/> HMix</label>
+<label><input checked="" type="checkbox"/> Автоочистка памяти</label>
+<button type="button">⬇</button><button type="button">⬆</button><button type="button">Инфо</button>
+</div>
+</div>
+<div class="site-background-settings" style="background:#fff;border:2px inset #999;padding:15px;margin:0 0 20px;text-align:left;">
+<h3 style="margin-top:0;">Приглашения на дуэли</h3>
+<label style="display:flex;align-items:center;gap:10px;margin:12px 0;">
+<input checked="" id="rpg-invites-toggle" type="checkbox"/>
+<span>Получать приглашения на дуэли RPG</span>
+</label>
+<label style="display:flex;align-items:center;gap:10px;margin:12px 0;">
+<input checked="" id="chess-invites-toggle" type="checkbox"/>
+<span>Получать приглашения на шахматы</span>
+</label>
+<small style="display:block;margin-top:10px;color:#555;">
         Настройки сохраняются на этом устройстве.
     </small>
 </div>
-
-
-            <br>
-            <div style="background: #fff; border: 2px inset #999; padding: 15px; margin-bottom: 20px; text-align: left;">
-                <h3 style="margin-top: 0;">Виджет погоды</h3>
-                <label style="font-size: 16px; cursor: pointer; display: flex; align-items: center; gap: 10px;">
-                    <input type="checkbox" id="weather-toggle" checked onchange="toggleWeather()" style="width: 20px; height: 20px; cursor: pointer;">
+<br/>
+<div style="background: #fff; border: 2px inset #999; padding: 15px; margin-bottom: 20px; text-align: left;">
+<h3 style="margin-top: 0;">Виджет погоды</h3>
+<label style="font-size: 16px; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+<input checked="" id="weather-toggle" onchange="toggleWeather()" style="width: 20px; height: 20px; cursor: pointer;" type="checkbox"/>
                     Показывать погоду в Заводоуковске
                 </label>
-            </div>
-            
-            <div style="background: #fff; border: 2px inset #999; padding: 15px; margin-bottom: 20px; text-align: left;">
-                <h3 style="margin-top: 0;">Удивительные часы</h3>
-                <label style="font-size: 16px; cursor: pointer; display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-                    <input type="checkbox" id="clock-toggle" checked onchange="toggleAntiqueClock()" style="width: 20px; height: 20px; cursor: pointer;">
+</div>
+<div style="background: #fff; border: 2px inset #999; padding: 15px; margin-bottom: 20px; text-align: left;">
+<h3 style="margin-top: 0;">Удивительные часы</h3>
+<label style="font-size: 16px; cursor: pointer; display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+<input checked="" id="clock-toggle" onchange="toggleAntiqueClock()" style="width: 20px; height: 20px; cursor: pointer;" type="checkbox"/>
                     Показывать часы с петушком
                 </label>
-                <label style="font-size: 16px; cursor: pointer; display: flex; align-items: center; gap: 10px;">
-                    <input type="checkbox" id="clock-sound-toggle" checked onchange="toggleAntiqueClockSound()" style="width: 20px; height: 20px; cursor: pointer;">
+<label style="font-size: 16px; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+<input checked="" id="clock-sound-toggle" onchange="toggleAntiqueClockSound()" style="width: 20px; height: 20px; cursor: pointer;" type="checkbox"/>
                     Включить звук тиканья и петушка
                 </label>
-            </div>
-
-                      <div style="background: #fff; border: 2px inset #999; padding: 15px; margin-bottom: 20px; text-align: left;">
-                <h3 style="margin-top: 0;">Щотьчики</h3>
-                          <label style="font-size: 16px; cursor: pointer; display: flex; align-items: center; gap: 10px;">
-    <input type="checkbox" id="fps-overlay-toggle" checked style="width: 20px; height: 20px; cursor: pointer;">
+</div>
+<div style="background: #fff; border: 2px inset #999; padding: 15px; margin-bottom: 20px; text-align: left;">
+<h3 style="margin-top: 0;">Щотьчики</h3>
+<label style="font-size: 16px; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+<input checked="" id="fps-overlay-toggle" style="width: 20px; height: 20px; cursor: pointer;" type="checkbox"/>
     Показывать щотьчики
 </label>
-                          </div>
-                          
-
-
-
-
-
-
+</div>
 <div id="mfa-block">
-    <button type="button" onclick="openFreeOTPWindow()">
+<button onclick="openFreeOTPWindow()" type="button">
         🔐 защитить аккаунт 2FA чтобы не спиздили
     </button>
 </div>
-
-<div id="freeotp-modal" class="freeotp-overlay" style="display: none;">
-    <div class="freeotp-window" role="dialog" aria-modal="true"
-         aria-labelledby="freeotp-title">
-
-        <button type="button" class="freeotp-close"
-                onclick="closeFreeOTPWindow()" aria-label="Закрыть">×</button>
-
-        <h2 id="freeotp-title">🔐 Двухфакторная аутентификация</h2>
-
-        <p>
-            <strong>Что такое 2FA?</strong><br>
+<div class="freeotp-overlay" id="freeotp-modal" style="display: none;">
+<div aria-labelledby="freeotp-title" aria-modal="true" class="freeotp-window" role="dialog">
+<button aria-label="Закрыть" class="freeotp-close" onclick="closeFreeOTPWindow()" type="button">×</button>
+<h2 id="freeotp-title">🔐 Двухфакторная аутентификация</h2>
+<p>
+<strong>Что такое 2FA?</strong><br/>
             Это дополнительный уровень защиты аккаунта. Помимо пароля,
             при входе обычно требуется одноразовый код из приложения-аутентификатора.
         </p>
-
-        <p>
-            <strong>Как это работает?</strong><br>
+<p>
+<strong>Как это работает?</strong><br/>
 мы предлагаем защиту с помощью приложения на смартфон поддерживаются все виды и типы вот демонстрация как это будет выглядеть на смартфоне DIGMA 3g CN 4gb WIRELESS config 
-            <img
-    class="freeotp-app-image"
-    src="https://freeotp.github.io/img/ios.png"
-    alt="вот так на дигме выглядит"
->
-        </p>
-
-        <p class="freeotp-warning">
+            <img alt="вот так на дигме выглядит" class="freeotp-app-image" src="https://freeotp.github.io/img/ios.png"/>
+</p>
+<p class="freeotp-warning">
             если проебете аутентификатор то проебёте просто ВСЁ.
             под чистую нахуй.
             и останетесь с голой сракой не зная что делать с этой жизнью.
         </p>
-
-        <button type="button" onclick="showDemoFreeOTP()">
+<button onclick="showDemoFreeOTP()" type="button">
             Показать QR-код
         </button>
-
-        <div id="freeotp-demo-setup" style="display: none;">
-            <p>Этот QR-код подключает FreeOTP и содержит секрет для входа.</p>
-            <img id="freeotp-demo-qr" width="180" height="180"
-                 alt=" QR-код">
-
-            <label for="freeotp-demo-code">Вставьте 6 цифр из приложения.:</label>
-            <input id="freeotp-demo-code" type="text" inputmode="numeric"
-                   maxlength="6" placeholder="123456">
-
-            <button type="button" onclick="checkDemoFreeOTP()">Подключить</button>
-            <p id="freeotp-demo-message"></p>
-        </div>
-    </div>
+<div id="freeotp-demo-setup" style="display: none;">
+<p>Этот QR-код подключает FreeOTP и содержит секрет для входа.</p>
+<img alt=" QR-код" height="180" id="freeotp-demo-qr" width="180"/>
+<label for="freeotp-demo-code">Вставьте 6 цифр из приложения.:</label>
+<input id="freeotp-demo-code" inputmode="numeric" maxlength="6" placeholder="123456" type="text"/>
+<button onclick="checkDemoFreeOTP()" type="button">Подключить</button>
+<p id="freeotp-demo-message"></p>
 </div>
-
-
-
-            <br><br><br>
-            <div class="version-text">версия игры beta 5.6</div>
-        </div>
-    </div>
-
-    <div id="rpg-item-modal" class="hidden">
-        <div class="item-modal-content">
-            <h3>Использовать предмет</h3>
-            <div id="rpg-item-list" class="inv-grid item-list-scroll"></div>
-            <button onclick="closeItemMenu()" class="modal-cancel-btn">Отмена</button>
-        </div>
-    </div>
-
-    <div id="profile-modal" class="hidden">
-        <div class="modal-content">
-            <h3 id="prof-name">Игрок</h3>
-            <div id="prof-stats" class="prof-stats"></div>
-            <div id="prof-inventory" class="inv-grid inv-scroll"></div>
-            <button onclick="closeProfile()" class="modal-cancel-btn">Закрыть</button>
-        </div>
-    </div>
-
-    <div id="pvp-lobby-modal" class="hidden overlay-modal">
-        <div class="modal-content" style="max-width: 600px;">
-            <h3>⚔️ PVP Лобби</h3>
-            <p>Выбери бойца для PVP:</p>
-            <select id="pvp-char-select" class="pvp-char-select">
-                <option value="ashab">Ashab Tamaev (Берсерк)</option>
-                <option value="apostol">Apostol (Чернокнижник)</option>
-                <option value="mee">Мээ (Друид)</option>
-            </select>
-            <div class="pvp-room-row">
-                <input type="text" id="pvp-room-name" placeholder="Название комнаты (если создаешь)">
-                <button onclick="createPvpRoom()" style="background:#90ee90;">Создать комнату</button>
-            </div>
-            <h4>Онлайн игроки (Вызови на бой):</h4>
-            <div id="pvp-online-list" class="pvp-online-list">
-                <p style="text-align:center;">Загрузка игроков...</p>
-            </div>
-            <button onclick="closePvpLobby()" class="modal-cancel-btn">Закрыть</button>
-        </div>
-    </div>
-
-    <div id="pvp-challenge-modal" class="hidden overlay-modal">
-        <div class="modal-content" style="max-width: 400px; text-align: center;">
-            <h3 id="pvp-challenge-title">Вызов на бой</h3>
-            <p>Выбери бойца для боя:</p>
-            <select id="pvp-challenge-char-select" class="pvp-char-select">
-                <option value="ashab">Ashab Tamaev (Берсерк)</option>
-                <option value="apostol">Apostol (Чернокнижник)</option>
-                <option value="mee">Мээ (Друид)</option>
-            </select>
-            <div style="display:flex; gap:5px; margin-top: 15px;">
-                <button onclick="executeChallenge()" style="background:#90ee90; flex-grow:1;">Отправить вызов</button>
-                <button onclick="closeChallengeModal()" style="background:#ffcccb; flex-grow:1;">Отмена</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="pvp-receive-modal" class="hidden overlay-modal">
-        <div class="modal-content" style="max-width: 400px; text-align: center;">
-            <h3>Тебе бросили вызов!</h3>
-            <p id="pvp-receive-host-name">Игрок: ...</p>
-            <p>Выбери бойца для защиты:</p>
-            <select id="pvp-receive-char-select" class="pvp-char-select">
-                <option value="ashab">Ashab Tamaev (Берсерк)</option>
-                <option value="apostol">Apostol (Чернокнижник)</option>
-                <option value="mee">Мээ (Друид)</option>
-            </select>
-            <div style="display:flex; gap:5px; margin-top: 15px;">
-                <button onclick="executeAcceptChallenge()" style="background:#90ee90; flex-grow:1;">Принять</button>
-                <button onclick="closeReceiveModal()" style="background:#ffcccb; flex-grow:1;">Отклонить</button>
-            </div>
-        </div>
-    </div>
-
-<div id="chess-invite-modal" class="hidden overlay-modal chess-invite-overlay">
-    <div class="modal-content chess-invite-content">
-        <div class="chess-invite-titlebar">♟ ВХОДЯЩИЙ ШАХМАТНЫЙ ВЫЗОВ</div>
-        <div class="chess-invite-body">
-            <div class="chess-invite-icon">♜ ♞ ♝</div>
-            <h2>ТЕБЯ ВЫЗВАЛИ НА ШАХМАТНУЮ ДУЭЛЬ!</h2>
-            <p>Игрок <strong id="chess-invite-from">Неизвестный игрок</strong> хочет сыграть с тобой.</p>
-            <div class="chess-invite-buttons">
-                <button type="button" id="chess-invite-accept">ПРИНЯТЬ ВЫЗОВ</button>
-                <button type="button" id="chess-invite-decline">ОТКЛОНИТЬ</button>
-            </div>
-        </div>
-    </div>
 </div>
-
-    <div id="case-contents-modal" class="hidden overlay-modal">
-        <div class="modal-content" style="max-width: 500px; width: 95%;">
-            <h3 id="case-contents-title">Содержимое Кейса</h3>
-            <div id="case-contents-list" class="case-contents-list"></div>
-            <button onclick="closeCaseContents()" class="modal-cancel-btn">Закрыть</button>
-        </div>
-    </div>
-
-    <div id="item-info-modal" class="hidden overlay-modal" style="z-index: 300;">
-        <div class="modal-content" style="max-width: 400px; width: 90%; text-align: center;">
-            <img id="info-img" src="" class="info-img">
-            <h3 id="info-name" style="margin: 5px 0;">Название</h3>
-            <h4 id="info-rarity" style="margin: 5px 0;">Редкость</h4>
-            <p id="info-desc" class="info-desc"></p>
-            <button onclick="closeItemInfo()" class="modal-cancel-btn">Закрыть</button>
-        </div>
-    </div>
+</div>
+<br/><br/><br/>
+<div class="version-text">версия игры beta 5.6</div>
+</div>
+</div>
+<div class="hidden" id="rpg-item-modal">
+<div class="item-modal-content">
+<h3>Использовать предмет</h3>
+<div class="inv-grid item-list-scroll" id="rpg-item-list"></div>
+<button class="modal-cancel-btn" onclick="closeItemMenu()">Отмена</button>
+</div>
+</div>
+<div class="hidden" id="profile-modal">
+<div class="modal-content">
+<h3 id="prof-name">Игрок</h3>
+<div class="prof-stats" id="prof-stats"></div>
+<div class="inv-grid inv-scroll" id="prof-inventory"></div>
+<button class="modal-cancel-btn" onclick="closeProfile()">Закрыть</button>
+</div>
+</div>
+<div class="hidden overlay-modal" id="pvp-lobby-modal">
+<div class="modal-content" style="max-width: 600px;">
+<h3>⚔️ PVP Лобби</h3>
+<p>Выбери бойца для PVP:</p>
+<select class="pvp-char-select" id="pvp-char-select">
+<option value="ashab">Ashab Tamaev (Берсерк)</option>
+<option value="apostol">Apostol (Чернокнижник)</option>
+<option value="mee">Мээ (Друид)</option>
+</select>
+<div class="pvp-room-row">
+<input id="pvp-room-name" placeholder="Название комнаты (если создаешь)" type="text"/>
+<button onclick="createPvpRoom()" style="background:#90ee90;">Создать комнату</button>
+</div>
+<h4>Онлайн игроки (Вызови на бой):</h4>
+<div class="pvp-online-list" id="pvp-online-list">
+<p style="text-align:center;">Загрузка игроков...</p>
+</div>
+<button class="modal-cancel-btn" onclick="closePvpLobby()">Закрыть</button>
+</div>
+</div>
+<div class="hidden overlay-modal" id="pvp-challenge-modal">
+<div class="modal-content" style="max-width: 400px; text-align: center;">
+<h3 id="pvp-challenge-title">Вызвать на бой</h3>
+<p>Выбери бойца для боя:</p>
+<select class="pvp-char-select" id="pvp-challenge-char-select">
+<option value="ashab">Ashab Tamaev (Берсерк)</option>
+<option value="apostol">Apostol (Чернокнижник)</option>
+<option value="mee">Мээ (Друид)</option>
+</select>
+<div style="display:flex; gap:5px; margin-top: 15px;">
+<button onclick="executeChallenge()" style="background:#90ee90; flex-grow:1;">Отправить вызов</button>
+<button onclick="closeChallengeModal()" style="background:#ffcccb; flex-grow:1;">Отмена</button>
+</div>
+</div>
+</div>
+<div class="hidden overlay-modal" id="pvp-receive-modal">
+<div class="modal-content" style="max-width: 400px; text-align: center;">
+<h3>Тебе бросили вызов!</h3>
+<p id="pvp-receive-host-name">Игрок: ...</p>
+<p>Выбери бойца для защиты:</p>
+<select class="pvp-char-select" id="pvp-receive-char-select">
+<option value="ashab">Ashab Tamaev (Берсерк)</option>
+<option value="apostol">Apostol (Чернокнижник)</option>
+<option value="mee">Мээ (Друид)</option>
+</select>
+<div style="display:flex; gap:5px; margin-top: 15px;">
+<button onclick="executeAcceptChallenge()" style="background:#90ee90; flex-grow:1;">Принять</button>
+<button onclick="closeReceiveModal()" style="background:#ffcccb; flex-grow:1;">Отклонить</button>
+</div>
+</div>
+</div>
+<div class="hidden overlay-modal chess-invite-overlay" id="chess-invite-modal">
+<div class="modal-content chess-invite-content">
+<div class="chess-invite-titlebar">♟ ВХОДЯЩИЙ ШАХМАТНЫЙ ВЫЗОВ</div>
+<div class="chess-invite-body">
+<div class="chess-invite-icon">♜ ♞ ♝</div>
+<h2>ТЕБЯ ВЫЗВАЛИ НА ШАХМАТНУЮ ДУЭЛЬ!</h2>
+<p>Игрок <strong id="chess-invite-from">Неизвестный игрок</strong> хочет сыграть с тобой.</p>
+<div class="chess-invite-buttons">
+<button id="chess-invite-accept" type="button">ПРИНЯТЬ ВЫЗОВ</button>
+<button id="chess-invite-decline" type="button">ОТКЛОНИТЬ</button>
+</div>
+</div>
+</div>
+</div>
+<div class="hidden overlay-modal" id="case-contents-modal">
+<div class="modal-content" style="max-width: 500px; width: 95%;">
+<h3 id="case-contents-title">Содержимое Кейса</h3>
+<div class="case-contents-list" id="case-contents-list"></div>
+<button class="modal-cancel-btn" onclick="closeCaseContents()">Закрыть</button>
+</div>
+</div>
+<div class="hidden overlay-modal" id="item-info-modal" style="z-index: 300;">
+<div class="modal-content" style="max-width: 400px; width: 90%; text-align: center;">
+<img class="info-img" id="info-img" src=""/>
+<h3 id="info-name" style="margin: 5px 0;">Название</h3>
+<h4 id="info-rarity" style="margin: 5px 0;">Редкость</h4>
+<p class="info-desc" id="info-desc"></p>
+<button class="modal-cancel-btn" onclick="closeItemInfo()">Закрыть</button>
+</div>
+</div>
 <style>
 #fw-widget { position: fixed; left: 10px; bottom: 10px; width: 200px; background: #e9eef4; border: 1px solid #3b5f8c; font: 11px Verdana, Tahoma, Arial, sans-serif; color: #000; z-index: 1000; box-shadow: 2px 2px 0 rgba(0,0,0,.35); }
 .fw-header { display: flex; align-items: center; justify-content: space-between; padding: 3px 4px 3px 6px; background: linear-gradient(#7fa2cc, #3f6799); color: #fff; font-weight: bold; border-bottom: 1px solid #2d4d78; }
@@ -1016,39 +906,37 @@
 .fw-banners a, .fw-banners img { display: block; }
 .fw-banners img { height: 31px; width: auto; border: 0; }
 </style>
-
 <div id="fw-widget">
-    <div class="fw-header">
-        <div class="fw-title">
-            <svg viewBox="0 0 16 16"><rect x="0" y="1" width="4" height="4"/><rect x="6" y="1" width="4" height="4"/><rect x="12" y="1" width="4" height="4"/><rect x="0" y="6" width="4" height="4"/><rect x="6" y="6" width="4" height="4"/><rect x="12" y="6" width="4" height="4"/><rect x="0" y="11" width="4" height="4"/><rect x="6" y="11" width="4" height="4"/><rect x="12" y="11" width="4" height="4"/></svg>
+<div class="fw-header">
+<div class="fw-title">
+<svg viewbox="0 0 16 16"><rect height="4" width="4" x="0" y="1"></rect><rect height="4" width="4" x="6" y="1"></rect><rect height="4" width="4" x="12" y="1"></rect><rect height="4" width="4" x="0" y="6"></rect><rect height="4" width="4" x="6" y="6"></rect><rect height="4" width="4" x="12" y="6"></rect><rect height="4" width="4" x="0" y="11"></rect><rect height="4" width="4" x="6" y="11"></rect><rect height="4" width="4" x="12" y="11"></rect></svg>
             статистика сайта
         </div>
-        <button type="button" class="fw-close" id="fw-close">&times;</button>
-    </div>
-    <div class="fw-body">
-        <div class="fw-label">Рассказать друзьям:</div>
-        <div class="fw-share">
-            <a data-share="vk" href="#" title="Поделиться ВКонтакте">
-                <svg viewBox="0 0 24 24"><text x="12" y="16.5" text-anchor="middle" font-family="Arial, sans-serif" font-weight="900" font-size="12.5">VK</text></svg>
-            </a>
-            <a data-share="mailru" href="#" title="Поделиться в Мой Мир (Mail.ru)">
-                <svg viewBox="0 0 24 24"><text x="12" y="19" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="21">@</text></svg>
-            </a>
-            <a data-share="ok" href="#" title="Поделиться в Одноклассниках">
-                <svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="3.2" fill="none" stroke="#fff" stroke-width="2"/><path d="M7 12.2c3 2.2 7 2.2 10 0M12 14.6v2.2M8.2 20l3.8-3.6 3.8 3.6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </a>
-            <a data-share="tg" href="#" title="Поделиться в Telegram">
-                <svg viewBox="0 0 24 24"><path d="M21.5 4.2 3 11.3l4.7 1.8 1.8 5.7 2.7-3.1 4.7 3.5z"/><path d="m8.4 13 8.3-5.3-6.1 6.7z" fill="#2ca5e0"/></svg>
-            </a>
-        </div>
-        <div class="fw-banners">
-            <a href="https://yandex.ru" target="_blank"><img src="yandex.png" alt="Яндекс"></a>
-            <a href="https://www.mozilla.org/firefox/" target="_blank"><img src="firefox.png" alt="Firefox"></a>
-            <a href="https://amigo.mail.ru" target="_blank"><img src="Amigo.png" alt="Amigo"></a>
-        </div>
-    </div>
+<button class="fw-close" id="fw-close" type="button">×</button>
 </div>
-
+<div class="fw-body">
+<div class="fw-label">Рассказать друзьям:</div>
+<div class="fw-share">
+<a data-share="vk" href="#" title="Поделиться ВКонтакте">
+<svg viewbox="0 0 24 24"><text font-family="Arial, sans-serif" font-size="12.5" font-weight="900" text-anchor="middle" x="12" y="16.5">VK</text></svg>
+</a>
+<a data-share="mailru" href="#" title="Поделиться в Мой Мир (Mail.ru)">
+<svg viewbox="0 0 24 24"><text font-family="Arial, sans-serif" font-size="21" font-weight="700" text-anchor="middle" x="12" y="19">@</text></svg>
+</a>
+<a data-share="ok" href="#" title="Поделиться в Одноклассниках">
+<svg viewbox="0 0 24 24"><circle cx="12" cy="7" fill="none" r="3.2" stroke="#fff" stroke-width="2"></circle><path d="M7 12.2c3 2.2 7 2.2 10 0M12 14.6v2.2M8.2 20l3.8-3.6 3.8 3.6" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</a>
+<a data-share="tg" href="#" title="Поделиться в Telegram">
+<svg viewbox="0 0 24 24"><path d="M21.5 4.2 3 11.3l4.7 1.8 1.8 5.7 2.7-3.1 4.7 3.5z"></path><path d="m8.4 13 8.3-5.3-6.1 6.7z" fill="#2ca5e0"></path></svg>
+</a>
+</div>
+<div class="fw-banners">
+<a href="https://yandex.ru" target="_blank"><img alt="Яндекс" src="yandex.png"/></a>
+<a href="https://www.mozilla.org/firefox/" target="_blank"><img alt="Firefox" src="firefox.png"/></a>
+<a href="https://amigo.mail.ru" target="_blank"><img alt="Amigo" src="Amigo.png"/></a>
+</div>
+</div>
+</div>
 <script>
 (function () {
     var url = location.href.split('#')[0]; // можно вписать свой адрес: 'https://твой-сайт.ru/'
@@ -1084,25 +972,23 @@
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chess.js@1.0.0/dist/chess.min.js"></script>
-
-    <!-- ОКНО СЛУЧАЙНОГО АФОРИЗМА -->
-    <aside id="aphorism-popup" class="aphorism-popup hidden" role="status" aria-live="polite" aria-label="Случайный афоризм">
-        <div class="aphorism-titlebar">
-            <div class="aphorism-controls-left">
-                <button type="button" id="aphorism-prev" aria-label="Предыдущий афоризм" title="Предыдущий">◀</button>
-                <button type="button" id="aphorism-next" aria-label="Следующий афоризм" title="Следующий">▶</button>
-                <button type="button" id="aphorism-like" aria-label="Нравится" title="Нравится">♡</button>
-            </div>
-            <button type="button" id="aphorism-close" class="aphorism-close" aria-label="Закрыть афоризм" title="Закрыть">×</button>
-        </div>
-        <div class="aphorism-body">
-            <div id="aphorism-text" class="aphorism-text"></div>
-            <div id="aphorism-author" class="aphorism-author"></div>
-        </div>
-    </aside>
-    <!-- КОНЕЦ ОКНА АФОРИЗМА -->
-
-    <script src="script.js?v=win98-case"></script>
+<!-- ОКНО СЛУЧАЙНОГО АФОРИЗМА -->
+<aside aria-label="Случайный афоризм" aria-live="polite" class="aphorism-popup hidden" id="aphorism-popup" role="status">
+<div class="aphorism-titlebar">
+<div class="aphorism-controls-left">
+<button aria-label="Предыдущий афоризм" id="aphorism-prev" title="Предыдущий" type="button">◀</button>
+<button aria-label="Следующий афоризм" id="aphorism-next" title="Следующий" type="button">▶</button>
+<button aria-label="Нравится" id="aphorism-like" title="Нравится" type="button">♡</button>
+</div>
+<button aria-label="Закрыть афоризм" class="aphorism-close" id="aphorism-close" title="Закрыть" type="button">×</button>
+</div>
+<div class="aphorism-body">
+<div class="aphorism-text" id="aphorism-text"></div>
+<div class="aphorism-author" id="aphorism-author"></div>
+</div>
+</aside>
+<!-- КОНЕЦ ОКНА АФОРИЗМА -->
+<script src="script.js?v=win98-case"></script>
 <style>
   #antique-clock {
     position: fixed;
@@ -1420,51 +1306,45 @@
     }
 }
 </style>
-
 <div id="antique-clock">
-  <img id="clock-bird" src="./bird.png" alt="Кукарекающий петух">
-  <img src="./clock.png" alt="Старинные часы">
-
-  <div class="dial" aria-label="Старинный циферблат">
-    <span class="numeral" style="--angle:0deg">XII</span>
-    <span class="numeral" style="--angle:30deg">I</span>
-    <span class="numeral" style="--angle:60deg">II</span>
-    <span class="numeral" style="--angle:90deg">III</span>
-    <span class="numeral" style="--angle:120deg">IV</span>
-    <span class="numeral" style="--angle:150deg">V</span>
-    <span class="numeral" style="--angle:180deg">VI</span>
-    <span class="numeral" style="--angle:210deg">VII</span>
-    <span class="numeral" style="--angle:240deg">VIII</span>
-    <span class="numeral" style="--angle:270deg">IX</span>
-    <span class="numeral" style="--angle:300deg">X</span>
-    <span class="numeral" style="--angle:330deg">XI</span>
-
-    <div class="dial-hand hour-hand" id="antique-hour"></div>
-    <div class="dial-hand minute-hand" id="antique-minute"></div>
-    <div class="dial-hand second-hand" id="antique-second"></div>
-    <div class="dial-center"></div>
-  </div>
+<img alt="Кукарекающий петух" id="clock-bird" src="./bird.png"/>
+<img alt="Старинные часы" src="./clock.png"/>
+<div aria-label="Старинный циферблат" class="dial">
+<span class="numeral" style="--angle:0deg">XII</span>
+<span class="numeral" style="--angle:30deg">I</span>
+<span class="numeral" style="--angle:60deg">II</span>
+<span class="numeral" style="--angle:90deg">III</span>
+<span class="numeral" style="--angle:120deg">IV</span>
+<span class="numeral" style="--angle:150deg">V</span>
+<span class="numeral" style="--angle:180deg">VI</span>
+<span class="numeral" style="--angle:210deg">VII</span>
+<span class="numeral" style="--angle:240deg">VIII</span>
+<span class="numeral" style="--angle:270deg">IX</span>
+<span class="numeral" style="--angle:300deg">X</span>
+<span class="numeral" style="--angle:330deg">XI</span>
+<div class="dial-hand hour-hand" id="antique-hour"></div>
+<div class="dial-hand minute-hand" id="antique-minute"></div>
+<div class="dial-hand second-hand" id="antique-second"></div>
+<div class="dial-center"></div>
 </div>
-
-
+</div>
 <!-- Перетаскиваемый компас со случайно вращающейся стрелкой -->
-<div id="random-compass" aria-label="Компас с вращающейся стрелкой" title="Зажми и перетащи компас">
-  <div class="compass-rim"></div>
-  <div class="compass-face">
-    <div class="compass-star"></div>
-    <div class="compass-ring"></div>
-    <span class="compass-label n">N</span>
-    <span class="compass-label e">E</span>
-    <span class="compass-label s">S</span>
-    <span class="compass-label w">W</span>
-  </div>
-  <div class="compass-needle" id="compass-needle">
-    <div class="needle-red"></div>
-    <div class="needle-dark"></div>
-  </div>
-  <div class="compass-hub"></div>
+<div aria-label="Компас с вращающейся стрелкой" id="random-compass" title="Зажми и перетащи компас">
+<div class="compass-rim"></div>
+<div class="compass-face">
+<div class="compass-star"></div>
+<div class="compass-ring"></div>
+<span class="compass-label n">N</span>
+<span class="compass-label e">E</span>
+<span class="compass-label s">S</span>
+<span class="compass-label w">W</span>
 </div>
-
+<div class="compass-needle" id="compass-needle">
+<div class="needle-red"></div>
+<div class="needle-dark"></div>
+</div>
+<div class="compass-hub"></div>
+</div>
 <script>
 (() => {
   const compass = document.getElementById('random-compass');
@@ -1530,10 +1410,8 @@
   compass.addEventListener('pointercancel', stopDragging);
 })();
 </script>
-
-<audio id="antique-tick" src="./tick.mp3" preload="auto" loop></audio>
-<audio id="antique-cuckoo" src="./cuckoo.mp3" preload="auto"></audio>
-
+<audio id="antique-tick" loop="" preload="auto" src="./tick.mp3"></audio>
+<audio id="antique-cuckoo" preload="auto" src="./cuckoo.mp3"></audio>
 <script>
 (() => {
   const hour = document.getElementById('antique-hour');
@@ -1704,9 +1582,6 @@ function updateClock() {
   setInterval(updateClock, 100);
 })();
 </script>
-    
-
-
 <script>
 (() => {
   const toggle = document.getElementById('aura-compressor-toggle');
@@ -1838,8 +1713,6 @@ function updateClock() {
   applyStrength();
 })();
 </script>
-
-
 <script>
 (() => {
   const SOUND_URLS = {
@@ -2152,27 +2025,25 @@ function updateClock() {
   });
 })();
 </script>
-    
 <div id="performance-overlay">
-    <div>FPS <span id="perf-fps">НЕИЗВЕСТНО</span></div>
-    <div>FPS 1% <span>НЕИЗВЕСТНО</span></div>
-    <div>GPU UTIL <span>НЕИЗВЕСТНО</span></div>
-    <div>GPU TEMP <span>НЕИЗВЕСТНО</span></div>
-    <div>GPU CLK <span>НЕИЗВЕСТНО</span></div>
-    <div>GPU Voltage <span>НЕИЗВЕСТНО</span></div>
-    <div>GPU PWR <span>НЕИЗВЕСТНО</span></div>
-    <div>GPU FAN <span>НЕИЗВЕСТНО</span></div>
-    <div>VRAM CLK <span>НЕИЗВЕСТНО</span></div>
-    <div>CPU UTIL <span>НЕИЗВЕСТНО</span></div>
-    <div>CPU TEMP <span>НЕИЗВЕСТНО</span></div>
-    <div>HOTSPOT GPU <span>НЕИЗВЕСТНО</span></div>
-    <div>HOTSPOT CPU <span>НЕИЗВЕСТНО</span></div>
-    <div>FPS 99% <span>НЕИЗВЕСТНО</span></div>
-    <div>RLAT <span>НЕИЗВЕСТНО</span></div>
-    <div>PCL (cp.) <span>НЕИЗВЕСТНО</span></div>
-    <div>REACTOR TEMP: <span id="perf-reactor-temp">300 °C</span></div>
+<div>FPS <span id="perf-fps">НЕИЗВЕСТНО</span></div>
+<div>FPS 1% <span>НЕИЗВЕСТНО</span></div>
+<div>GPU UTIL <span>НЕИЗВЕСТНО</span></div>
+<div>GPU TEMP <span>НЕИЗВЕСТНО</span></div>
+<div>GPU CLK <span>НЕИЗВЕСТНО</span></div>
+<div>GPU Voltage <span>НЕИЗВЕСТНО</span></div>
+<div>GPU PWR <span>НЕИЗВЕСТНО</span></div>
+<div>GPU FAN <span>НЕИЗВЕСТНО</span></div>
+<div>VRAM CLK <span>НЕИЗВЕСТНО</span></div>
+<div>CPU UTIL <span>НЕИЗВЕСТНО</span></div>
+<div>CPU TEMP <span>НЕИЗВЕСТНО</span></div>
+<div>HOTSPOT GPU <span>НЕИЗВЕСТНО</span></div>
+<div>HOTSPOT CPU <span>НЕИЗВЕСТНО</span></div>
+<div>FPS 99% <span>НЕИЗВЕСТНО</span></div>
+<div>RLAT <span>НЕИЗВЕСТНО</span></div>
+<div>PCL (cp.) <span>НЕИЗВЕСТНО</span></div>
+<div>REACTOR TEMP: <span id="perf-reactor-temp">300 °C</span></div>
 </div>
-
 <script>
 (() => {
     const overlay = document.getElementById('performance-overlay');
@@ -2218,8 +2089,6 @@ function updateClock() {
     }
 })();
 </script>
-
-    
 <script>
 (() => {
     const overlay = document.getElementById('performance-overlay');
@@ -2367,7 +2236,6 @@ function updateClock() {
     updateSimulation();
 })();
 </script>
-    
 <script>
 (() => {
     const overlay = document.getElementById('performance-overlay');
@@ -2426,8 +2294,6 @@ function updateClock() {
     overlay.addEventListener('pointercancel', stopDragging);
 })();
 </script>
-
 </body>
 
-</body>
 </html>
