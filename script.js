@@ -3325,35 +3325,34 @@ document.addEventListener('DOMContentLoaded', () => {
         { text: 'Есть две мирные формы насилия: закон и приличия.', author: 'Иоганн Гёте' },
         { text: 'Опыт — это имя, которое каждый даёт своим ошибкам.', author: 'Оскар Уайльд' },
         { text: 'Путь в тысячу ли начинается с первого шага.', author: 'Лао-цзы' },
-        { text: 'Если хочешь изменить мир, начни с себя.', author: 'Часто приписывается Ганди' },
+        { text: 'Если хочешь изменить мир, начни с себя.', author: 'Махатма Ганди' },
         { text: 'Мысль изречённая есть ложь.', author: 'Фёдор Тютчев' },
         { text: 'Краткость — сестра таланта.', author: 'Антон Чехов' },
         { text: 'Время — деньги.', author: 'Бенджамин Франклин' },
         { text: 'Ничто так не обманывает нас, как наше мнение.', author: 'Леонардо да Винчи' },
         { text: 'Самое трудное — познать самого себя.', author: 'Фалес' },
         { text: 'Сомнение — начало мудрости.', author: 'Аристотель' },
-        { text: 'Победа любит подготовку.', author: 'Часто приписывается Эмилию Паулю' },
+        { text: 'Победа любит подготовку.', author: 'Эмилий Павел' },
         { text: 'Даже длинная дорога состоит из маленьких шагов.', author: 'Автор неизвестен' },
         { text: 'Не всё то золото, что блестит.', author: 'Народная мудрость' },
         { text: 'Семь раз отмерь, один раз отрежь.', author: 'Народная мудрость' },
-        { text: 'Мудрый меняет мнение, глупец — никогда.', author: 'Приписывается Иммануилу Канту' },
+        { text: 'Мудрый меняет мнение, глупец — никогда.', author: 'Иммануил Кант' },
         { text: 'У кого есть зачем жить, тот выдержит почти любое как.', author: 'Фридрих Ницше' },
         { text: 'КОЛОРИТНАЯ ЖИРУХА РАЗДВИГАЙ ПИЗДУ.', author: 'Фридрих Ницше' },
         { text: 'Иногда молчание — лучший ответ.', author: 'Далай-лама XIV' },
         { text: 'Самая большая ошибка — бояться ошибиться.', author: 'Элберт Хаббард' },
         { text: 'Делай что можешь, с тем, что имеешь, там, где ты есть.', author: 'Теодор Рузвельт' },
         { text: 'Терпение горько, но плод его сладок.', author: 'Жан-Жак Руссо' },
-        { text: 'Кто владеет информацией, тот владеет миром.', author: 'Часто приписывается Натану Ротшильду' },
+        { text: 'Кто владеет информацией, тот владеет миром.', author: 'Натан Ротшильд' },
         { text: 'Не количество лет, а качество жизни имеет значение.', author: 'Сенека' },
-        { text: 'Будь собой; прочие роли уже заняты.', author: 'Приписывается Оскару Уайльду' },
-        { text: 'Самый верный способ предсказать будущее — создать его.', author: 'Приписывается Питеру Друкеру' },
+        { text: 'Будь собой; прочие роли уже заняты.', author: 'Оскар Уайльд' },
+        { text: 'Самый верный способ предсказать будущее — создать его.', author: 'Питер Друкер' },
         { text: 'Всё проходит. И это тоже пройдёт.', author: 'Персидская пословица' }
     ];
 
     const popup = document.getElementById('aphorism-popup');
     const textEl = document.getElementById('aphorism-text');
     const authorEl = document.getElementById('aphorism-author');
-    const likesEl = document.getElementById('aphorism-likes');
     const mainScreen = document.getElementById('main-screen');
     if (!popup || !textEl || !authorEl || !mainScreen) return;
 
@@ -3361,7 +3360,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const DISPLAY_MS = 12_000;
     let lastIndex = -1;
     let liked = false;
-    let likes = 0;
     let nextTimer = null;
     let hideTimer = null;
     let nextRemaining = INTERVAL_MS;
@@ -3395,10 +3393,8 @@ document.addEventListener('DOMContentLoaded', () => {
         textEl.textContent = '«' + quote.text + '»';
         authorEl.textContent = '— ' + quote.author;
         liked = false;
-        likes = 0;
-        if (likesEl) likesEl.textContent = String(likes);
         const likeButton = document.getElementById('aphorism-like');
-        if (likeButton) likeButton.textContent = '♡ ' + likes;
+        if (likeButton) likeButton.textContent = '♡';
     }
 
     function clearNextTimer() {
@@ -3489,10 +3485,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.getElementById('aphorism-like')?.addEventListener('click', () => {
         liked = !liked;
-        likes = liked ? 1 : 0;
         const button = document.getElementById('aphorism-like');
-        if (button) button.textContent = (liked ? '♥ ' : '♡ ') + likes;
-        if (likesEl) likesEl.textContent = String(likes);
+        if (button) button.textContent = liked ? '♥' : '♡';
     });
 
     syncTimers();
