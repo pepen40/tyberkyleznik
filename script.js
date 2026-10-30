@@ -54,7 +54,9 @@ function toggleWeather() {
 // === БАРАН С ПАРАШЮТОМ ===
 let sheepTimer = null;
 let sheepDescentTimer = null;
+let sheepWalkTimer = null;
 let sheepSecondsUntilBeee = 43;
+let sheepWalkingRight = false;
 
 function startSheep() {
     stopSheep();
@@ -67,20 +69,49 @@ function startSheep() {
     layer.classList.remove('hidden');
     character.classList.remove('walking');
     character.style.animation = 'none';
-    character.style.top = '-150px';
-    character.style.left = '0';
-    // Перезапускаем CSS-анимацию спуска
+    character.style.transition = 'none';
+    character.style.left = 'calc(50% - 29px)';
+    character.style.top = '-110px';
+    character.style.bottom = 'auto';
+    character.style.transform = 'none';
     void character.offsetWidth;
-    character.style.animation = '';
+    character.style.animation = 'sheep-parachute-descent 18s linear forwards';
 
     sheepSecondsUntilBeee = 43;
+    sheepWalkingRight = false;
+
+    // После приземления убираем только парашют — сам баран остаётся на экране.
     sheepDescentTimer = setTimeout(() => {
+        character.style.animation = 'none';
         character.classList.add('walking');
+        character.style.top = 'auto';
+        character.style.bottom = '0';
+        character.style.left = 'calc(50% - 29px)';
+        character.style.transition = 'left 140s linear';
+        const parachute = document.getElementById('sheep-parachute');
+        if (parachute) parachute.style.display = 'none';
+        void character.offsetWidth;
+        // Сначала идёт к левому краю, затем медленно пересекает весь экран.
+        sheepWalkTimer = setTimeout(() => {
+            if (!currentUser || document.visibilityState !== 'visible') return;
+            character.style.left = '0px';
+            sheepWalkingRight = true;
+            sheepWalkTimer = setTimeout(() => {
+                if (!currentUser) return;
+                character.style.transition = 'left 140s linear';
+                character.style.left = 'calc(100vw - 58px)';
+                sheepWalkingRight = false;
+                sheepWalkTimer = setInterval(() => {
+                    if (!currentUser || document.visibilityState !== 'visible') return;
+                    character.style.left = sheepWalkingRight ? 'calc(100vw - 58px)' : '0px';
+                    sheepWalkingRight = !sheepWalkingRight;
+                }, 140000);
+            }, 140000);
+        }, 1000);
         sheepDescentTimer = null;
     }, 18000);
 
     sheepTimer = setInterval(() => {
-        // Считаем только время, когда вкладка действительно активна
         if (document.visibilityState !== 'visible' || !currentUser) return;
         sheepSecondsUntilBeee -= 1;
         if (sheepSecondsUntilBeee <= 0) {
@@ -94,12 +125,28 @@ function startSheep() {
 function stopSheep() {
     if (sheepTimer) clearInterval(sheepTimer);
     if (sheepDescentTimer) clearTimeout(sheepDescentTimer);
+    if (sheepWalkTimer) {
+        clearTimeout(sheepWalkTimer);
+        clearInterval(sheepWalkTimer);
+    }
     sheepTimer = null;
     sheepDescentTimer = null;
+    sheepWalkTimer = null;
 
     const layer = document.getElementById('sheep-layer');
+    const character = document.getElementById('sheep-character');
+    const parachute = document.getElementById('sheep-parachute');
     const audio = document.getElementById('sheep-beee-audio');
     if (layer) layer.classList.add('hidden');
+    if (character) {
+        character.classList.remove('walking');
+        character.style.animation = '';
+        character.style.transition = '';
+        character.style.left = '';
+        character.style.top = '';
+        character.style.bottom = '';
+    }
+    if (parachute) parachute.style.display = '';
     if (audio) {
         audio.pause();
         audio.currentTime = 0;

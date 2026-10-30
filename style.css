@@ -1169,7 +1169,7 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
 @media(max-width:520px){ .rpg-contract-heading { align-items:flex-start; flex-direction:column; } .rpg-contract-grid { grid-template-columns:1fr; } }
 
 
-/* === ПИКСЕЛЬНЫЙ БАРАН === */
+/* === МАЛЕНЬКИЙ ПИКСЕЛЬНЫЙ БАРАН === */
 #sheep-layer {
     position: fixed;
     inset: 0;
@@ -1180,69 +1180,58 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
 #sheep-layer.hidden { display: none !important; }
 #sheep-character {
     position: absolute;
-    left: 0;
-    top: -150px;
-    width: 100px;
-    height: 100px;
+    left: calc(50% - 29px);
+    top: -110px;
+    width: 58px;
+    height: 52px;
     will-change: left, top;
-    animation: sheep-parachute-descent 18s linear forwards;
 }
 #sheep-sprite {
     position: absolute;
-    left: 4px;
+    left: 0;
     bottom: 0;
-    width: 90px;
-    height: 78px;
+    width: 58px;
+    height: 46px;
     object-fit: contain;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
 }
 #sheep-parachute {
     position: absolute;
-    left: 19px;
-    top: 0;
-    width: 62px;
-    height: 33px;
+    left: 14px;
+    top: -37px;
+    width: 30px;
+    height: 17px;
     border-radius: 50% 50% 12% 12%;
-    background: repeating-linear-gradient(90deg, #d71920 0 10px, #f7f0d5 10px 20px);
-    border: 2px solid #242424;
+    background: repeating-linear-gradient(90deg, #d71920 0 5px, #f7f0d5 5px 10px);
+    border: 1px solid #242424;
     box-sizing: border-box;
-    box-shadow: 2px 2px 0 rgba(0,0,0,.25);
+    box-shadow: 1px 1px 0 rgba(0,0,0,.25);
 }
 #sheep-parachute::before,
 #sheep-parachute::after {
     content: "";
     position: absolute;
-    top: 27px;
-    width: 2px;
-    height: 42px;
+    top: 14px;
+    width: 1px;
+    height: 23px;
     background: #333;
-    transform-origin: top;
 }
-#sheep-parachute::before { left: 7px; transform: rotate(-12deg); }
-#sheep-parachute::after { right: 7px; transform: rotate(12deg); }
+#sheep-parachute::before { left: 5px; transform: rotate(-12deg); }
+#sheep-parachute::after { right: 5px; transform: rotate(12deg); }
 #sheep-parachute span {
     position: absolute;
-    left: 29px;
-    top: 27px;
-    height: 40px;
-    border-left: 2px solid #333;
-}
-#sheep-character.walking {
-    top: auto;
-    bottom: 0;
-    animation: sheep-walk-across 150s linear infinite alternate;
+    left: 14px;
+    top: 14px;
+    height: 22px;
+    border-left: 1px solid #333;
 }
 #sheep-character.walking #sheep-parachute { display: none; }
 @keyframes sheep-parachute-descent {
-    0% { top: -150px; }
-    100% { top: calc(100vh - 88px); }
+    from { top: -110px; }
+    to { top: calc(100vh - 52px); }
 }
-@keyframes sheep-walk-across {
-    from { left: 0; }
-    to { left: max(0px, calc(100vw - 100px)); }
-}
-@media (prefers-reduced-motion: reduce) {
-    #sheep-character { animation-duration: 30s; }
-    #sheep-character.walking { animation-duration: 300s; }
+@media (max-width: 520px) {
+    #sheep-character { width: 50px; height: 46px; }
+    #sheep-sprite { width: 50px; height: 40px; }
 }
