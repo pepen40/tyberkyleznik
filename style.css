@@ -23,9 +23,46 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
 .inv-card-buttons button { font-size: 12px; padding: 2px 5px; margin-top: 5px; width: 100%; }
 .qty-badge { position: absolute; top: 5px; right: 5px; background: rgba(0, 0, 0, 0.8); color: #fff; padding: 2px 6px; border-radius: 4px; border: 1px solid #fff; font-size: 12px; font-weight: bold; z-index: 10; }
 .shop-item { background-color: #fff; border: 2px solid #000; padding: 10px; margin: 10px 0; display: flex; justify-content: space-between; align-items: center; text-align: left;}
-.case-box { flex-direction: column; text-align: center; }
-.case-box-premium { border-color: purple; }
-.case-box-title { margin-bottom: 10px; }
+.case-box {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 24px;
+    min-height: 150px;
+    padding: 12px 18px;
+    text-align: left;
+}
+.case-box-image {
+    width: 170px;
+    height: 125px;
+    flex: 0 0 170px;
+    object-fit: contain;
+    display: block;
+}
+.case-box-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 12px;
+}
+.case-box-title { margin: 0; }
+.case-box-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+@media (max-width: 520px) {
+    .case-box { gap: 10px; padding: 10px; }
+    .case-box-image { width: 112px; height: 100px; flex-basis: 112px; }
+    .case-box-actions { gap: 6px; }
+    .case-box-actions button { font-size: 13px; padding: 7px 9px; }
+}
 #case-result { color: red; margin-top: 20px; display: flex; flex-direction: column; align-items: center; }
 .rarity-Обычное { color: gray; }
 .rarity-Редкое { color: blue; }
