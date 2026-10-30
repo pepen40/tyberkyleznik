@@ -192,7 +192,7 @@ let roachAnimationFrame = null;
 let roachActive = false;
 let roachItems = [];
 let roachSplats = [];
-let roachTool = 'hammer';
+let roachTool = 'none';
 let roachPointerX = 0;
 let roachPointerY = 0;
 let roachAlertTimer = null;
@@ -267,9 +267,10 @@ function spawnRoachWave() {
             el: img,
             x: Math.random() * Math.max(10, w - 55),
             y: 90 + Math.random() * Math.max(20, h - 180),
-            vx: (Math.random() < .5 ? -1 : 1) * (0.65 + Math.random() * 1.15),
-            vy: (Math.random() < .5 ? -1 : 1) * (0.22 + Math.random() * .65),
-            alive: true
+            vx: (Math.random() < .5 ? -1 : 1) * (0.16 + Math.random() * 0.30),
+            vy: (Math.random() < .5 ? -1 : 1) * (0.07 + Math.random() * 0.16),
+            alive: true,
+            hits: 0
         };
         img.style.left = item.x + 'px';
         img.style.top = item.y + 'px';
@@ -279,9 +280,9 @@ function spawnRoachWave() {
     }
     const hammerBtn = document.getElementById('roach-hammer-tool');
     const ragBtn = document.getElementById('roach-rag-tool');
-    hammerBtn?.classList.add('selected');
+    hammerBtn?.classList.remove('selected');
     ragBtn?.classList.remove('selected');
-    setRoachTool('hammer');
+    setRoachTool('none');
     if (!roachAnimationFrame) animateRoaches();
 }
 function showRoachAlert() {
@@ -313,24 +314,43 @@ function animateRoaches() {
 }
 function hitRoach(item) {
     if (!roachActive || roachTool !== 'hammer' || !item.alive) return;
+    item.hits = (item.hits || 0) + 1;
+    playRoachAudio('roach-death-audio');
+    item.el.classList.remove('roach-hit-1', 'roach-hit-2');
+    if (item.hits < 3) {
+        item.el.classList.add('roach-hit-' + item.hits);
+        return;
+    }
     item.alive = false;
     item.el.classList.add('roach-dead');
-    playRoachAudio('roach-death-audio');
     const splat = document.createElement('div');
     splat.className = 'roach-splat';
     splat.setAttribute('role', 'button');
-    splat.setAttribute('aria-label', 'Убрать ошмёток тряпочкой');
+    splat.setAttribute('aria-label', 'Оттереть пятно тряпочкой');
     splat.style.left = (item.x + 8) + 'px';
     splat.style.top = (item.y + 4) + 'px';
-    splat.innerHTML = '<i></i><i></i><i></i><i></i><i></i>';
+    const splatImage = document.createElement('img');
+    splatImage.src = 'roach-splat.png';
+    splatImage.alt = '';
+    splatImage.draggable = false;
+    splat.appendChild(splatImage);
+    splat.wipeHits = 0;
     splat.addEventListener('click', () => cleanRoachSplat(splat));
     document.getElementById('roach-field')?.appendChild(splat);
     roachSplats.push(splat);
     checkRoachClear();
 }
 function cleanRoachSplat(splat) {
-    if (!roachActive || roachTool !== 'rag' || !splat.isConnected) return;
+    if (!roachActive || roachTool !== 'rag' || !splat.isConnected || splat.dataset.cleaning === 'true') return;
+    splat.wipeHits = (splat.wipeHits || 0) + 1;
     playRoachAudio('roach-wipe-audio');
+    splat.classList.add('wiping');
+    splat.dataset.wipeHits = String(splat.wipeHits);
+    if (splat.wipeHits < 3) {
+        setTimeout(() => splat.classList.remove('wiping'), 180);
+        return;
+    }
+    splat.dataset.cleaning = 'true';
     splat.classList.add('cleaning');
     setTimeout(() => {
         splat.remove();
@@ -345,12 +365,20 @@ function setRoachTool(tool) {
     document.getElementById('roach-rag-tool')?.classList.toggle('selected', tool === 'rag');
     const cursor = document.getElementById('roach-cursor');
     if (cursor) {
-        cursor.classList.toggle('hidden', tool !== 'hammer');
+        cursor.classList.toggle('hidden', tool === 'none');
         const img = cursor.querySelector('img');
-        if (img) img.src = tool === 'hammer' ? 'kuvalda.png' : 'tryapka.png';
+        if (img) img.src = tool === 'rag' ? 'tryapka.png' : 'kuvalda.png';
     }
+    document.getElementById('roach-event-layer')?.classList.toggle('tool-cursor-active', tool !== 'none');
     document.getElementById('roach-event-layer')?.classList.toggle('rag-mode', tool === 'rag');
 }
+// Картинка инструмента следует за указателем только после выбора инструмента.
+document.addEventListener('mousemove', (event) => {
+    const cursor = document.getElementById('roach-cursor');
+    if (!cursor || !roachActive || roachTool === 'none') return;
+    cursor.style.left = (event.clientX + 4) + 'px';
+    cursor.style.top = (event.clientY + 4) + 'px';
+});
 function checkRoachClear() {
     const allDead = roachItems.length && roachItems.every(x => !x.alive);
     if (allDead && roachSplats.length === 0) finishRoachWave();

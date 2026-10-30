@@ -1249,11 +1249,11 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
 #roach-field { position: absolute; inset: 0; pointer-events: none; }
 .roach-bug {
     position: absolute;
-    width: 42px;
-    height: 31px;
+    width: 168px;
+    height: 124px;
     object-fit: contain;
     image-rendering: pixelated;
-    cursor: crosshair;
+    cursor: default;
     pointer-events: auto;
     user-select: none;
     -webkit-user-drag: none;
@@ -1270,12 +1270,11 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
     left: 50%;
     transform: translateX(-50%);
     color: #f00000;
-    font-family: Impact, "Arial Black", sans-serif;
-    font-size: clamp(30px, 5vw, 62px);
-    font-weight: 1000;
-    letter-spacing: 4px;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: clamp(24px, 3.5vw, 42px);
+    font-weight: 700;
+    letter-spacing: 0;
     text-shadow: 2px 2px 0 #300, -2px -1px 0 #700, 0 0 8px #f00, 0 8px 5px rgba(120,0,0,.8);
-    -webkit-text-stroke: 1px #650000;
     animation: roach-blood-fire .35s infinite alternate;
     pointer-events: none;
     white-space: nowrap;
@@ -1332,24 +1331,21 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
 }
 #roach-cursor.hidden { display: none !important; }
 #roach-cursor img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
-#roach-event-layer:not(.rag-mode) { cursor: none; }
-#roach-event-layer.rag-mode { cursor: url("tryapka.png") 12 12, crosshair; }
+#roach-event-layer.tool-cursor-active { cursor: none; }
+#roach-event-layer:not(.tool-cursor-active) { cursor: default; }
 .roach-splat {
     position: absolute;
     z-index: 10015;
-    width: 40px;
-    height: 34px;
+    width: 88px;
+    height: 72px;
     cursor: pointer;
     pointer-events: auto;
-    background:
-      radial-gradient(ellipse at 50% 52%, #b6d62c 0 22%, transparent 24%),
-      radial-gradient(ellipse at 25% 65%, #86a91c 0 19%, transparent 21%),
-      radial-gradient(ellipse at 75% 68%, #d4e65a 0 18%, transparent 20%),
-      radial-gradient(ellipse at 45% 25%, #718c16 0 14%, transparent 16%);
     filter: drop-shadow(1px 2px 1px rgba(0,0,0,.65));
     animation: roach-splat-pop .18s ease-out;
 }
-.roach-splat i { position:absolute; display:block; width:7px; height:7px; border-radius:50%; background:#b8d93a; }
+.roach-splat img { width:100%; height:100%; object-fit:contain; image-rendering:pixelated; pointer-events:none; }
+.roach-splat.wiping { filter:brightness(1.35) drop-shadow(1px 2px 1px rgba(0,0,0,.65)); }
+.roach-splat i { display:none; position:absolute; display:block; width:7px; height:7px; border-radius:50%; background:#b8d93a; }
 .roach-splat i:nth-child(1) { left:-4px; top:9px; }
 .roach-splat i:nth-child(2) { right:-5px; top:13px; width:5px; height:5px; }
 .roach-splat i:nth-child(3) { left:8px; bottom:-5px; width:5px; height:5px; }
@@ -1365,10 +1361,10 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
     left:50%;
     transform:translateX(-50%);
     color:#00e000;
-    font-family:Impact,"Arial Black",sans-serif;
-    font-size:clamp(30px,5vw,58px);
-    font-weight:1000;
-    letter-spacing:3px;
+    font-family:Arial,Helvetica,sans-serif;
+    font-size:clamp(24px,3.5vw,42px);
+    font-weight:700;
+    letter-spacing:0;
     text-shadow:2px 2px 0 #003800, 0 0 12px #00ff00;
     animation:roach-clean-pulse .7s infinite alternate;
     pointer-events:none;
@@ -1379,5 +1375,5 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
     #roach-tools { left:3px; }
     .roach-tool { width:62px; min-height:68px; }
     .roach-tool img { width:38px; height:38px; }
-    .roach-bug { width:36px; height:27px; }
+    .roach-bug { width: min(168px, 34vw); height: auto; aspect-ratio: 168 / 124; }
 }
