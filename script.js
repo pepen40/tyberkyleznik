@@ -404,7 +404,7 @@ async function finishRoachWave() {
                 if (data.newUpgrades) currentUpgrades = data.newUpgrades;
                 updateUI();
                 const messageEl = document.getElementById('roach-clean-message');
-                if (messageEl) messageEl.textContent = 'зачищено · +150 монет';
+                if (messageEl) messageEl.textContent = 'зачищено · +150 бабла';
             } else {
                 roachRewardSent = false;
                 console.error('Не удалось начислить награду за бойню:', data?.error);
