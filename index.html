@@ -2294,6 +2294,16 @@ function updateClock() {
     overlay.addEventListener('pointercancel', stopDragging);
 })();
 </script>
+
+<!-- Пиксельный баран: появляется только после авторизации -->
+<div id="sheep-layer" class="hidden" aria-hidden="true">
+  <div id="sheep-character">
+    <div id="sheep-parachute"><span></span></div>
+    <img id="sheep-sprite" src="ram.png" alt="">
+  </div>
+</div>
+<audio id="sheep-beee-audio" src="beee.mp3" preload="auto"></audio>
+
 </body>
 
 </html>

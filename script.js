@@ -51,8 +51,64 @@ function toggleWeather() {
     // Никакого localStorage
 }
 
+// === БАРАН С ПАРАШЮТОМ ===
+let sheepTimer = null;
+let sheepDescentTimer = null;
+let sheepSecondsUntilBeee = 43;
+
+function startSheep() {
+    stopSheep();
+
+    const layer = document.getElementById('sheep-layer');
+    const character = document.getElementById('sheep-character');
+    const audio = document.getElementById('sheep-beee-audio');
+    if (!layer || !character || !audio || !currentUser) return;
+
+    layer.classList.remove('hidden');
+    character.classList.remove('walking');
+    character.style.animation = 'none';
+    character.style.top = '-150px';
+    character.style.left = '0';
+    // Перезапускаем CSS-анимацию спуска
+    void character.offsetWidth;
+    character.style.animation = '';
+
+    sheepSecondsUntilBeee = 43;
+    sheepDescentTimer = setTimeout(() => {
+        character.classList.add('walking');
+        sheepDescentTimer = null;
+    }, 18000);
+
+    sheepTimer = setInterval(() => {
+        // Считаем только время, когда вкладка действительно активна
+        if (document.visibilityState !== 'visible' || !currentUser) return;
+        sheepSecondsUntilBeee -= 1;
+        if (sheepSecondsUntilBeee <= 0) {
+            audio.currentTime = 0;
+            audio.play().catch(() => {});
+            sheepSecondsUntilBeee = 43;
+        }
+    }, 1000);
+}
+
+function stopSheep() {
+    if (sheepTimer) clearInterval(sheepTimer);
+    if (sheepDescentTimer) clearTimeout(sheepDescentTimer);
+    sheepTimer = null;
+    sheepDescentTimer = null;
+
+    const layer = document.getElementById('sheep-layer');
+    const audio = document.getElementById('sheep-beee-audio');
+    if (layer) layer.classList.add('hidden');
+    if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+    }
+}
+
 function logout() {
     if (!confirm("Выйти с аккаунта?")) return;
+    stopSheep();
     location.reload();
 }
 
@@ -473,6 +529,7 @@ async function login() {
 
         document.getElementById('auth-screen').classList.add('hidden');
         document.getElementById('main-screen').classList.remove('hidden');
+        startSheep(); // Баран появляется только после успешной авторизации
         preloadSounds(); 
         initOnlineCounter();
         initLobby();
