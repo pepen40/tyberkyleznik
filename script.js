@@ -1012,7 +1012,7 @@ function pvpAttack() {
         pvpGameState.enemyHp -= dmg;
         logPvp(`Ты бьешь на ${dmg} урона${dmg < rawDamage ? ` (броня врага поглотила ${rawDamage - dmg})` : ''}!`);
     }
-    const manaGain = currentPvpChar === 'apostol' ? 35 : (currentPvpChar === 'mee' ? 25 : 20);
+    const manaGain = currentPvpChar === 'apostol' ? 20 : 15;
     pvpGameState.myMp = Math.min(100, pvpGameState.myMp + manaGain);
     if (pvpGameState.myBonusAttacks > 0) pvpGameState.myBonusAttacks--;
     const keepAttackTurn = pvpGameState.myBonusAttacks > 0;
@@ -1032,14 +1032,14 @@ function pvpAttack() {
 
 function pvpDefend() {
     if (!pvpGameState.isMyTurn) return;
-    if (pvpGameState.myMp < 40) { alert("Мало маны для защиты! Нужно 40."); return; }
+    if (pvpGameState.myMp < 50) { alert("Мало маны для защиты! Нужно 50."); return; }
     playSoundEffect('protection');
-    pvpGameState.myMp -= 40;
+    pvpGameState.myMp -= 50;
     pvpGameState.myItemUsed = false;
     pvpGameState.isMyTurn = false; disablePvpButtons(); setPvpTurn(false);
     pvpGameState.myDefending = true;
     pvpGameState.myBonusAttacks = 2;
-    updatePvpUI(); logPvp(`Ты встаешь в защиту (-40 маны). После удара получишь 2 атаки подряд.`);
+    updatePvpUI(); logPvp(`Ты встаешь в защиту (-50 маны). После удара получишь 2 атаки подряд.`);
     if(roomChannel) roomChannel.send({ type: 'broadcast', event: 'enemy_action', payload: { type: 'defend' } });
 }
 
@@ -1284,7 +1284,7 @@ function enablePvpButtons() {
     let skill = document.getElementById('pvp-skill-btn');
     let item = document.getElementById('pvp-item-btn');
     if (atk) atk.disabled = false;
-    if (def) def.disabled = pvpGameState.myMp < 40; 
+    if (def) def.disabled = pvpGameState.myMp < 50; 
     if (item) item.disabled = pvpGameState.myItemUsed;
     if (skill) skill.disabled = pvpGameState.myMp < 100;
 }
@@ -1339,9 +1339,9 @@ function selectChar(type) {
     currentCharType = type;
     rpgBonusAttacks = 0;
     let baseHp = 0, baseAtk = 0, mpGain = 0, name = "", charClass = "", imgUrl = "";
-    if (type === 'ashab') { baseHp = 150; baseAtk = 20; mpGain = 20; name = "Ashab"; charClass = "Берсерк"; imgUrl = "IMG_3545.jpeg"; }
-    else if (type === 'apostol') { baseHp = 80; baseAtk = 30; mpGain = 35; name = "Apostol"; charClass = "Чернокнижник"; imgUrl = "IMG_3544.jpeg"; }
-    else if (type === 'mee') { baseHp = 110; baseAtk = 18; mpGain = 25; name = "Мээ"; charClass = "Друид"; imgUrl = "IMG_3546.jpeg"; }
+    if (type === 'ashab') { baseHp = 150; baseAtk = 20; mpGain = 15; name = "Ashab"; charClass = "Берсерк"; imgUrl = "IMG_3545.jpeg"; }
+    else if (type === 'apostol') { baseHp = 80; baseAtk = 30; mpGain = 20; name = "Apostol"; charClass = "Чернокнижник"; imgUrl = "IMG_3544.jpeg"; }
+    else if (type === 'mee') { baseHp = 110; baseAtk = 18; mpGain = 15; name = "Мээ"; charClass = "Друид"; imgUrl = "IMG_3546.jpeg"; }
     let u = currentUpgrades[type];
     const gearBonus = getGearBonuses(type);
     const equippedHp = baseHp + (u.hp * 20) + gearBonus.hp;
@@ -1425,7 +1425,7 @@ function checkButtons() {
     const btns = [document.querySelector('.btn-atk'), document.querySelector('.btn-def'), document.getElementById('rpg-skill-btn'), document.querySelector('.btn-item')];
     if (isPlayerTurn) { 
         btns[0].disabled = false; 
-        btns[1].disabled = rpgMana < 40; 
+        btns[1].disabled = rpgMana < 50; 
         btns[2].disabled = rpgMana < 100; 
         btns[3].disabled = rpgItemUsed; 
     } else { 
@@ -1477,12 +1477,12 @@ function rpgAttack() {
 }
 function rpgDefend() {
     if (!isPlayerTurn || rpgChar.hp <= 0 || rpgEnemy.hp <= 0) return;
-    if (rpgMana < 40) { alert("Мало маны для защиты! Нужно 40."); return; }
+    if (rpgMana < 50) { alert("Мало маны для защиты! Нужно 50."); return; }
     playSoundEffect('protection');
-    rpgMana -= 40;
+    rpgMana -= 50;
     rpgBonusAttacks = 2;
     isPlayerTurn = false; rpgItemUsed = false; rpgPlayerDefending = true; rpgEnemyStunned = true; setTurnIndicator(false); checkButtons();
-    addLog(`${rpgChar.name} защищается (-40 маны). Враг пропускает ход, а ты получаешь 2 удара!`); updateRpgUI(); enemyTurnTimeout = setTimeout(() => enemyTurn(false), 800);
+    addLog(`${rpgChar.name} защищается (-50 маны). Враг пропускает ход, а ты получаешь 2 удара!`); updateRpgUI(); enemyTurnTimeout = setTimeout(() => enemyTurn(false), 800);
 }
 function rpgSkill() {
     rpgBonusAttacks = 0;
