@@ -109,28 +109,14 @@ function startSheep() {
         character.classList.add('walking');
         character.style.top = 'auto';
         character.style.bottom = '0';
-        character.style.left = 'calc(50% - 29px)';
-        character.style.transition = 'left 140s linear';
+        character.style.left = '0px';
+        character.style.transition = 'none';
         const parachute = document.getElementById('sheep-parachute');
         if (parachute) parachute.style.display = 'none';
+        // Баран бесконечно ходит от одного края экрана до другого и обратно.
+        // CSS alternate сам разворачивает движение на каждом краю — таймеры не нужны.
         void character.offsetWidth;
-        // Сначала идёт к левому краю, затем медленно пересекает весь экран.
-        sheepWalkTimer = setTimeout(() => {
-            if (!currentUser || document.visibilityState !== 'visible') return;
-            character.style.left = '0px';
-            sheepWalkingRight = true;
-            sheepWalkTimer = setTimeout(() => {
-                if (!currentUser) return;
-                character.style.transition = 'left 140s linear';
-                character.style.left = 'calc(100vw - 58px)';
-                sheepWalkingRight = false;
-                sheepWalkTimer = setInterval(() => {
-                    if (!currentUser || document.visibilityState !== 'visible') return;
-                    character.style.left = sheepWalkingRight ? 'calc(100vw - 58px)' : '0px';
-                    sheepWalkingRight = !sheepWalkingRight;
-                }, 140000);
-            }, 140000);
-        }, 1000);
+        character.style.animation = 'sheep-walk-across 140s linear infinite alternate';
         sheepDescentTimer = null;
     }, 18000);
 
@@ -189,6 +175,7 @@ let roachEnabled = true;
 let roachScheduleTimer = null;
 let roachCountdown = ROACH_FIRST_DELAY;
 let roachAnimationFrame = null;
+let roachRewardSent = false;
 let roachActive = false;
 let roachItems = [];
 let roachSplats = [];
@@ -245,6 +232,7 @@ function spawnRoachWave() {
     const tools = document.getElementById('roach-tools');
     if (!layer || !field || !tools) return;
     roachActive = true;
+    roachRewardSent = false;
     roachTool = 'hammer';
     roachItems = [];
     roachSplats = [];
@@ -383,8 +371,30 @@ function checkRoachClear() {
     const allDead = roachItems.length && roachItems.every(x => !x.alive);
     if (allDead && roachSplats.length === 0) finishRoachWave();
 }
-function finishRoachWave() {
-    if (!roachActive) return;
+async function finishRoachWave() {
+    if (!roachActive || roachRewardSent) return;
+    roachRewardSent = true;
+    try {
+        if (currentUser) {
+            const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
+                body: { action: 'roach_clear', username: currentUser, data: {} }
+            });
+            if (error) throw error;
+            if (data?.success) {
+                currentCoins = Number(data.newCoins ?? currentCoins);
+                if (data.newUpgrades) currentUpgrades = data.newUpgrades;
+                updateUI();
+                const messageEl = document.getElementById('roach-clean-message');
+                if (messageEl) messageEl.textContent = 'зачищено · +150 монет';
+            } else {
+                roachRewardSent = false;
+                console.error('Не удалось начислить награду за бойню:', data?.error);
+            }
+        }
+    } catch (e) {
+        roachRewardSent = false;
+        console.error('Ошибка награды за бойню:', e);
+    }
     roachActive = false;
     if (roachAnimationFrame) cancelAnimationFrame(roachAnimationFrame);
     roachAnimationFrame = null;
@@ -495,16 +505,16 @@ const RPG_GEAR = [
 let rpgGearFilter = 'all';
 
 const RPG_DAILY_QUESTS = [
-    { id: 'wins3', title: 'istrebitel', desc: 'Победи 3 врагов в офлайн-RPG.', target: 3, reward: 120, metric: 'wins' },
-    { id: 'boss1', title: 'опасный чювак', desc: 'Одолей босса на пятом подэтаже.', target: 1, reward: 250, metric: 'bosses' },
-    { id: 'spend500', title: 'лионель месси', desc: 'Потрать 500 монет на прокачку или экипировку.', target: 500, reward: 100, metric: 'spent' }
+    { id: 'wins3', title: 'istrebitel', desc: 'Победи 3 врагов в офлайн-RPG.', target: 3, reward: 75, metric: 'wins' },
+    { id: 'boss1', title: 'опасный чювак', desc: 'Одолей босса на пятом подэтаже.', target: 1, reward: 150, metric: 'bosses' },
+    { id: 'spend500', title: 'лионель месси', desc: 'Потрать 500 монет на прокачку или экипировку.', target: 500, reward: 50, metric: 'spent' }
 ];
 const RPG_ACHIEVEMENTS = [
-    { id: 'first_win', title: 'Начало start', desc: 'Победи первого врага.', target: 1, reward: 100, metric: 'totalWins' },
-    { id: 'ten_wins', title: 'gustav', desc: 'Победи 10 врагов суммарно.', target: 10, reward: 350, metric: 'totalWins' },
-    { id: 'fifty_wins', title: 'VLADIMIR', desc: 'Победи 50 врагов суммарно.', target: 50, reward: 1200, metric: 'totalWins' },
-    { id: 'first_boss', title: 'серьезный поцан', desc: 'Победи первого босса.', target: 1, reward: 300, metric: 'totalBosses' },
-    { id: 'ten_bosses', title: 'да мне похуй', desc: 'Победи 10 боссов суммарно.', target: 10, reward: 1500, metric: 'totalBosses' }
+    { id: 'first_win', title: 'Начало start', desc: 'Победи первого врага.', target: 1, reward: 50, metric: 'totalWins' },
+    { id: 'ten_wins', title: 'gustav', desc: 'Победи 10 врагов суммарно.', target: 10, reward: 200, metric: 'totalWins' },
+    { id: 'fifty_wins', title: 'VLADIMIR', desc: 'Победи 50 врагов суммарно.', target: 50, reward: 600, metric: 'totalWins' },
+    { id: 'first_boss', title: 'серьезный поцан', desc: 'Победи первого босса.', target: 1, reward: 150, metric: 'totalBosses' },
+    { id: 'ten_bosses', title: 'да мне похуй', desc: 'Победи 10 боссов суммарно.', target: 10, reward: 750, metric: 'totalBosses' }
 ];
 let rpgContractBusy = false;
 function getLocalRpgProgress() {
@@ -1996,7 +2006,7 @@ function enemyTurn(isPlayerDefending = false) {
 }
 
 async function winRpg() {
-    let reward = 15 + (rpgFloorMain * 10);
+    let reward = Math.min(100, 10 + (rpgFloorMain * 3));
     const wonFloorMain = rpgFloorMain;
     try {
         const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'rpg_win', username: currentUser, data: { floorMain: wonFloorMain, floorSub: rpgFloorSub } } });
@@ -2581,6 +2591,7 @@ async function viewProfile(username) {
     statsEl.innerHTML = `
         Статус: ${onlineStatusHtml}<br>Зареган: ${createdStr}<br>Был в сети: ${lastOnlineStr}<hr style="margin: 5px 0;">
         <b>PTS: <span style="color:orange;">${data.pvp_pts || 0}</span></b> | Общий счет: ${(data.max_score || 0) + (data.item_points || 0)}<hr style="margin: 5px 0;">
+        <b>Тараканов переебашил за всё время:</b> ${Math.max(0, Number(ups.roachKills) || 0)}<br><hr style="margin: 5px 0;">
         <b>Статы РПГ:</b><br>
         <span style="color: #d32f2f;">Ashab:</span> Этаж ${(maxF.ashab || 0).toFixed(1)} | HP ур.${ups.ashab?.hp || 0} | ATK ур.${ups.ashab?.atk || 0}<br>
         <span style="color: #d32f2f;">Apostol:</span> Этаж ${(maxF.apostol || 0).toFixed(1)} | HP ур.${ups.apostol?.hp || 0} | ATK ур.${ups.apostol?.atk || 0}<br>

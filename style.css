@@ -1227,12 +1227,16 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
     border-left: 1px solid #333;
 }
 #sheep-character.walking #sheep-parachute { display: none; }
+@keyframes sheep-walk-across {
+    from { left: 0; }
+    to { left: calc(100vw - var(--sheep-width, 58px)); }
+}
 @keyframes sheep-parachute-descent {
     from { top: -110px; }
     to { top: calc(100vh - 52px); }
 }
 @media (max-width: 520px) {
-    #sheep-character { width: 50px; height: 46px; }
+    #sheep-character { width: 50px; height: 46px; --sheep-width: 50px; }
     #sheep-sprite { width: 50px; height: 40px; }
 }
 
@@ -1249,8 +1253,8 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
 #roach-field { position: absolute; inset: 0; pointer-events: none; }
 .roach-bug {
     position: absolute;
-    width: 168px;
-    height: 124px;
+    width: 252px;
+    height: 186px;
     object-fit: contain;
     image-rendering: pixelated;
     cursor: default;
@@ -1305,8 +1309,8 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
 }
 #roach-tools.hidden { display: none !important; }
 .roach-tool {
-    width: 78px;
-    min-height: 82px;
+    width: 126px;
+    min-height: 135px;
     padding: 5px 3px;
     margin: 0;
     display: flex;
@@ -1319,25 +1323,27 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
     border: 3px outset #fff;
     box-shadow: 2px 2px 0 rgba(0,0,0,.55);
 }
-.roach-tool img { width: 48px; height: 48px; object-fit: contain; image-rendering: pixelated; }
+.roach-tool img { width: 87px; height: 87px; object-fit: contain; image-rendering: pixelated; }
 .roach-tool.selected { border-style: inset; background: #ffe5a0; }
 #roach-cursor {
     position: fixed;
     z-index: 10040;
-    width: 58px;
-    height: 58px;
+    width: 156px;
+    height: 156px;
     pointer-events: none;
     transform: rotate(-25deg);
 }
 #roach-cursor.hidden { display: none !important; }
 #roach-cursor img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+/* Тряпка компактнее кувалды, чтобы инструменты читались пропорционально. */
+#roach-event-layer.rag-mode #roach-cursor { width: 117px; height: 117px; transform: rotate(-18deg); }
 #roach-event-layer.tool-cursor-active { cursor: none; }
 #roach-event-layer:not(.tool-cursor-active) { cursor: default; }
 .roach-splat {
     position: absolute;
     z-index: 10015;
-    width: 88px;
-    height: 72px;
+    width: 285px;
+    height: 231px;
     cursor: pointer;
     pointer-events: auto;
     filter: drop-shadow(1px 2px 1px rgba(0,0,0,.65));
@@ -1373,7 +1379,10 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
 @keyframes roach-clean-pulse { from { opacity:.75; } to { opacity:1; text-shadow:2px 2px 0 #003800,0 0 18px #00ff00; } }
 @media(max-width:520px) {
     #roach-tools { left:3px; }
-    .roach-tool { width:62px; min-height:68px; }
-    .roach-tool img { width:38px; height:38px; }
-    .roach-bug { width: min(168px, 34vw); height: auto; aspect-ratio: 168 / 124; }
+    .roach-tool { width:82px; min-height:90px; }
+    .roach-tool img { width:56px; height:56px; }
+    .roach-bug { width: min(252px, 40vw); height: auto; aspect-ratio: 252 / 186; }
+    .roach-splat { width:min(285px, 58vw); height:auto; aspect-ratio:285 / 231; }
+    #roach-cursor { width:132px; height:132px; }
+    #roach-event-layer.rag-mode #roach-cursor { width:99px; height:99px; }
 }
