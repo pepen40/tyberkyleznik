@@ -9,6 +9,9 @@ window.addEventListener('load', () => {
     // Всегда показываем экран входа — никакого автологина
     document.getElementById('auth-screen').classList.remove('hidden');
     initSiteBackground();
+    initSheepSetting();
+    initRoachSetting();
+    initRoachControls();
 
     // Погода включена по умолчанию
     document.getElementById('weather-toggle').checked = true;
@@ -51,6 +54,26 @@ function toggleWeather() {
     // Никакого localStorage
 }
 
+// === НАСТРОЙКА ПИКСЕЛЬНОГО БАРАНА ===
+const SHEEP_SETTING_KEY = 'pepen-sheep-enabled';
+function isSheepEnabled() {
+    try { return localStorage.getItem(SHEEP_SETTING_KEY) !== 'false'; }
+    catch (_) { return true; }
+}
+function initSheepSetting() {
+    const toggle = document.getElementById('sheep-enabled');
+    if (!toggle) return;
+    toggle.checked = isSheepEnabled();
+    toggle.addEventListener('change', () => {
+        try { localStorage.setItem(SHEEP_SETTING_KEY, toggle.checked ? 'true' : 'false'); } catch (_) {}
+        if (!toggle.checked) {
+            stopSheep();
+        } else if (currentUser) {
+            startSheep();
+        }
+    });
+}
+
 // === БАРАН С ПАРАШЮТОМ ===
 let sheepTimer = null;
 let sheepDescentTimer = null;
@@ -64,7 +87,7 @@ function startSheep() {
     const layer = document.getElementById('sheep-layer');
     const character = document.getElementById('sheep-character');
     const audio = document.getElementById('sheep-beee-audio');
-    if (!layer || !character || !audio || !currentUser) return;
+    if (!layer || !character || !audio || !currentUser || !isSheepEnabled()) return;
 
     layer.classList.remove('hidden');
     character.classList.remove('walking');
@@ -153,9 +176,252 @@ function stopSheep() {
     }
 }
 
+
+// === ТАРАКАНЬЯ МЯСОРУБКА ===
+// Ожидаемые файлы в корне сайта:
+// tarakan.png, kuvalda.png, tryapka.png,
+// tarakan-smert.mp3, tryapka-zvuk.mp3
+const ROACH_SETTING_KEY = 'pepen-roach-enabled';
+const ROACH_FIRST_DELAY = 60;       // первая волна через 1 минуту
+const ROACH_REPEAT_DELAY = 30 * 60; // затем каждые 30 минут активного сеанса
+const ROACH_COUNT = 9;
+let roachEnabled = true;
+let roachScheduleTimer = null;
+let roachCountdown = ROACH_FIRST_DELAY;
+let roachAnimationFrame = null;
+let roachActive = false;
+let roachItems = [];
+let roachSplats = [];
+let roachTool = 'hammer';
+let roachPointerX = 0;
+let roachPointerY = 0;
+let roachAlertTimer = null;
+let roachCleanTimer = null;
+
+function isRoachEnabled() {
+    try { return localStorage.getItem(ROACH_SETTING_KEY) !== 'false'; }
+    catch (_) { return true; }
+}
+function initRoachSetting() {
+    const toggle = document.getElementById('roach-enabled');
+    roachEnabled = isRoachEnabled();
+    if (!toggle) return;
+    toggle.checked = roachEnabled;
+    toggle.addEventListener('change', () => {
+        roachEnabled = toggle.checked;
+        try { localStorage.setItem(ROACH_SETTING_KEY, roachEnabled ? 'true' : 'false'); } catch (_) {}
+        if (!roachEnabled) stopRoachEvent(true);
+        else if (currentUser) startRoachSchedule(ROACH_FIRST_DELAY);
+    });
+}
+function startRoachSchedule(seconds = ROACH_FIRST_DELAY) {
+    stopRoachSchedule();
+    if (!currentUser || !isRoachEnabled()) return;
+    roachCountdown = seconds;
+    roachScheduleTimer = setInterval(() => {
+        if (!currentUser || !isRoachEnabled() || document.visibilityState !== 'visible') return;
+        roachCountdown--;
+        if (roachCountdown <= 0) {
+            if (!roachActive) spawnRoachWave();
+            roachCountdown = ROACH_REPEAT_DELAY;
+        }
+    }, 1000);
+}
+function stopRoachSchedule() {
+    if (roachScheduleTimer) clearInterval(roachScheduleTimer);
+    roachScheduleTimer = null;
+}
+function playRoachAudio(id) {
+    const audio = document.getElementById(id);
+    if (!audio) return;
+    try { audio.pause(); audio.currentTime = 0; } catch (_) {}
+    const p = audio.play();
+    if (p && p.catch) p.catch(() => {});
+}
+function spawnRoachWave() {
+    if (!currentUser || !isRoachEnabled() || roachActive) return;
+    const layer = document.getElementById('roach-event-layer');
+    const field = document.getElementById('roach-field');
+    const tools = document.getElementById('roach-tools');
+    if (!layer || !field || !tools) return;
+    roachActive = true;
+    roachTool = 'hammer';
+    roachItems = [];
+    roachSplats = [];
+    field.innerHTML = '';
+    document.getElementById('roach-clean-message')?.classList.add('hidden');
+    document.getElementById('roach-cursor')?.classList.add('hidden');
+    layer.classList.remove('hidden');
+    tools.classList.remove('hidden');
+    showRoachAlert();
+
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    for (let i = 0; i < ROACH_COUNT; i++) {
+        const img = document.createElement('img');
+        img.className = 'roach-bug';
+        img.src = 'tarakan.png';
+        img.alt = 'Таракан';
+        img.draggable = false;
+        const item = {
+            el: img,
+            x: Math.random() * Math.max(10, w - 55),
+            y: 90 + Math.random() * Math.max(20, h - 180),
+            vx: (Math.random() < .5 ? -1 : 1) * (0.65 + Math.random() * 1.15),
+            vy: (Math.random() < .5 ? -1 : 1) * (0.22 + Math.random() * .65),
+            alive: true
+        };
+        img.style.left = item.x + 'px';
+        img.style.top = item.y + 'px';
+        img.addEventListener('click', () => hitRoach(item));
+        field.appendChild(img);
+        roachItems.push(item);
+    }
+    const hammerBtn = document.getElementById('roach-hammer-tool');
+    const ragBtn = document.getElementById('roach-rag-tool');
+    hammerBtn?.classList.add('selected');
+    ragBtn?.classList.remove('selected');
+    setRoachTool('hammer');
+    if (!roachAnimationFrame) animateRoaches();
+}
+function showRoachAlert() {
+    const alert = document.getElementById('roach-alert');
+    if (!alert) return;
+    alert.classList.remove('hidden');
+    if (roachAlertTimer) clearTimeout(roachAlertTimer);
+    roachAlertTimer = setTimeout(() => alert.classList.add('hidden'), 10000);
+}
+function animateRoaches() {
+    if (!roachActive) { roachAnimationFrame = null; return; }
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    roachItems.forEach(item => {
+        if (!item.alive) return;
+        const rw = item.el.offsetWidth || 38;
+        const rh = item.el.offsetHeight || 28;
+        item.x += item.vx;
+        item.y += item.vy;
+        if (item.x <= 0 || item.x >= w - rw) item.vx *= -1;
+        if (item.y <= 48 || item.y >= h - rh - 12) item.vy *= -1;
+        item.x = Math.max(0, Math.min(w - rw, item.x));
+        item.y = Math.max(48, Math.min(h - rh - 12, item.y));
+        item.el.style.left = item.x + 'px';
+        item.el.style.top = item.y + 'px';
+        item.el.classList.toggle('facing-left', item.vx < 0);
+    });
+    roachAnimationFrame = requestAnimationFrame(animateRoaches);
+}
+function hitRoach(item) {
+    if (!roachActive || roachTool !== 'hammer' || !item.alive) return;
+    item.alive = false;
+    item.el.classList.add('roach-dead');
+    playRoachAudio('roach-death-audio');
+    const splat = document.createElement('div');
+    splat.className = 'roach-splat';
+    splat.setAttribute('role', 'button');
+    splat.setAttribute('aria-label', 'Убрать ошмёток тряпочкой');
+    splat.style.left = (item.x + 8) + 'px';
+    splat.style.top = (item.y + 4) + 'px';
+    splat.innerHTML = '<i></i><i></i><i></i><i></i><i></i>';
+    splat.addEventListener('click', () => cleanRoachSplat(splat));
+    document.getElementById('roach-field')?.appendChild(splat);
+    roachSplats.push(splat);
+    checkRoachClear();
+}
+function cleanRoachSplat(splat) {
+    if (!roachActive || roachTool !== 'rag' || !splat.isConnected) return;
+    playRoachAudio('roach-wipe-audio');
+    splat.classList.add('cleaning');
+    setTimeout(() => {
+        splat.remove();
+        roachSplats = roachSplats.filter(x => x !== splat);
+        checkRoachClear();
+    }, 280);
+}
+function setRoachTool(tool) {
+    if (!roachActive) return;
+    roachTool = tool;
+    document.getElementById('roach-hammer-tool')?.classList.toggle('selected', tool === 'hammer');
+    document.getElementById('roach-rag-tool')?.classList.toggle('selected', tool === 'rag');
+    const cursor = document.getElementById('roach-cursor');
+    if (cursor) {
+        cursor.classList.toggle('hidden', tool !== 'hammer');
+        const img = cursor.querySelector('img');
+        if (img) img.src = tool === 'hammer' ? 'kuvalda.png' : 'tryapka.png';
+    }
+    document.getElementById('roach-event-layer')?.classList.toggle('rag-mode', tool === 'rag');
+}
+function checkRoachClear() {
+    const allDead = roachItems.length && roachItems.every(x => !x.alive);
+    if (allDead && roachSplats.length === 0) finishRoachWave();
+}
+function finishRoachWave() {
+    if (!roachActive) return;
+    roachActive = false;
+    if (roachAnimationFrame) cancelAnimationFrame(roachAnimationFrame);
+    roachAnimationFrame = null;
+    document.getElementById('roach-tools')?.classList.add('hidden');
+    document.getElementById('roach-cursor')?.classList.add('hidden');
+    document.getElementById('roach-alert')?.classList.add('hidden');
+    const message = document.getElementById('roach-clean-message');
+    message?.classList.remove('hidden');
+    if (roachCleanTimer) clearTimeout(roachCleanTimer);
+    roachCleanTimer = setTimeout(() => {
+        document.getElementById('roach-event-layer')?.classList.add('hidden');
+        if (message) message.classList.add('hidden');
+        const field = document.getElementById('roach-field');
+        if (field) field.innerHTML = '';
+        roachItems = [];
+        roachSplats = [];
+    }, 10000);
+}
+function stopRoachEvent(resetSchedule = false) {
+    stopRoachSchedule();
+    roachActive = false;
+    if (roachAnimationFrame) cancelAnimationFrame(roachAnimationFrame);
+    roachAnimationFrame = null;
+    if (roachAlertTimer) clearTimeout(roachAlertTimer);
+    if (roachCleanTimer) clearTimeout(roachCleanTimer);
+    roachAlertTimer = null;
+    roachCleanTimer = null;
+    document.getElementById('roach-event-layer')?.classList.add('hidden');
+    document.getElementById('roach-tools')?.classList.add('hidden');
+    document.getElementById('roach-field')?.replaceChildren();
+    document.getElementById('roach-clean-message')?.classList.add('hidden');
+    document.getElementById('roach-alert')?.classList.add('hidden');
+    document.getElementById('roach-cursor')?.classList.add('hidden');
+    roachItems = [];
+    roachSplats = [];
+    ['roach-death-audio', 'roach-wipe-audio'].forEach(id => {
+        const a = document.getElementById(id);
+        if (a) { a.pause(); a.currentTime = 0; }
+    });
+    if (resetSchedule && currentUser && isRoachEnabled()) startRoachSchedule(ROACH_FIRST_DELAY);
+}
+function initRoachControls() {
+    document.getElementById('roach-hammer-tool')?.addEventListener('click', () => setRoachTool('hammer'));
+    document.getElementById('roach-rag-tool')?.addEventListener('click', () => setRoachTool('rag'));
+    document.addEventListener('pointermove', e => {
+        roachPointerX = e.clientX;
+        roachPointerY = e.clientY;
+        const cursor = document.getElementById('roach-cursor');
+        if (cursor && !cursor.classList.contains('hidden')) {
+            cursor.style.left = (roachPointerX - 12) + 'px';
+            cursor.style.top = (roachPointerY - 12) + 'px';
+        }
+    });
+    document.getElementById('roach-field')?.addEventListener('click', e => {
+        if (roachTool === 'rag' && e.target === e.currentTarget) {
+            // В режиме тряпочки клик по пустому месту ничего не делает.
+        }
+    });
+}
+
+
 function logout() {
     if (!confirm("Выйти с аккаунта?")) return;
     stopSheep();
+    stopRoachEvent(false);
     location.reload();
 }
 
@@ -577,6 +843,7 @@ async function login() {
         document.getElementById('auth-screen').classList.add('hidden');
         document.getElementById('main-screen').classList.remove('hidden');
         startSheep(); // Баран появляется только после успешной авторизации
+        startRoachSchedule(ROACH_FIRST_DELAY); // Первое нашествие через минуту
         preloadSounds(); 
         initOnlineCounter();
         initLobby();

@@ -531,6 +531,22 @@
                 </label>
 <small style="display:block;margin-top:6px;color:#555;">Если выключить, всплывающие цитаты полностью отключатся. Настройка сохранится на этом устройстве.</small>
 </div>
+<div class="sheep-settings" style="background:#fff;border:2px inset #999;padding:15px;margin:0 0 20px;text-align:left;">
+<h3 style="margin-top:0;">Пиксельный баран 🐏</h3>
+<label for="sheep-enabled" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+<input checked id="sheep-enabled" type="checkbox"/>
+Показывать барана на сайте
+</label>
+<small style="display:block;margin-top:6px;color:#555;">Если выключить, баран исчезнет и перестанет издавать звуки. Настройка сохраняется на этом устройстве.</small>
+</div>
+<div class="roach-settings" style="background:#fff;border:2px inset #999;padding:15px;margin:0 0 20px;text-align:left;">
+<h3 style="margin-top:0;">Тараканья мясорубка 🪳</h3>
+<label for="roach-enabled" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+<input checked id="roach-enabled" type="checkbox"/>
+Разрешить нашествие тараканов
+</label>
+<small style="display:block;margin-top:6px;color:#555;">Первое нашествие — через минуту после входа, затем раз в 30 минут активного сеанса. Настройка сохраняется на этом устройстве.</small>
+</div>
 <style>
 /* Панель «Аура» — элементы интерфейса */
 #aura-mock {
@@ -2294,6 +2310,24 @@ function updateClock() {
     overlay.addEventListener('pointercancel', stopDragging);
 })();
 </script>
+
+<!-- ТАРАКАНЬЯ МЯСОРУБКА: интерфейс появляется только во время нашествия -->
+<div id="roach-event-layer" class="hidden" aria-hidden="true">
+  <div id="roach-alert" class="hidden">МЯСОРУБКА</div>
+  <div id="roach-tools" class="hidden" aria-label="Инструменты">
+    <button type="button" id="roach-hammer-tool" class="roach-tool" title="Кувалда">
+      <img src="kuvalda.png" alt="Кувалда"><span>Кувалда</span>
+    </button>
+    <button type="button" id="roach-rag-tool" class="roach-tool" title="Тряпочка">
+      <img src="tryapka.png" alt="Тряпочка"><span>Тряпочка</span>
+    </button>
+  </div>
+  <div id="roach-field"></div>
+  <div id="roach-cursor" class="hidden"><img src="kuvalda.png" alt=""></div>
+  <div id="roach-clean-message" class="hidden">ЗАЧИЩЕНО</div>
+</div>
+<audio id="roach-death-audio" src="tarakan-smert.mp3" preload="auto"></audio>
+<audio id="roach-wipe-audio" src="tryapka-zvuk.mp3" preload="auto"></audio>
 
 <!-- Пиксельный баран: появляется только после авторизации -->
 <div id="sheep-layer" class="hidden" aria-hidden="true">

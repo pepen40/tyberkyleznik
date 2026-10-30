@@ -1235,3 +1235,149 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
     #sheep-character { width: 50px; height: 46px; }
     #sheep-sprite { width: 50px; height: 40px; }
 }
+
+
+/* === ТАРАКАНЬЯ МЯСОРУБКА === */
+#roach-event-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 10020;
+    pointer-events: none;
+    overflow: hidden;
+}
+#roach-event-layer.hidden { display: none !important; }
+#roach-field { position: absolute; inset: 0; pointer-events: none; }
+.roach-bug {
+    position: absolute;
+    width: 42px;
+    height: 31px;
+    object-fit: contain;
+    image-rendering: pixelated;
+    cursor: crosshair;
+    pointer-events: auto;
+    user-select: none;
+    -webkit-user-drag: none;
+    filter: drop-shadow(1px 2px 1px rgba(0,0,0,.55));
+    transition: filter .08s;
+}
+.roach-bug.facing-left { transform: scaleX(-1); }
+.roach-bug:hover { filter: drop-shadow(0 0 4px #ff2b00) drop-shadow(1px 2px 1px #000); }
+.roach-bug.roach-dead { display: none; }
+#roach-alert {
+    position: absolute;
+    z-index: 10025;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #f00000;
+    font-family: Impact, "Arial Black", sans-serif;
+    font-size: clamp(30px, 5vw, 62px);
+    font-weight: 1000;
+    letter-spacing: 4px;
+    text-shadow: 2px 2px 0 #300, -2px -1px 0 #700, 0 0 8px #f00, 0 8px 5px rgba(120,0,0,.8);
+    -webkit-text-stroke: 1px #650000;
+    animation: roach-blood-fire .35s infinite alternate;
+    pointer-events: none;
+    white-space: nowrap;
+}
+#roach-alert::after {
+    content: "🩸";
+    position: absolute;
+    right: 4px;
+    bottom: -22px;
+    font-size: 18px;
+    animation: roach-drip .8s infinite;
+}
+@keyframes roach-blood-fire {
+    from { filter: drop-shadow(0 0 2px #f00) drop-shadow(0 4px 2px #ff5a00); transform: translateX(-50%) scale(1); }
+    to { filter: drop-shadow(0 0 10px #ff1a00) drop-shadow(0 8px 6px #ff7a00); transform: translateX(-50%) scale(1.035); }
+}
+@keyframes roach-drip { 0%,55% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(14px); opacity: .25; } }
+#roach-tools {
+    position: absolute;
+    z-index: 10030;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: auto;
+}
+#roach-tools.hidden { display: none !important; }
+.roach-tool {
+    width: 78px;
+    min-height: 82px;
+    padding: 5px 3px;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    font-size: 10px;
+    background: #c0c0c0;
+    border: 3px outset #fff;
+    box-shadow: 2px 2px 0 rgba(0,0,0,.55);
+}
+.roach-tool img { width: 48px; height: 48px; object-fit: contain; image-rendering: pixelated; }
+.roach-tool.selected { border-style: inset; background: #ffe5a0; }
+#roach-cursor {
+    position: fixed;
+    z-index: 10040;
+    width: 58px;
+    height: 58px;
+    pointer-events: none;
+    transform: rotate(-25deg);
+}
+#roach-cursor.hidden { display: none !important; }
+#roach-cursor img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+#roach-event-layer:not(.rag-mode) { cursor: none; }
+#roach-event-layer.rag-mode { cursor: url("tryapka.png") 12 12, crosshair; }
+.roach-splat {
+    position: absolute;
+    z-index: 10015;
+    width: 40px;
+    height: 34px;
+    cursor: pointer;
+    pointer-events: auto;
+    background:
+      radial-gradient(ellipse at 50% 52%, #b6d62c 0 22%, transparent 24%),
+      radial-gradient(ellipse at 25% 65%, #86a91c 0 19%, transparent 21%),
+      radial-gradient(ellipse at 75% 68%, #d4e65a 0 18%, transparent 20%),
+      radial-gradient(ellipse at 45% 25%, #718c16 0 14%, transparent 16%);
+    filter: drop-shadow(1px 2px 1px rgba(0,0,0,.65));
+    animation: roach-splat-pop .18s ease-out;
+}
+.roach-splat i { position:absolute; display:block; width:7px; height:7px; border-radius:50%; background:#b8d93a; }
+.roach-splat i:nth-child(1) { left:-4px; top:9px; }
+.roach-splat i:nth-child(2) { right:-5px; top:13px; width:5px; height:5px; }
+.roach-splat i:nth-child(3) { left:8px; bottom:-5px; width:5px; height:5px; }
+.roach-splat i:nth-child(4) { right:7px; top:-4px; width:4px; height:4px; }
+.roach-splat i:nth-child(5) { left:18px; top:2px; width:4px; height:4px; }
+.roach-splat.cleaning { animation: roach-wipe-away .28s ease-in forwards; pointer-events:none; }
+@keyframes roach-splat-pop { from { transform:scale(.2) rotate(-20deg); opacity:0; } to { transform:scale(1) rotate(0); opacity:1; } }
+@keyframes roach-wipe-away { to { transform:scale(.1) rotate(35deg); opacity:0; filter:blur(5px); } }
+#roach-clean-message {
+    position:absolute;
+    z-index:10035;
+    top:18px;
+    left:50%;
+    transform:translateX(-50%);
+    color:#00e000;
+    font-family:Impact,"Arial Black",sans-serif;
+    font-size:clamp(30px,5vw,58px);
+    font-weight:1000;
+    letter-spacing:3px;
+    text-shadow:2px 2px 0 #003800, 0 0 12px #00ff00;
+    animation:roach-clean-pulse .7s infinite alternate;
+    pointer-events:none;
+}
+#roach-clean-message.hidden { display:none !important; }
+@keyframes roach-clean-pulse { from { opacity:.75; } to { opacity:1; text-shadow:2px 2px 0 #003800,0 0 18px #00ff00; } }
+@media(max-width:520px) {
+    #roach-tools { left:3px; }
+    .roach-tool { width:62px; min-height:68px; }
+    .roach-tool img { width:38px; height:38px; }
+    .roach-bug { width:36px; height:27px; }
+}
