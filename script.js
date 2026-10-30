@@ -56,6 +56,11 @@ function toggleWeather() {
 
 // === НАСТРОЙКА ПИКСЕЛЬНОГО БАРАНА ===
 const SHEEP_SETTING_KEY = 'pepen-sheep-enabled';
+const SHEEP_SOUND_SETTING_KEY = 'pepen-sheep-sound-enabled';
+function isSheepSoundEnabled() {
+    try { return localStorage.getItem(SHEEP_SOUND_SETTING_KEY) !== 'false'; }
+    catch (_) { return true; }
+}
 function isSheepEnabled() {
     try { return localStorage.getItem(SHEEP_SETTING_KEY) !== 'false'; }
     catch (_) { return true; }
@@ -72,6 +77,18 @@ function initSheepSetting() {
             startSheep();
         }
     });
+
+    const soundToggle = document.getElementById('sheep-sound-enabled');
+    if (soundToggle) {
+        soundToggle.checked = isSheepSoundEnabled();
+        soundToggle.addEventListener('change', () => {
+            try { localStorage.setItem(SHEEP_SOUND_SETTING_KEY, soundToggle.checked ? 'true' : 'false'); } catch (_) {}
+            if (!soundToggle.checked) {
+                const audio = document.getElementById('sheep-beee-audio');
+                if (audio) { audio.pause(); audio.currentTime = 0; }
+            }
+        });
+    }
 }
 
 // === БАРАН С ПАРАШЮТОМ ===
@@ -124,8 +141,10 @@ function startSheep() {
         if (document.visibilityState !== 'visible' || !currentUser) return;
         sheepSecondsUntilBeee -= 1;
         if (sheepSecondsUntilBeee <= 0) {
-            audio.currentTime = 0;
-            audio.play().catch(() => {});
+            if (isSheepSoundEnabled()) {
+                audio.currentTime = 0;
+                audio.play().catch(() => {});
+            }
             sheepSecondsUntilBeee = 43;
         }
     }, 1000);

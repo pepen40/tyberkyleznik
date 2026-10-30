@@ -1379,8 +1379,8 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
 .roach-splat {
     position: absolute;
     z-index: 10015;
-    width: 285px;
-    height: 231px;
+    width: 120px;
+    height: 97px;
     cursor: pointer;
     pointer-events: auto;
     filter: drop-shadow(1px 2px 1px rgba(0,0,0,.65));
@@ -1419,7 +1419,7 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
     .roach-tool { width:82px; min-height:90px; }
     .roach-tool img { width:56px; height:56px; }
     .roach-bug { width: min(252px, 40vw); height: auto; aspect-ratio: 252 / 186; }
-    .roach-splat { width:min(285px, 58vw); height:auto; aspect-ratio:285 / 231; }
+    .roach-splat { width:min(120px, 30vw); height:auto; aspect-ratio:285 / 231; }
     #roach-cursor { width:132px; height:132px; }
     #roach-event-layer.rag-mode #roach-cursor { width:99px; height:99px; }
 }
