@@ -404,7 +404,7 @@ async function finishRoachWave() {
                 if (data.newUpgrades) currentUpgrades = data.newUpgrades;
                 updateUI();
                 const messageEl = document.getElementById('roach-clean-message');
-                if (messageEl) messageEl.textContent = 'зачищено · +150 бабла';
+                if (messageEl) messageEl.textContent = 'зачищено · +150 монет';
             } else {
                 roachRewardSent = false;
                 console.error('Не удалось начислить награду за бойню:', data?.error);
@@ -1666,6 +1666,8 @@ async function leavePvpRoom(sendSignal = true) {
 }
 
 function updatePvpUI() {
+    const attackButton = document.getElementById('pvp-atk-btn');
+    if (attackButton) attackButton.textContent = `Обычный удар (+${currentPvpChar === 'apostol' ? 20 : 15} маны)`;
     document.getElementById('pvp-player-hp-text').innerText = `${Math.max(0, pvpGameState.myHp)}/${pvpGameState.myMaxHp}`;
     document.getElementById('pvp-player-hp-bar').style.width = (Math.max(0, pvpGameState.myHp) / pvpGameState.myMaxHp) * 100 + '%';
     document.getElementById('pvp-player-mp-text').innerText = `${pvpGameState.myMp}/100`;
@@ -1820,6 +1822,8 @@ function addLog(msg) { const logBox = document.getElementById('rpg-log'); logBox
 function setTurnIndicator(isPlayer) { const ind = document.getElementById('rpg-turn-indicator'); if (isPlayer) { ind.innerText = "ВАШ ХОД"; ind.className = "turn-indicator turn-player"; } else { ind.innerText = "ХОД ВРАГА"; ind.className = "turn-indicator turn-enemy"; } }
 
 function updateRpgUI() {
+    const attackButton = document.querySelector('.rpg-actions .btn-atk');
+    if (attackButton && rpgChar) attackButton.textContent = `Обычный удар (+${rpgChar.mpGain} маны)`;
     document.getElementById('rpg-player-name').innerText = rpgChar.name;
     document.getElementById('rpg-player-hp-text').innerText = `${Math.max(0, rpgChar.hp)}/${rpgChar.maxHp}`;
     document.getElementById('rpg-player-hp-bar').style.width = (Math.max(0, rpgChar.hp) / rpgChar.maxHp) * 100 + '%';
