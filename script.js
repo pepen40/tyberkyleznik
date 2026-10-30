@@ -2403,21 +2403,35 @@ async function handlePadClick(e) {
     const currentStep = playerSequence.length - 1;
     if (playerSequence[currentStep] !== gameSequence[currentStep]) {
         canClick = false; gameStarted = false; statusText.textContent = "ОШИБКА!"; statusText.style.color = "#FF0000";
+        // Учитываем только полностью пройденные раунды. Первый завершённый раунд тоже оплачивается.
         const currentScore = Math.max(0, level - 1);
         try {
             const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'score', username: currentUser, data: { rounds: currentScore } } });
-            if (error) { statusText.textContent += ` (Ошибка сети)`; }
+            if (error) { statusText.textContent += ` (Ошибка сети: награда не подтверждена)`; }
             else if (data.error) { statusText.textContent += ` (${data.error})`; }
             else {
-                currentCoins = data.newCoins; if (currentScore > currentHighScore) currentHighScore = currentScore; updateUI();
-                if (data.earned > 0) { statusText.textContent += ` (+${data.earned} монет)`; }
-                else { statusText.textContent += ` (Ничего)`; }
+                currentCoins = data.newCoins;
+                if (currentScore > currentHighScore) currentHighScore = currentScore;
+                updateUI();
+                if (data.earned > 0) {
+                    statusText.textContent = `ОШИБКА! Пройдено раундов: ${currentScore}. Получено +${data.earned} монет.`;
+                } else {
+                    statusText.textContent = 'ОШИБКА! Ни одного раунда не пройдено — награда не начислена.';
+                }
             }
-        } catch(e) { statusText.textContent += ` (Сбой)`; }
+        } catch(e) { statusText.textContent += ` (Сбой при начислении награды)`; }
         const osc = audioCtx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 1);
         osc.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 1); restartBtn.classList.remove('hidden'); return;
     }
-    if (playerSequence.length === gameSequence.length) { canClick = false; level++; statusText.textContent = `УРОВЕНЬ ${level} ПРОЙДЕН!`; setTimeout(nextRound, 1500); }
+    if (playerSequence.length === gameSequence.length) {
+        canClick = false;
+        const completedRound = gameSequence.length;
+        const roundReward = 20 + 2 * (completedRound - 1);
+        const totalReward = completedRound * (completedRound + 19);
+        level++;
+        statusText.textContent = `РАУНД ${completedRound} ПРОЙДЕН! +${roundReward} монет · за серию: ${totalReward} монет`;
+        setTimeout(nextRound, 1500);
+    }
 }
 
 pads.forEach(pad => pad.addEventListener('click', handlePadClick));
