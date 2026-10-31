@@ -606,7 +606,7 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
     display: block;
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     border-radius: 8px;
 }
 
@@ -1446,3 +1446,6 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
 #pvp-enemy-build-modal.hidden { display: none !important; }
 .pvp-enemy-build-box { width: min(420px, 95vw); max-height: 80vh; overflow: auto; padding: 14px; background: #c0c0c0; border: 3px outset #fff; color: #000; box-sizing: border-box; }
 .pvp-enemy-build-box h3 { margin: -2px -2px 12px; padding: 8px; background: #000080; color: #fff; }
+
+/* Chess opponent previews: show the complete image, never crop it */
+.chess-bot-avatar img, .chess-bot-detail-avatar img { object-fit: contain !important; width:100%; height:100%; }

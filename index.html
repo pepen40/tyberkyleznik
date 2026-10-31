@@ -153,16 +153,16 @@
 <button onclick="switchTab('howto')">Как играть</button>
 <button onclick="switchTab('settings')">Настройки</button>
 </div>
-<div id="site-global-chat" class="site-global-chat">
-  <h3>💬 Общий чат сайта</h3>
-  <div id="site-global-chat-messages" aria-live="polite"><div>Подключаем общий чат…</div></div>
-  <div class="site-global-chat-row"><input id="site-global-chat-input" maxlength="240" placeholder="Напиши всем игрокам…"><button id="site-global-chat-send" type="button">Отправить</button></div>
-</div>
 <div class="tg-promo">
             ПОДПИШИСЬ НА НАШ ТЕЛЕГРАМ КАНАЛ <a href="https://t.me/pepen40" target="_blank">@pepen40</a>
 <span class="arrow-blink">-&gt;</span>
 <a class="tg-link" href="https://t.me/pepen40" target="_blank">t.me/pepen40</a>
 <span class="arrow-blink">&lt;-</span>
+</div>
+<div id="site-global-chat" class="site-global-chat">
+  <h3>💬 Общий чат сайта</h3>
+  <div id="site-global-chat-messages" aria-live="polite"><div>Подключаем общий чат…</div></div>
+  <div class="site-global-chat-row"><input id="site-global-chat-input" maxlength="240" placeholder="Напиши всем игрокам…"><button id="site-global-chat-send" type="button">Отправить</button></div>
 </div>
 <!-- КАТАЛОГ МИНИ-ИГР -->
 <div class="panel hidden" id="tab-minigames">
@@ -564,6 +564,11 @@
 Разрешить нашествие тараканов
 </label>
 <small style="display:block;margin-top:6px;color:#555;">Первое нашествие — через минуту после входа, затем раз в 30 минут активного сеанса. Настройка сохраняется на этом устройстве.</small>
+<label for="roach-sound-enabled" style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:10px;">
+<input checked id="roach-sound-enabled" type="checkbox"/>
+Включить все звуки тараканьей мясорубки
+</label>
+<small style="display:block;margin-top:6px;color:#555;">Отключает тревогу, удары, уборку и аплодисменты тараканьего события. Настройка сохраняется на этом устройстве.</small>
 </div>
 <style>
 /* Панель «Аура» — элементы интерфейса */

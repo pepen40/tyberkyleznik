@@ -237,7 +237,29 @@ function stopRoachSchedule() {
     if (roachScheduleTimer) clearInterval(roachScheduleTimer);
     roachScheduleTimer = null;
 }
+const ROACH_SOUND_SETTING_KEY = 'pepen-roach-sounds-enabled';
+function isRoachSoundEnabled() {
+    const toggle = document.getElementById('roach-sound-enabled');
+    if (toggle) return toggle.checked;
+    return localStorage.getItem(ROACH_SOUND_SETTING_KEY) !== 'false';
+}
+function initRoachSoundSetting() {
+    const toggle = document.getElementById('roach-sound-enabled');
+    if (!toggle) return;
+    toggle.checked = localStorage.getItem(ROACH_SOUND_SETTING_KEY) !== 'false';
+    toggle.addEventListener('change', () => {
+        localStorage.setItem(ROACH_SOUND_SETTING_KEY, String(toggle.checked));
+        if (!toggle.checked) {
+            ['cockroach-alarm-audio','hammer-sound-audio','roach-wipe-audio','roach-applause-audio'].forEach(id => {
+                const audio = document.getElementById(id);
+                if (audio) { audio.pause(); audio.currentTime = 0; }
+            });
+        }
+    });
+}
+document.addEventListener('DOMContentLoaded', initRoachSoundSetting);
 function playRoachAudio(id) {
+    if (!isRoachSoundEnabled()) return;
     const audio = document.getElementById(id);
     if (!audio) return;
     try { audio.pause(); audio.currentTime = 0; } catch (_) {}
