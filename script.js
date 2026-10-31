@@ -3,35 +3,27 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // === Безопасная сессия игрока для защищённых Edge Functions ===
+// Читаем токен при КАЖДОМ вызове: вход/выход могут происходить уже после загрузки скрипта.
 let playerSessionToken = null;
 try { playerSessionToken = localStorage.getItem('pepen-player-session') || null; } catch (_) {}
 const originalFunctionsInvoke = supabaseClient.functions.invoke.bind(supabaseClient.functions);
-
+const EDGE_FUNCTION_NAME = 'award-coins';
 supabaseClient.functions.invoke = (functionName, options = {}) => {
-    console.log('[award-coins wrapper]', functionName, {
-    tokenExists: !!localStorage.getItem('pepen-player-session')
-});
-    let currentPlayerToken = null;
-
-    try {
-        currentPlayerToken = localStorage.getItem('pepen-player-session') || null;
-    } catch (_) {}
-
-    if (functionName === 'award-coins' && currentPlayerToken) {
-        options = {
-            ...options,
-            headers: {
-                ...(options.headers || {}),
-                'x-player-session': currentPlayerToken
-            }
-        };
+    if (functionName === EDGE_FUNCTION_NAME) {
+        let currentPlayerToken = null;
+        try { currentPlayerToken = localStorage.getItem('pepen-player-session') || playerSessionToken || null; } catch (_) { currentPlayerToken = playerSessionToken || null; }
+        if (currentPlayerToken) {
+            options = {
+                ...options,
+                headers: {
+                    ...(options.headers || {}),
+                    'x-player-session': currentPlayerToken
+                }
+            };
+        }
     }
-console.log('[award-coins headers]', functionName, {
-    hasPlayerSession: !!options.headers?.['x-player-session']
-});
     return originalFunctionsInvoke(functionName, options);
 };
-const EDGE_FUNCTION_NAME = 'award-coins'; 
 const battleBackgrounds = ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png', 'bg6.png'];
 
 // === БЕЗ АВТОЛОГИНА, ПОГОДА И ЧАСЫ ВКЛЮЧЕНЫ ПО УМОЛЧАНИЮ ===
@@ -484,11 +476,8 @@ async function finishRoachWave() {
     try {
         if (currentUser) {
             const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
-    body: { action: 'roach_clear', username: currentUser, data: {} },
-    headers: {
-        'x-player-session': localStorage.getItem('pepen-player-session') || ''
-    }
-});
+                body: { action: 'roach_clear', username: currentUser, data: {} }
+            });
             if (error) throw error;
             if (data?.success) {
                 playRoachAudio('roach-applause-audio');
@@ -983,34 +972,6 @@ function initSiteGlobalChat() {
     input.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); submit(); } });
 }
 
-// Превращает технические ошибки Edge Function в понятный текст от сервера.
-async function getAuthErrorMessage(error, fallback) {
-    const context = error?.context;
-    if (context) {
-        try {
-            const response = typeof context.clone === 'function' ? context.clone() : context;
-            const payload = typeof response.json === 'function' ? await response.json() : response;
-            const serverMessage = payload?.error || payload?.message || payload?.msg;
-            if (serverMessage) return String(serverMessage);
-        } catch (_) {
-            try {
-                const response = typeof context.clone === 'function' ? context.clone() : context;
-                const raw = typeof response.text === 'function' ? await response.text() : '';
-                if (raw) {
-                    try {
-                        const payload = JSON.parse(raw);
-                        if (payload?.error || payload?.message) return String(payload.error || payload.message);
-                    } catch (_) {}
-                }
-            } catch (_) {}
-        }
-    }
-
-    const message = String(error?.message || '');
-    if (message && !/Edge Function returned a non-2xx status code/i.test(message)) return message;
-    return fallback;
-}
-
 async function register() {
     const u = document.getElementById('username').value.trim();
     const p = document.getElementById('password').value;
@@ -1029,7 +990,7 @@ async function register() {
         msg.textContent = 'Аккаунт создан! Теперь нажми «Войти».';
     } catch (e) {
         msg.style.color = '';
-        msg.textContent = 'Ошибка регистрации: ' + await getAuthErrorMessage(e, 'Не удалось создать аккаунт. Проверь данные и попробуй позже.');
+        msg.textContent = 'Ошибка регистрации: ' + (e.message || e);
     }
 }
 
@@ -1073,7 +1034,7 @@ async function login() {
     } catch (e) {
         playerSessionToken = null;
         try { localStorage.removeItem('pepen-player-session'); } catch (_) {}
-        msg.textContent = 'Ошибка входа: ' + await getAuthErrorMessage(e, 'Не удалось выполнить вход. Проверь ник и пароль или попробуй позже.');
+        msg.textContent = 'Ошибка входа: ' + (e.message || e);
     }
 }
 
