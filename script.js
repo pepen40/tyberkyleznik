@@ -6,16 +6,24 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let playerSessionToken = null;
 try { playerSessionToken = localStorage.getItem('pepen-player-session') || null; } catch (_) {}
 const originalFunctionsInvoke = supabaseClient.functions.invoke.bind(supabaseClient.functions);
+
 supabaseClient.functions.invoke = (functionName, options = {}) => {
-    if (functionName === EDGE_FUNCTION_NAME && playerSessionToken) {
+    let currentPlayerToken = null;
+
+    try {
+        currentPlayerToken = localStorage.getItem('pepen-player-session') || null;
+    } catch (_) {}
+
+    if (functionName === 'award-coins' && currentPlayerToken) {
         options = {
             ...options,
             headers: {
                 ...(options.headers || {}),
-                'x-player-session': playerSessionToken
+                'x-player-session': currentPlayerToken
             }
         };
     }
+
     return originalFunctionsInvoke(functionName, options);
 };
 const EDGE_FUNCTION_NAME = 'award-coins'; 
