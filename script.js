@@ -484,8 +484,11 @@ async function finishRoachWave() {
     try {
         if (currentUser) {
             const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
-                body: { action: 'roach_clear', username: currentUser, data: {} }
-            });
+    body: { action: 'roach_clear', username: currentUser, data: {} },
+    headers: {
+        'x-player-session': localStorage.getItem('pepen-player-session') || ''
+    }
+});
             if (error) throw error;
             if (data?.success) {
                 playRoachAudio('roach-applause-audio');
