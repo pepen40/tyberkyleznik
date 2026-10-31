@@ -266,6 +266,14 @@ function playRoachAudio(id) {
     const p = audio.play();
     if (p && p.catch) p.catch(() => {});
 }
+// Отдельный проигрыватель для звуков кейсов: настройка тараканов на них не влияет.
+function playIndependentAudio(id) {
+    const audio = document.getElementById(id);
+    if (!audio) return;
+    try { audio.pause(); audio.currentTime = 0; } catch (_) {}
+    const p = audio.play();
+    if (p && p.catch) p.catch(() => {});
+}
 function spawnRoachWave() {
     if (!currentUser || !isRoachEnabled() || roachActive) return;
     const layer = document.getElementById('roach-event-layer');
@@ -2551,12 +2559,13 @@ async function openCase(price) {
             return;
         }
 
-        playRoachAudio('case-open-audio');
+        // Звуки кейсов независимы от настройки звуков тараканов.
+        playIndependentAudio('case-open-audio');
         await runCaseRoulette(price, data.droppedItem);
 
         const item = data.droppedItem;
-        if (item.name !== 'Вам не повезло') playRoachAudio('case-win-audio');
-        else playRoachAudio('case-lose-audio');
+        if (item.name !== 'Вам не повезло') playIndependentAudio('case-win-audio');
+        else playIndependentAudio('case-lose-audio');
         const detailsButton = document.createElement('button');
         detailsButton.className = 'info-btn';
         detailsButton.style.width = '150px';
