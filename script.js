@@ -10,20 +10,22 @@ const originalFunctionsInvoke = supabaseClient.functions.invoke.bind(supabaseCli
 const EDGE_FUNCTION_NAME = 'award-coins';
 supabaseClient.functions.invoke = (functionName, options = {}) => {
     if (functionName === EDGE_FUNCTION_NAME) {
-        let currentPlayerToken = playerSessionToken || null;
+        // Источник истины — localStorage: он обновляется при каждом успешном входе.
+        // Переменная в памяти может содержать токен от предыдущей сессии.
+        let currentPlayerToken = null;
         try {
-            const storedPlayerToken = localStorage.getItem('pepen-player-session') || null;
-            if (!currentPlayerToken && storedPlayerToken) currentPlayerToken = storedPlayerToken;
+            currentPlayerToken = localStorage.getItem('pepen-player-session') || null;
         } catch (_) {}
-        if (currentPlayerToken) {
-            options = {
-                ...options,
-                headers: {
-                    ...(options.headers || {}),
-                    'x-player-session': currentPlayerToken
-                }
-            };
-        }
+        if (!currentPlayerToken) currentPlayerToken = playerSessionToken || null;
+        if (currentPlayerToken) playerSessionToken = currentPlayerToken;
+
+        options = {
+            ...options,
+            headers: {
+                ...(options.headers || {}),
+                'x-player-session': currentPlayerToken || ''
+            }
+        };
     }
     return originalFunctionsInvoke(functionName, options);
 };
