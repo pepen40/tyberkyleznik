@@ -10,8 +10,11 @@ const originalFunctionsInvoke = supabaseClient.functions.invoke.bind(supabaseCli
 const EDGE_FUNCTION_NAME = 'award-coins';
 supabaseClient.functions.invoke = (functionName, options = {}) => {
     if (functionName === EDGE_FUNCTION_NAME) {
-        let currentPlayerToken = null;
-        try { currentPlayerToken = localStorage.getItem('pepen-player-session') || playerSessionToken || null; } catch (_) { currentPlayerToken = playerSessionToken || null; }
+        let currentPlayerToken = playerSessionToken || null;
+        try {
+            const storedPlayerToken = localStorage.getItem('pepen-player-session') || null;
+            if (!currentPlayerToken && storedPlayerToken) currentPlayerToken = storedPlayerToken;
+        } catch (_) {}
         if (currentPlayerToken) {
             options = {
                 ...options,
