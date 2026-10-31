@@ -1,6 +1,17 @@
 const SUPABASE_URL = 'https://zfvinbamwavibnhmfwnz.supabase.co'; 
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpmdmluYmFtd2F2aWJuaG1md256Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4ODE2MjAsImV4cCI6MjEwODQ1NzYyMH0.FT5tlKgLUCrFs0zzY-BGimCmU9qNZmIzMW8LyysMmgE';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// === Безопасная сессия игрока для защищённых Edge Functions ===
+let playerSessionToken = null;
+try { playerSessionToken = localStorage.getItem('pepen-player-session') || null; } catch (_) {}
+const originalFunctionsInvoke = supabaseClient.functions.invoke.bind(supabaseClient.functions);
+supabaseClient.functions.invoke = (functionName, options = {}) => {
+    if (functionName === EDGE_FUNCTION_NAME && playerSessionToken) {
+        options = { ...options, headers: { ...(options.headers || {}), Authorization: `Bearer ${playerSessionToken}` } };
+    }
+    return originalFunctionsInvoke(functionName, options);
+};
 const EDGE_FUNCTION_NAME = 'award-coins'; 
 const battleBackgrounds = ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png', 'bg6.png'];
 
@@ -953,42 +964,55 @@ function initSiteGlobalChat() {
 async function register() {
     const u = document.getElementById('username').value.trim();
     const p = document.getElementById('password').value;
-    if (!u || !p) return;
-    if (!/^[a-zA-Zа-яА-Я0-9_]{3,20}$/.test(u)) { document.getElementById('auth-msg').textContent = "Ник: 3-20 символов, буквы/цифры/_"; return; }
-    const { data: existing } = await supabaseClient.from('players').select('username').eq('username', u);
-    if (existing && existing.length > 0) { document.getElementById('auth-msg').textContent = "Ник занят."; return; }
-    const { error } = await supabaseClient.from('players').insert([{ 
-        username: u, password: p, max_score: 0, coins: 200, inventory: [], item_points: 0,
-        rpg_upgrades: {"ashab":{"hp":0,"atk":0},"apostol":{"hp":0,"atk":0},"mee":{"hp":0,"atk":0}},
-        rpg_max_floors: {"ashab":0,"apostol":0,"mee":0}, pvp_pts: 0
-    }]);
-    if (error) document.getElementById('auth-msg').textContent = "Ошибка: " + error.message;
-    else { document.getElementById('auth-msg').style.color = "green"; document.getElementById('auth-msg').textContent = "Успех! Жми Войти."; }
+    const msg = document.getElementById('auth-msg');
+    if (!u || !p) { msg.textContent = 'Введи ник и пароль.'; return; }
+    if (!/^[a-zA-Zа-яА-ЯёЁ0-9_]{3,20}$/.test(u)) { msg.textContent = 'Ник: 3-20 символов, буквы/цифры/_'; return; }
+    if (p.length < 6 || p.length > 128) { msg.textContent = 'Пароль должен содержать от 6 до 128 символов.'; return; }
+    msg.textContent = 'Создаём аккаунт...';
+    try {
+        const { data, error } = await supabaseClient.functions.invoke('player-auth', {
+            body: { action: 'register', username: u, password: p }
+        });
+        if (error) throw error;
+        if (!data?.success) throw new Error(data?.error || 'Не удалось создать аккаунт.');
+        msg.style.color = 'green';
+        msg.textContent = 'Аккаунт создан! Теперь нажми «Войти».';
+    } catch (e) {
+        msg.style.color = '';
+        msg.textContent = 'Ошибка регистрации: ' + (e.message || e);
+    }
 }
 
 async function login() {
     const u = document.getElementById('username').value.trim();
     const p = document.getElementById('password').value;
-    if (!u || !p) return;
-    const { data, error } = await supabaseClient.from('players').select('*').eq('username', u).eq('password', p).single();
-    if (error || !data) { document.getElementById('auth-msg').textContent = "Неверный ник или пароль."; }
-    else {
-        currentUser = data.username;
-        currentHighScore = data.max_score || 0;
-        currentCoins = data.coins || 0;
-        currentInventory = data.inventory || [];
-        currentItemPoints = data.item_points || 0;
-        currentPvpPts = data.pvp_pts || 0;
-        currentUpgrades = data.rpg_upgrades || {"ashab":{"hp":0,"atk":0},"apostol":{"hp":0,"atk":0},"mee":{"hp":0,"atk":0}};
+    const msg = document.getElementById('auth-msg');
+    if (!u || !p) { msg.textContent = 'Введи ник и пароль.'; return; }
+    msg.textContent = 'Входим...';
+    try {
+        const { data, error } = await supabaseClient.functions.invoke('player-auth', {
+            body: { action: 'login', username: u, password: p }
+        });
+        if (error) throw error;
+        if (!data?.success || !data?.player || !data?.token) throw new Error(data?.error || 'Неверный ник или пароль.');
+        const player = data.player;
+        playerSessionToken = data.token;
+        try { localStorage.setItem('pepen-player-session', playerSessionToken); } catch (_) {}
+        currentUser = player.username;
+        currentHighScore = player.max_score || 0;
+        currentCoins = player.coins || 0;
+        currentInventory = player.inventory || [];
+        currentItemPoints = player.item_points || 0;
+        currentPvpPts = player.pvp_pts || 0;
+        currentUpgrades = player.rpg_upgrades || {"ashab":{"hp":0,"atk":0},"apostol":{"hp":0,"atk":0},"mee":{"hp":0,"atk":0}};
         ensureRpgGear();
-        currentMaxFloors = data.rpg_max_floors || {"ashab":0,"apostol":0,"mee":0};
-        await supabaseClient.from('players').update({ last_online: new Date().toISOString() }).eq('username', u);
+        currentMaxFloors = player.rpg_max_floors || {"ashab":0,"apostol":0,"mee":0};
 
         document.getElementById('auth-screen').classList.add('hidden');
         document.getElementById('main-screen').classList.remove('hidden');
-        startSheep(); // Баран появляется только после успешной авторизации
-        startRoachSchedule(ROACH_FIRST_DELAY); // Первое нашествие через минуту
-        preloadSounds(); 
+        startSheep();
+        startRoachSchedule(ROACH_FIRST_DELAY);
+        preloadSounds();
         initOnlineCounter();
         initLobby();
         initSiteGlobalChat();
@@ -996,7 +1020,10 @@ async function login() {
         resetGame();
         renderCharStats();
         switchTab('minigames');
-
+    } catch (e) {
+        playerSessionToken = null;
+        try { localStorage.removeItem('pepen-player-session'); } catch (_) {}
+        msg.textContent = 'Ошибка входа: ' + (e.message || e);
     }
 }
 
