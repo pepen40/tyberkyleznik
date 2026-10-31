@@ -961,6 +961,34 @@ function initSiteGlobalChat() {
     input.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); submit(); } });
 }
 
+// Превращает технические ошибки Edge Function в понятный текст от сервера.
+async function getAuthErrorMessage(error, fallback) {
+    const context = error?.context;
+    if (context) {
+        try {
+            const response = typeof context.clone === 'function' ? context.clone() : context;
+            const payload = typeof response.json === 'function' ? await response.json() : response;
+            const serverMessage = payload?.error || payload?.message || payload?.msg;
+            if (serverMessage) return String(serverMessage);
+        } catch (_) {
+            try {
+                const response = typeof context.clone === 'function' ? context.clone() : context;
+                const raw = typeof response.text === 'function' ? await response.text() : '';
+                if (raw) {
+                    try {
+                        const payload = JSON.parse(raw);
+                        if (payload?.error || payload?.message) return String(payload.error || payload.message);
+                    } catch (_) {}
+                }
+            } catch (_) {}
+        }
+    }
+
+    const message = String(error?.message || '');
+    if (message && !/Edge Function returned a non-2xx status code/i.test(message)) return message;
+    return fallback;
+}
+
 async function register() {
     const u = document.getElementById('username').value.trim();
     const p = document.getElementById('password').value;
@@ -979,7 +1007,7 @@ async function register() {
         msg.textContent = 'Аккаунт создан! Теперь нажми «Войти».';
     } catch (e) {
         msg.style.color = '';
-        msg.textContent = 'Ошибка регистрации: ' + (e.message || e);
+        msg.textContent = 'Ошибка регистрации: ' + await getAuthErrorMessage(e, 'Не удалось создать аккаунт. Проверь данные и попробуй позже.');
     }
 }
 
@@ -1023,7 +1051,7 @@ async function login() {
     } catch (e) {
         playerSessionToken = null;
         try { localStorage.removeItem('pepen-player-session'); } catch (_) {}
-        msg.textContent = 'Ошибка входа: ' + (e.message || e);
+        msg.textContent = 'Ошибка входа: ' + await getAuthErrorMessage(e, 'Не удалось выполнить вход. Проверь ник и пароль или попробуй позже.');
     }
 }
 
