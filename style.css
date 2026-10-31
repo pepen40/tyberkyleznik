@@ -1301,7 +1301,16 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
     filter: drop-shadow(1px 2px 1px rgba(0,0,0,.55));
     transition: filter .08s;
 }
-.roach-bug.facing-left { transform: scaleX(-1); }
+.roach-bug {
+    transform: rotate(var(--roach-heading, 0deg));
+    transform-origin: 50% 50%;
+    animation: roach-scuttle .16s steps(2, end) infinite;
+    will-change: transform, left, top;
+}
+@keyframes roach-scuttle {
+    0%, 100% { transform: rotate(var(--roach-heading, 0deg)) translateY(0); }
+    50% { transform: rotate(var(--roach-heading, 0deg)) translateY(-2px); }
+}
 .roach-bug:hover { filter: drop-shadow(0 0 4px #ff2b00) drop-shadow(1px 2px 1px #000); }
 .roach-bug.roach-dead { display: none; }
 #roach-alert {

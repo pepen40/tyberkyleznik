@@ -261,6 +261,8 @@ function spawnRoachWave() {
     layer.classList.remove('hidden');
     tools.classList.remove('hidden');
     showRoachAlert();
+    // Однократная тревога при появлении тараканов (без повтора/цикла).
+    playRoachAudio('cockroach-alarm-audio');
 
     const w = window.innerWidth;
     const h = window.innerHeight;
@@ -274,11 +276,18 @@ function spawnRoachWave() {
             el: img,
             x: Math.random() * Math.max(10, w - 55),
             y: 90 + Math.random() * Math.max(20, h - 180),
-            vx: (Math.random() < .5 ? -1 : 1) * (0.16 + Math.random() * 0.30),
-            vy: (Math.random() < .5 ? -1 : 1) * (0.07 + Math.random() * 0.16),
+            // Направление движения в радианах; спрайт изначально смотрит вправо.
+            heading: Math.random() * Math.PI * 2,
+            speed: 1.15 + Math.random() * 0.85,
+            turnIn: 35 + Math.floor(Math.random() * 75),
+            vx: 0,
+            vy: 0,
             alive: true,
             hits: 0
         };
+        item.vx = Math.cos(item.heading) * item.speed;
+        item.vy = Math.sin(item.heading) * item.speed;
+        img.style.setProperty('--roach-heading', (item.heading * 180 / Math.PI) + 'deg');
         img.style.left = item.x + 'px';
         img.style.top = item.y + 'px';
         img.addEventListener('click', () => hitRoach(item));
@@ -305,24 +314,43 @@ function animateRoaches() {
     const h = window.innerHeight;
     roachItems.forEach(item => {
         if (!item.alive) return;
-        const rw = item.el.offsetWidth || 38;
-        const rh = item.el.offsetHeight || 28;
+        const rw = item.el.offsetWidth || 252;
+        const rh = item.el.offsetHeight || 186;
+
+        // Таракан бежит вперёд, периодически немного меняя курс.
+        item.turnIn--;
+        if (item.turnIn <= 0) {
+            item.heading += (Math.random() - 0.5) * 1.15;
+            item.speed = 1.15 + Math.random() * 0.85;
+            item.turnIn = 35 + Math.floor(Math.random() * 75);
+        }
+        item.vx = Math.cos(item.heading) * item.speed;
+        item.vy = Math.sin(item.heading) * item.speed;
+
         item.x += item.vx;
         item.y += item.vy;
-        if (item.x <= 0 || item.x >= w - rw) item.vx *= -1;
-        if (item.y <= 48 || item.y >= h - rh - 12) item.vy *= -1;
-        item.x = Math.max(0, Math.min(w - rw, item.x));
-        item.y = Math.max(48, Math.min(h - rh - 12, item.y));
+
+        // Отскакивает от краёв, разворачивая голову вместе с направлением.
+        if (item.x <= 0 || item.x >= w - rw) {
+            item.heading = Math.PI - item.heading;
+            item.x = Math.max(0, Math.min(w - rw, item.x));
+        }
+        if (item.y <= 48 || item.y >= h - rh - 12) {
+            item.heading = -item.heading;
+            item.y = Math.max(48, Math.min(h - rh - 12, item.y));
+        }
+        item.vx = Math.cos(item.heading) * item.speed;
+        item.vy = Math.sin(item.heading) * item.speed;
+        item.el.style.setProperty('--roach-heading', (item.heading * 180 / Math.PI) + 'deg');
         item.el.style.left = item.x + 'px';
         item.el.style.top = item.y + 'px';
-        item.el.classList.toggle('facing-left', item.vx < 0);
     });
     roachAnimationFrame = requestAnimationFrame(animateRoaches);
 }
 function hitRoach(item) {
     if (!roachActive || roachTool !== 'hammer' || !item.alive) return;
     item.hits = (item.hits || 0) + 1;
-    playRoachAudio('roach-death-audio');
+    playRoachAudio('hammer-sound-audio');
     item.el.classList.remove('roach-hit-1', 'roach-hit-2');
     if (item.hits < 3) {
         item.el.classList.add('roach-hit-' + item.hits);
@@ -400,6 +428,7 @@ async function finishRoachWave() {
             });
             if (error) throw error;
             if (data?.success) {
+                playRoachAudio('roach-applause-audio');
                 currentCoins = Number(data.newCoins ?? currentCoins);
                 if (data.newUpgrades) currentUpgrades = data.newUpgrades;
                 updateUI();
@@ -2455,6 +2484,7 @@ async function openCase(price) {
         await runCaseRoulette(price, data.droppedItem);
 
         const item = data.droppedItem;
+        if (item.name !== 'Вам не повезло') playRoachAudio('case-win-audio');
         const detailsButton = document.createElement('button');
         detailsButton.className = 'info-btn';
         detailsButton.style.width = '150px';
@@ -3482,8 +3512,8 @@ if (chatInput && chatSend && !chat.dataset.ready) {
   document.addEventListener('DOMContentLoaded', () => {
     const botInfo = {
       1: { avatar: '🐣', name: 'ебаный нахуй даун', text: 'Это просто нахуй ебучий сука долбаёб. Это просто пизда как же он тупой нахуй. Даже айжан жёлтый переиграет этого хуесоса если вы полный ноль в этой компьютерной игре вы можете отточить тут свои навыки' },
-      2: { avatar: '🧑‍🎓', name: 'чето умеющий', text: 'Уже старается развивать фигуры и замечать угрозы. Выбирай этого пидара если ты знаешь основы и хочешь немного потренироваться.' },
-      3: { avatar: '🤖', name: 'миха осипов', text: 'Сбалансированный соперник. Замечает тактические возможности и наказывает за невнимательные ходы. Подходит для обычной тренировочной партии.' },
+      2: { avatar: '🧑‍🎓', name: 'чето умеющий', text: 'Уже старается развивать фигуры и замечать угрозы. Хороший выбор, если ты знаешь основы и хочешь немного потренироваться.' },
+      3: { avatar: '🤖', name: 'силач', text: 'Сбалансированный соперник: замечает тактические возможности и наказывает за невнимательные ходы. Подходит для обычной тренировочной партии.' },
       4: { avatar: '🧙', name: 'анатолий карпов', text: 'Сильный противник, который глубже рассчитывает варианты и лучше использует ошибки. Специалист по тюремным шахматам. Подготовься к серьёзной борьбе.' },
       5: { avatar: '👑', name: 'ГАРРИ КАСПАРОВ*', text: ' *ВНЕСЁН В ЕВАНГЕЛИСТСКИЙ ПЕРЕЧЕНЬ СУДЬБЫ. Максимальная доступная сложность PEPENAI в этой игре. Рассчитывает больше вариантов и станет испытанием даже для опытных игроков.' }
     };
@@ -4052,12 +4082,11 @@ document.addEventListener('DOMContentLoaded', () => {
         { text: 'Лучше поздно, чем никогда.', author: 'Народная мудрость' },
         { text: 'Не ошибается тот, кто ничего не делает.', author: 'Народная мудрость' },
         { text: 'Есть две мирные формы насилия: закон и приличия.', author: 'Иоганн Гёте' },
-        { text: 'ЖУЧЬЯ ЭКСПОНЕНТА НИЧТОЖНО МОЛА.', author: 'Артюр Рембо' },
         { text: 'Опыт — это имя, которое каждый даёт своим ошибкам.', author: 'Оскар Уайльд' },
         { text: 'Путь в тысячу ли начинается с первого шага.', author: 'Лао-цзы' },
         { text: 'Если хочешь изменить мир, начни с себя.', author: 'Махатма Ганди' },
         { text: 'Мысль изречённая есть ложь.', author: 'Фёдор Тютчев' },
-        { text: 'Из глаз льются слёзы. Из носа - сопли. Из жопы - гавно. Из хуя - ссаньё.', author: 'Антон Чехов' },
+        { text: 'Краткость — сестра таланта.', author: 'Антон Чехов' },
         { text: 'Время — деньги.', author: 'Бенджамин Франклин' },
         { text: 'Ничто так не обманывает нас, как наше мнение.', author: 'Леонардо да Винчи' },
         { text: 'Самое трудное — познать самого себя.', author: 'Фалес' },
@@ -4065,7 +4094,6 @@ document.addEventListener('DOMContentLoaded', () => {
         { text: 'Победа любит подготовку.', author: 'Эмилий Павел' },
         { text: 'Даже длинная дорога состоит из маленьких шагов.', author: 'Автор неизвестен' },
         { text: 'Не всё то золото, что блестит.', author: 'Народная мудрость' },
-        { text: 'М-да ну похуй пускай торпеду мне паливать , ну комон . Трещят будешь в памёт так же. Похуй ладно ракеты пускай в очке селезней пускай. Сверчков пиликанов , ну памёт в памёте ,отлежишся там в под-земки, может быть. А карова не ебалась , у телёнка не рождалась матка. Где поляк твоя бабка дед ебанулися уже. С этой оперы ну ботнись и помётам пробдись. Очко падпарь и пропарь там не свой шлак. Мне плевать кто чего гоняет там. Нет утро б не умерали , вопьщем и поляки говно в очке про-срали, чем то срали и Европа проехалась и ми 6 там обосрались. Короче памёт потом испарение ,спи поляк или кто ты там  мне плевать не родился я не пас тебя.', author: 'Ахейская рукопись.' },
         { text: 'Семь раз отмерь, один раз отрежь.', author: 'Народная мудрость' },
         { text: 'Мудрый меняет мнение, глупец — никогда.', author: 'Иммануил Кант' },
         { text: 'У кого есть зачем жить, тот выдержит почти любое как.', author: 'Фридрих Ницше' },
@@ -4079,7 +4107,6 @@ document.addEventListener('DOMContentLoaded', () => {
         { text: 'Будь собой; прочие роли уже заняты.', author: 'Оскар Уайльд' },
         { text: 'Самый верный способ предсказать будущее — создать его.', author: 'Питер Друкер' },
         { text: 'Всё проходит. И это тоже пройдёт.', author: 'Персидская пословица' }
-   
     ];
 
     const popup = document.getElementById('aphorism-popup');
