@@ -8,6 +8,9 @@ try { playerSessionToken = localStorage.getItem('pepen-player-session') || null;
 const originalFunctionsInvoke = supabaseClient.functions.invoke.bind(supabaseClient.functions);
 
 supabaseClient.functions.invoke = (functionName, options = {}) => {
+    console.log('[award-coins wrapper]', functionName, {
+    tokenExists: !!localStorage.getItem('pepen-player-session')
+});
     let currentPlayerToken = null;
 
     try {
@@ -23,7 +26,9 @@ supabaseClient.functions.invoke = (functionName, options = {}) => {
             }
         };
     }
-
+console.log('[award-coins headers]', functionName, {
+    hasPlayerSession: !!options.headers?.['x-player-session']
+});
     return originalFunctionsInvoke(functionName, options);
 };
 const EDGE_FUNCTION_NAME = 'award-coins'; 
