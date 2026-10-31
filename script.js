@@ -8,7 +8,13 @@ try { playerSessionToken = localStorage.getItem('pepen-player-session') || null;
 const originalFunctionsInvoke = supabaseClient.functions.invoke.bind(supabaseClient.functions);
 supabaseClient.functions.invoke = (functionName, options = {}) => {
     if (functionName === EDGE_FUNCTION_NAME && playerSessionToken) {
-        options = { ...options, headers: { ...(options.headers || {}), Authorization: `Bearer ${playerSessionToken}` } };
+        options = {
+            ...options,
+            headers: {
+                ...(options.headers || {}),
+                'x-player-session': playerSessionToken
+            }
+        };
     }
     return originalFunctionsInvoke(functionName, options);
 };
