@@ -892,6 +892,34 @@ function getProcessedInventory() {
     return Object.values(grouped).sort((a, b) => (rarityWeight[b.rarity] || 0) - (rarityWeight[a.rarity] || 0));
 }
 
+let siteGlobalChatChannel = null;
+function initSiteGlobalChat() {
+    if (siteGlobalChatChannel || !supabaseClient || !currentUser) return;
+    const messages = document.getElementById('site-global-chat-messages');
+    const input = document.getElementById('site-global-chat-input');
+    const send = document.getElementById('site-global-chat-send');
+    if (!messages || !input || !send) return;
+    messages.innerHTML = '<div>Общий чат подключён. Сообщения видны тем, кто сейчас онлайн.</div>';
+    const add = (nick, text) => {
+        const row = document.createElement('div'); row.className = 'site-global-chat-message';
+        const strong = document.createElement('b'); strong.textContent = String(nick || 'Игрок') + ': ';
+        const body = document.createElement('span'); body.textContent = String(text || '').slice(0, 240);
+        row.append(strong, body); messages.appendChild(row);
+        while (messages.children.length > 80) messages.firstElementChild.remove();
+        messages.scrollTop = messages.scrollHeight;
+    };
+    siteGlobalChatChannel = supabaseClient.channel('pepen40-global-chat', { config: { broadcast: { self: false } } });
+    siteGlobalChatChannel.on('broadcast', { event: 'site_message' }, ({ payload }) => add(payload?.nick, payload?.text));
+    siteGlobalChatChannel.subscribe();
+    const submit = () => {
+        const value = input.value.trim(); if (!value) return;
+        siteGlobalChatChannel?.send({ type: 'broadcast', event: 'site_message', payload: { nick: currentUser, text: value.slice(0, 240) } });
+        add(currentUser, value); input.value = ''; input.focus();
+    };
+    send.addEventListener('click', submit);
+    input.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); submit(); } });
+}
+
 async function register() {
     const u = document.getElementById('username').value.trim();
     const p = document.getElementById('password').value;
@@ -933,6 +961,7 @@ async function login() {
         preloadSounds(); 
         initOnlineCounter();
         initLobby();
+        initSiteGlobalChat();
         updateUI();
         resetGame();
         renderCharStats();
@@ -1149,8 +1178,8 @@ async function executeChallenge() {
     roomChannel = supabaseClient.channel(myRoomId, { config: { broadcast: { self: false } } });
     roomChannel.on('broadcast', { event: 'join_request' }, (payload) => {
         const guest = payload.payload;
-        startPvpBattle(guest.charName, guest.hp, guest.atk, guest.username, guest.charType, guest.crit || 0, guest.defense || 0);
-        roomChannel.send({ type: 'broadcast', event: 'start_game', payload: { charName: charName, hp, atk, username: currentUser, charType: charType, crit: gearBonus.crit || 0, defense: gearBonus.defense || 0 } });
+        startPvpBattle(guest.charName, guest.hp, guest.atk, guest.username, guest.charType, guest.crit || 0, guest.defense || 0, guest.build);
+        roomChannel.send({ type: 'broadcast', event: 'start_game', payload: { charName: charName, hp, atk, username: currentUser, charType: charType, crit: gearBonus.crit || 0, defense: gearBonus.defense || 0, build: getPvpBuildSnapshot(charType) } });
     });
     roomChannel.on('broadcast', { event: 'enemy_action' }, (payload) => { handlePvpEnemyAction(payload.payload); });
     roomChannel.on('broadcast', { event: 'leave' }, () => handlePvpOpponentLeave());
@@ -1244,6 +1273,24 @@ function executeAcceptChallenge() {
     joinPvpRoom(roomId, charType);
 }
 
+async function getPvpBuildSnapshot(charType) {
+    const upgrades = currentUpgrades?.[charType] || { hp: 0, atk: 0 };
+    const gear = ensureRpgGear();
+    const equipped = gear?.equipped?.[charType] || {};
+    const gearNames = Object.values(equipped).filter(Boolean).map(id => RPG_GEAR.find(item => item.id === id)?.name || id);
+    return { charType, hpLevel: Number(upgrades.hp) || 0, atkLevel: Number(upgrades.atk) || 0, gearNames };
+}
+function renderPvpEnemyBuild(build) {
+    const box = document.getElementById('pvp-enemy-build-content');
+    if (!box) return;
+    if (!build) { box.textContent = 'Соперник ещё не передал данные.'; return; }
+    const names = Array.isArray(build.gearNames) && build.gearNames.length ? build.gearNames : ['Нет надетых предметов'];
+    box.innerHTML = `<b>Боец:</b> ${String(build.charType || '—')}<br><b>Прокачка HP:</b> ${Number(build.hpLevel)||0}<br><b>Прокачка ATK:</b> ${Number(build.atkLevel)||0}<br><b>Надетое снаряжение:</b><ul>${names.map(name => `<li>${String(name).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}</li>`).join('')}</ul>`;
+}
+function togglePvpEnemyBuild(show) {
+    document.getElementById('pvp-enemy-build-modal')?.classList.toggle('hidden', !show);
+}
+
 async function createPvpRoom() {
     const roomName = document.getElementById('pvp-room-name').value.trim() || "Комната " + currentUser;
     const charType = document.getElementById('pvp-char-select').value;
@@ -1265,8 +1312,8 @@ async function createPvpRoom() {
     roomChannel = supabaseClient.channel(myRoomId, { config: { broadcast: { self: false } } });
     roomChannel.on('broadcast', { event: 'join_request' }, (payload) => {
         const guest = payload.payload;
-        startPvpBattle(guest.charName, guest.hp, guest.atk, guest.username, guest.charType, guest.crit || 0, guest.defense || 0);
-        roomChannel.send({ type: 'broadcast', event: 'start_game', payload: { charName: charName, hp, atk, username: currentUser, charType: charType, crit: gearBonus.crit || 0, defense: gearBonus.defense || 0 } });
+        startPvpBattle(guest.charName, guest.hp, guest.atk, guest.username, guest.charType, guest.crit || 0, guest.defense || 0, guest.build);
+        roomChannel.send({ type: 'broadcast', event: 'start_game', payload: { charName: charName, hp, atk, username: currentUser, charType: charType, crit: gearBonus.crit || 0, defense: gearBonus.defense || 0, build: getPvpBuildSnapshot(charType) } });
     });
     roomChannel.on('broadcast', { event: 'enemy_action' }, (payload) => { handlePvpEnemyAction(payload.payload); });
     roomChannel.on('broadcast', { event: 'leave' }, () => handlePvpOpponentLeave());
@@ -1316,7 +1363,7 @@ async function joinPvpRoom(roomId, charType) {
     roomChannel = supabaseClient.channel(roomId, { config: { broadcast: { self: false } } });
     roomChannel.on('broadcast', { event: 'start_game' }, (payload) => {
         const host = payload.payload;
-        startPvpBattle(host.charName, host.hp, host.atk, host.username, host.charType, host.crit || 0, host.defense || 0);
+        startPvpBattle(host.charName, host.hp, host.atk, host.username, host.charType, host.crit || 0, host.defense || 0, host.build);
         setPvpTurn(false);
     });
     roomChannel.on('broadcast', { event: 'enemy_action' }, (payload) => { handlePvpEnemyAction(payload.payload); });
@@ -1324,14 +1371,15 @@ async function joinPvpRoom(roomId, charType) {
         addPvpChatMessage(payload.payload.nick || '???', payload.payload.text || '');
     });
     roomChannel.subscribe((status) => {
-        if (status === 'SUBSCRIBED') { roomChannel.send({ type: 'broadcast', event: 'join_request', payload: { username: currentUser, charName, hp, atk, charType, crit: getGearBonuses(charType).crit || 0, defense: getGearBonuses(charType).defense || 0 } }); }
+        if (status === 'SUBSCRIBED') { roomChannel.send({ type: 'broadcast', event: 'join_request', payload: { username: currentUser, charName, hp, atk, charType, crit: getGearBonuses(charType).crit || 0, defense: getGearBonuses(charType).defense || 0, build: getPvpBuildSnapshot(charType) } }); }
     });
     initPvpChat(roomId);
 }
 
-function startPvpBattle(enemyName, enemyHp, enemyAtk, enemyUsername, enemyCharType, enemyCrit = 0, enemyDefense = 0) {
+function startPvpBattle(enemyName, enemyHp, enemyAtk, enemyUsername, enemyCharType, enemyCrit = 0, enemyDefense = 0, enemyBuild = null) {
     pvpBattleStarted = true;
     pvpBattleFinished = false;
+    renderPvpEnemyBuild(enemyBuild);
     const charType = currentPvpChar;
     let baseHp = charType === 'ashab' ? 150 : (charType === 'apostol' ? 80 : 110);
     let baseAtk = charType === 'ashab' ? 20 : (charType === 'apostol' ? 30 : 18);
@@ -2481,10 +2529,12 @@ async function openCase(price) {
             return;
         }
 
+        playRoachAudio('case-open-audio');
         await runCaseRoulette(price, data.droppedItem);
 
         const item = data.droppedItem;
         if (item.name !== 'Вам не повезло') playRoachAudio('case-win-audio');
+        else playRoachAudio('case-lose-audio');
         const detailsButton = document.createElement('button');
         detailsButton.className = 'info-btn';
         detailsButton.style.width = '150px';
@@ -3431,6 +3481,14 @@ const chatInput = $('chess-chat-input');
 const chatSend = $('chess-chat-send');
 
 if (chat) chat.classList.remove('hidden');
+if (onlineChessChannel && !onlineChessChannel.__pepenChessChatBound) {
+    onlineChessChannel.__pepenChessChatBound = true;
+    onlineChessChannel.on('broadcast', { event: 'chess_chat' }, ({ payload }) => {
+        if (!payload || payload.roomId !== onlineChessRoomId) return;
+        if (payload.from === currentUser) return;
+        appendOnlineChessChat(payload.from || 'Соперник', payload.text || '');
+    });
+}
 
 if (chatMessages) {
     chatMessages.replaceChildren();

@@ -153,6 +153,11 @@
 <button onclick="switchTab('howto')">Как играть</button>
 <button onclick="switchTab('settings')">Настройки</button>
 </div>
+<div id="site-global-chat" class="site-global-chat">
+  <h3>💬 Общий чат сайта</h3>
+  <div id="site-global-chat-messages" aria-live="polite"><div>Подключаем общий чат…</div></div>
+  <div class="site-global-chat-row"><input id="site-global-chat-input" maxlength="240" placeholder="Напиши всем игрокам…"><button id="site-global-chat-send" type="button">Отправить</button></div>
+</div>
 <div class="tg-promo">
             ПОДПИШИСЬ НА НАШ ТЕЛЕГРАМ КАНАЛ <a href="https://t.me/pepen40" target="_blank">@pepen40</a>
 <span class="arrow-blink">-&gt;</span>
@@ -405,7 +410,7 @@
 <div class="rpg-log" id="rpg-log">Бой начался!</div>
 <div class="rpg-actions">
 <button class="btn-atk" onclick="rpgAttack()" style="width:48%;">Обычный удар (+15 маны)</button>
-<button class="btn-def" onclick="rpgDefend()" style="width:48%;">Защита (-40 маны)</button>
+<button class="btn-def" onclick="rpgDefend()" style="width:48%;">Защита (-50 маны)</button>
 <button class="btn-skill" disabled="" id="rpg-skill-btn" onclick="rpgSkill()" style="width:100%;">Способность (100 маны)</button>
 <button class="btn-item" onclick="openItemMenu()" style="width:100%;">🎒 Инвентарь</button>
 <button class="btn-def" onclick="fleeOfflineBattle()" style="width:100%; background:#ffcccb;">Съебаться с поля боя</button>
@@ -443,10 +448,12 @@
 </div>
 <div class="rpg-actions">
 <button class="btn-atk" disabled="" id="pvp-atk-btn" onclick="pvpAttack()" style="width:48%;">Атака</button>
-<button class="btn-def" disabled="" id="pvp-def-btn" onclick="pvpDefend()" style="width:48%;">Защита (-40 маны)</button>
+<button class="btn-def" disabled="" id="pvp-def-btn" onclick="pvpDefend()" style="width:48%;">Защита (-50 маны)</button>
 <button class="btn-skill" disabled="" id="pvp-skill-btn" onclick="pvpSkill()" style="width:100%;">Способность (100 маны)</button>
 <button class="btn-item" disabled="" id="pvp-item-btn" onclick="openPvpItemMenu()" style="width:100%;">🎒 Использовать предмет</button>
 <button class="btn-def" id="pvp-leave-btn" onclick="leavePvpRoom()" style="width:100%; background:#ffcccb;">Свалить</button>
+<button type="button" id="pvp-view-enemy-build" style="width:100%;" onclick="togglePvpEnemyBuild(true)">👁 Посмотреть прокачку и снаряжение врага</button>
+<div id="pvp-enemy-build-modal" class="hidden" role="dialog" aria-modal="true"><div class="pvp-enemy-build-box"><h3>Прокачка и снаряжение соперника</h3><div id="pvp-enemy-build-content">Ждём данные соперника…</div><button type="button" onclick="togglePvpEnemyBuild(false)">Закрыть</button></div></div>
 </div>
 </div>
 </div>
@@ -501,7 +508,7 @@
 <div class="panel hidden" id="tab-howto">
 <h2>Как играть</h2>
 <div class="howto-text">
-                привет представляем вашему вниманию новомую игру pepen40 games . У вас наверняка возник вопрос что это за хуйня как в это играть? смотрите нужно нажимать на пидорасов поочередно в соответствии с тем с какой последовательностью каждый из них пищит. Ну там пропищал apostol 2 раза потом амжан желтый 3 раза . Значит надо нажать на apostol 3 раза и потом амжан желтый 3 раза. Также тут представлены кейсы как в ксго . Покупаете вам выпадает всякая хуйня которая в соответствии со своей редкостью выводит вас в топ в Leaderboard на определенный уровень. За хуйню вам маленько дадут баллов за apostol - дохуя. Вы также можете продавать эти хуйни которые выбили. Да да нахуй не ослышались продавать. На торговой площадке. И зарабатывать за это бабки нахуй. В РПГ защита теперь жрет 40 маны и режет урон. А если ты защитился, враг в следующем ходу споткнется и пропустит ход, так что можно ебнуть его с кулака!
+                привет представляем вашему вниманию новомую игру pepen40 games . У вас наверняка возник вопрос что это за хуйня как в это играть? смотрите нужно нажимать на пидорасов поочередно в соответствии с тем с какой последовательностью каждый из них пищит. Ну там пропищал apostol 2 раза потом амжан желтый 3 раза . Значит надо нажать на apostol 3 раза и потом амжан желтый 3 раза. Также тут представлены кейсы как в ксго . Покупаете вам выпадает всякая хуйня которая в соответствии со своей редкостью выводит вас в топ в Leaderboard на определенный уровень. За хуйню вам маленько дадут баллов за apostol - дохуя. Вы также можете продавать эти хуйни которые выбили. Да да нахуй не ослышались продавать. На торговой площадке. И зарабатывать за это бабки нахуй. В РПГ защита теперь жрет 50 маны и режет урон. А если ты защитился, враг в следующем ходу споткнется и пропустит ход, так что можно ебнуть его с кулака!
             </div>
 <br/><br/><br/>
 <div class="version-text">версия игры beta 5.6</div>
@@ -2342,6 +2349,8 @@ function updateClock() {
 <audio id="hammer-sound-audio" src="hammer_sound.mp3" preload="auto"></audio>
 <audio id="roach-applause-audio" src="aplodisment.mp3" preload="auto"></audio>
 <audio id="case-win-audio" src="win.mp3" preload="auto"></audio>
+<audio id="case-open-audio" src="case_open.mp3" preload="auto"></audio>
+<audio id="case-lose-audio" src="case_lose.mp3" preload="auto"></audio>
 <audio id="roach-death-audio" src="tarakan-smert.mp3" preload="auto"></audio>
 <audio id="roach-wipe-audio" src="tryapka-zvuk.mp3" preload="auto"></audio>
 
