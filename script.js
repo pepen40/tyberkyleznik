@@ -3075,24 +3075,32 @@ document.getElementById("freeotp-modal")?.addEventListener("click", function(eve
     const statusEl = $('chess-engine-status');
     if (statusEl) { statusEl.textContent = game.turn() === humanColor ? 'ТВОЙ ХОД' : 'ХОД ПРОТИВНИКА'; statusEl.classList.add('online-turn-status'); }
   }
-    function playMoveSound(move) {
-            if (typeof chessSounds === 'undefined') return;
-    if (!game || !move) return;
+  // MP3-файлы лежат в корне сайта рядом с index.html и script.js
+  const chessSounds = {
+    move: new Audio('chess-move.mp3'),
+    win: new Audio('chess-win.mp3'),
+    lose: new Audio('chess-lose.mp3'),
+    draw: new Audio('chess-draw.mp3')
+  };
+  let chessResultSoundPlayed = false;
 
-    let sound = chessSounds.move;
-
-    if (game.isCheckmate()) {
-        sound = chessSounds.checkmate;
-    } else if (game.isCheck()) {
-        sound = chessSounds.check;
-    } else if (move.captured) {
-        sound = chessSounds.capture;
-    }
-
+  function playChessSound(sound) {
+    if (!sound) return;
     sound.currentTime = 0;
     sound.play().catch(() => {});
-}
-// === КОНЕЦ ЗВУКОВ ===
+  }
+
+  function playMoveSound(move) {
+    if (!game || !move) return;
+    playChessSound(chessSounds.move);
+  }
+
+  function playChessResultSound(result) {
+    if (chessResultSoundPlayed) return;
+    chessResultSoundPlayed = true;
+    playChessSound(chessSounds[result]);
+  }
+  // === КОНЕЦ ЗВУКОВ ===
 
   function startEngine() {
     if (engine) return;
@@ -3210,6 +3218,7 @@ document.getElementById("freeotp-modal")?.addEventListener("click", function(eve
     }
   }
   async function startGame() {
+    chessResultSoundPlayed = false;
     try {
       onlineChessMode = false;
       onlineChessRoomId = null;
@@ -3593,8 +3602,9 @@ playMoveSound(playedMove);
     if (game.isCheckmate()) {
       ended = true;
       setStatus(game.turn() === humanColor ? 'Мат. Ты проиграл.' : 'Мат! Ты победил!');
+      playChessResultSound(game.turn() === humanColor ? 'lose' : 'win');
     } else if (game.isDraw()) {
-      ended = true; setStatus('Ничья.');
+      ended = true; setStatus('Ничья.'); playChessResultSound('draw');
 } else if (game.isCheck()) {
   if (onlineChessMode) {
     setStatus(
