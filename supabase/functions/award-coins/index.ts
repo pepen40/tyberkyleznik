@@ -4,6 +4,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Max-Age': '86400',
 }
 
 const case1Loot = [
@@ -69,6 +71,23 @@ function ensureGearState(upgrades: any) {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ success: false, error: 'Метод не поддерживается.' }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 405
+    });
+  }
+  const contentType = req.headers.get('Content-Type') || '';
+  if (!contentType.toLowerCase().startsWith('application/json')) {
+    return new Response(JSON.stringify({ success: false, error: 'Ожидается JSON-запрос.' }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 415
+    });
+  }
+  const announcedLength = Number(req.headers.get('Content-Length') || 0);
+  if (Number.isFinite(announcedLength) && announcedLength > 16384) {
+    return new Response(JSON.stringify({ success: false, error: 'Слишком большой запрос.' }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 413
+    });
+  }
   try {
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     if (!serviceKey) throw new Error("Нет SUPABASE_SERVICE_ROLE_KEY в секретах!");
@@ -88,9 +107,44 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401
       });
     }
-    const { action, data } = await req.json();
-    if (typeof action !== 'string' || !action) {
-      return new Response(JSON.stringify({ success: false, error: 'Не указано действие.' }), {
+    const rawBody = await req.text();
+    if (rawBody.length > 16384) {
+      return new Response(JSON.stringify({ success: false, error: 'Слишком большой запрос.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 413
+      });
+    }
+    let requestBody: unknown;
+    try {
+      requestBody = JSON.parse(rawBody);
+    } catch {
+      return new Response(JSON.stringify({ success: false, error: 'Некорректный JSON.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400
+      });
+    }
+    if (!requestBody || typeof requestBody !== 'object' || Array.isArray(requestBody)) {
+      return new Response(JSON.stringify({ success: false, error: 'Некорректный формат запроса.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400
+      });
+    }
+    const { action, data } = requestBody as { action?: unknown; data?: unknown };
+    if (typeof action !== 'string' || !action || action.length > 40) {
+      return new Response(JSON.stringify({ success: false, error: 'Не указано корректное действие.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400
+      });
+    }
+    if (data !== undefined && data !== null && (typeof data !== 'object' || Array.isArray(data))) {
+      return new Response(JSON.stringify({ success: false, error: 'Некорректные параметры действия.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400
+      });
+    }
+    const allowedActions = new Set([
+      'chess_reward', 'daily_status', 'claim_rpg_reward', 'score', 'roach_clear',
+      'rpg_win', 'open_case', 'sell_item', 'remove_listing', 'buy_item',
+      'consume_item', 'buy_upgrade', 'pvp_result', 'buy_gear', 'equip_gear',
+      'register_room_membership', 'join_room_membership'
+    ]);
+    if (!allowedActions.has(action)) {
+      return new Response(JSON.stringify({ success: false, error: 'Неизвестное действие.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400
       });
     }
@@ -109,7 +163,16 @@ serve(async (req) => {
       pvp_result: 3,
       claim_rpg_reward: 2,
       register_room_membership: 10,
-      join_room_membership: 2
+      join_room_membership: 2,
+      daily_status: 5,
+      open_case: 2,
+      sell_item: 2,
+      remove_listing: 2,
+      buy_item: 2,
+      consume_item: 1,
+      buy_upgrade: 1,
+      buy_gear: 1,
+      equip_gear: 1
     };
     const cooldownSeconds = cooldowns[action];
     if (cooldownSeconds) {
@@ -338,6 +401,9 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ error: "Неизвестное действие" }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
   } catch (error) {
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 })
+    console.error('award-coins internal error:', error);
+    return new Response(JSON.stringify({ success: false, error: 'Внутренняя ошибка сервера.' }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500
+    });
   }
 })
