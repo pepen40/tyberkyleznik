@@ -101,6 +101,38 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403
       });
     }
+    // These actions still trust results calculated in the player's browser.
+    // Do not pay out currency/rating until their gameplay is validated server-side.
+    const temporarilyDisabledClientRewards = new Set([
+      'chess_reward',
+      'score',
+      'roach_clear',
+      'rpg_win',
+      'pvp_result'
+    ]);
+    if (temporarilyDisabledClientRewards.has(action)) {
+      return new Response(JSON.stringify({
+        success: false,
+        rewardPaused: true,
+        error: 'Награды за эту игру временно приостановлены: серверная проверка результата ещё не подключена. Сама игра доступна.'
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+    }
+
+    // These contracts rely on win/boss progress previously reported by the browser.
+    // Keep the server-verified spending contract available, but pause win-derived claims.
+    if (action === 'claim_rpg_reward') {
+      const kind = String(data?.kind || '');
+      const id = String(data?.id || '');
+      const winBasedClaims = new Set(['wins3', 'boss1', 'first_win', 'ten_wins', 'fifty_wins', 'first_boss', 'ten_bosses']);
+      if (winBasedClaims.has(id)) {
+        return new Response(JSON.stringify({
+          success: false,
+          rewardPaused: true,
+          error: 'Награда за победы временно приостановлена до серверной проверки игрового результата.'
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+      }
+    }
+
     const cooldowns: Record<string, number> = {
       chess_reward: 60,
       roach_clear: 60,
