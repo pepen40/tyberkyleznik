@@ -8,6 +8,8 @@ const battleBackgrounds = ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png'
 window.addEventListener('load', () => {
     // Всегда показываем экран входа — никакого автологина
     document.getElementById('auth-screen').classList.remove('hidden');
+    document.getElementById('auth-screen').classList.remove('hidden');
+    restoreAuthSession();
     initSiteBackground();
     initSheepSetting();
     initRoachSetting();
@@ -534,11 +536,114 @@ function initRoachControls() {
 }
 
 
-function logout() {
+async function logout() {
     if (!confirm("Выйти с аккаунта?")) return;
     stopSheep();
     stopRoachEvent(false);
+    const { error } = await supabaseClient.auth.signOut();
+    if (error) {
+        alert("Не удалось выйти: " + error.message);
+        return;
+    }
+    currentUser = null;
     location.reload();
+}
+
+async function finishAuthLogin(user) {
+    if (!user?.id) throw new Error("Не удалось определить пользователя.");
+    const { data, error } = await supabaseClient
+        .from('players')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+    if (error || !data) throw new Error("Профиль игрока не найден: " + (error?.message || "нет записи"));
+
+    currentUser = data.username;
+    currentHighScore = data.max_score || 0;
+    currentCoins = data.coins || 0;
+    currentInventory = data.inventory || [];
+    currentItemPoints = data.item_points || 0;
+    currentPvpPts = data.pvp_pts || 0;
+    currentUpgrades = data.rpg_upgrades || {"ashab":{"hp":0,"atk":0},"apostol":{"hp":0,"atk":0},"mee":{"hp":0,"atk":0}};
+    ensureRpgGear();
+    currentMaxFloors = data.rpg_max_floors || {"ashab":0,"apostol":0,"mee":0};
+    await supabaseClient.from('players').update({ last_online: new Date().toISOString() }).eq('user_id', user.id);
+
+    document.getElementById('auth-screen').classList.add('hidden');
+    document.getElementById('main-screen').classList.remove('hidden');
+    startSheep();
+    startRoachSchedule(ROACH_FIRST_DELAY);
+    preloadSounds();
+    initOnlineCounter();
+    initLobby();
+    initSiteGlobalChat();
+    updateUI();
+    resetGame();
+    renderCharStats();
+    switchTab('minigames');
+}
+
+async function restoreAuthSession() {
+    const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+    if (sessionError || !sessionData?.session) return;
+    const { data: userData, error: userError } = await supabaseClient.auth.getUser();
+    if (userError || !userData?.user) {
+        await supabaseClient.auth.signOut();
+        return;
+    }
+    try {
+        await finishAuthLogin(userData.user);
+    } catch (error) {
+        console.error("Ошибка восстановления сессии:", error);
+        document.getElementById('auth-msg').textContent = "Не удалось загрузить профиль: " + error.message;
+        await supabaseClient.auth.signOut();
+    }
+}
+
+async function register() {
+    const u = document.getElementById('username').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const p = document.getElementById('password').value;
+    const msg = document.getElementById('auth-msg');
+    msg.style.color = '';
+    if (!u || !email || !p) { msg.textContent = "Заполни ник, email и пароль."; return; }
+    if (!/^[a-zA-Zа-яА-Я0-9_]{3,20}$/.test(u)) { msg.textContent = "Ник: 3-20 символов, буквы/цифры/_"; return; }
+    if (p.length < 8) { msg.textContent = "Пароль должен содержать минимум 8 символов."; return; }
+    const { data, error } = await supabaseClient.auth.signUp({
+        email,
+        password: p,
+        options: { data: { username: u } }
+    });
+    if (error) { msg.textContent = "Ошибка регистрации: " + error.message; return; }
+    if (data.session && data.user) {
+        try {
+            await finishAuthLogin(data.user);
+            msg.textContent = "";
+        } catch (e) { msg.textContent = "Аккаунт создан, но профиль не загрузился: " + e.message; }
+    } else {
+        msg.style.color = "green";
+        msg.textContent = "Письмо подтверждения отправлено на email. Подтверди адрес, затем войди.";
+    }
+}
+
+async function login() {
+    const email = document.getElementById('email').value.trim();
+    const p = document.getElementById('password').value;
+    const msg = document.getElementById('auth-msg');
+    msg.style.color = '';
+    if (!email || !p) { msg.textContent = "Введи email и пароль."; return; }
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: p });
+    if (error || !data?.user) {
+        msg.textContent = "Не удалось войти: " + (error?.message || "проверь email и пароль.");
+        return;
+    }
+    try {
+        await finishAuthLogin(data.user);
+        msg.textContent = "";
+    } catch (e) {
+        msg.textContent = "Ошибка загрузки профиля: " + e.message;
+        await supabaseClient.auth.signOut();
+    }
 }
 
 const itemDatabase = {
