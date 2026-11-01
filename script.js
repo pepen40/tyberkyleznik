@@ -935,9 +935,6 @@ function initSiteGlobalChat() {
         const strong = document.createElement('b');
         const displayNick = String(nick || 'Игрок');
         strong.textContent = displayNick + ': ';
-        if (['vlad', 'витя_програмист'].includes(displayNick.toLowerCase())) {
-            strong.style.color = '#ff3333';
-        }
         const body = document.createElement('span'); body.textContent = String(text || '').slice(0, 240);
         row.append(strong, body); messages.appendChild(row);
         while (messages.children.length > 80) messages.firstElementChild.remove();
