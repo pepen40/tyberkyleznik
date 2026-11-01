@@ -1,39 +1,7 @@
 const SUPABASE_URL = 'https://zfvinbamwavibnhmfwnz.supabase.co'; 
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpmdmluYmFtd2F2aWJuaG1md256Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4ODE2MjAsImV4cCI6MjEwODQ1NzYyMH0.FT5tlKgLUCrFs0zzY-BGimCmU9qNZmIzMW8LyysMmgE';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-// === Безопасная сессия игрока для защищённых Edge Functions ===
-// Добавляем заголовок на уровне fetch самого Supabase FunctionsClient.
-// Так заголовок попадёт в реальный HTTP-запрос независимо от invoke options.
-const EDGE_FUNCTION_NAME = 'award-coins';
-
-const originalFunctionsFetch = supabaseClient.functions.fetch.bind(supabaseClient.functions);
-supabaseClient.functions.fetch = (input, init = {}) => {
-    let headers;
-    try {
-        headers = new Headers(init.headers || {});
-    } catch (_) {
-        headers = new Headers();
-    }
-
-    let requestUrl = '';
-    try {
-        requestUrl = typeof input === 'string' ? input : input?.url || '';
-    } catch (_) {}
-
-    if (requestUrl.includes('/functions/v1/' + EDGE_FUNCTION_NAME)) {
-        let token = null;
-        try {
-            token = localStorage.getItem('pepen-player-session') || null;
-        } catch (_) {}
-
-        if (token) {
-            headers.set('x-player-session', token);
-        }
-    }
-
-    return originalFunctionsFetch(input, { ...init, headers });
-}; 
+const EDGE_FUNCTION_NAME = 'award-coins'; 
 const battleBackgrounds = ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png', 'bg6.png'];
 
 // === БЕЗ АВТОЛОГИНА, ПОГОДА И ЧАСЫ ВКЛЮЧЕНЫ ПО УМОЛЧАНИЮ ===
@@ -486,11 +454,8 @@ async function finishRoachWave() {
     try {
         if (currentUser) {
             const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
-    body: { action: 'roach_clear', username: currentUser, data: {} },
-    headers: {
-        'x-player-session': localStorage.getItem('pepen-player-session') || ''
-    }
-});
+                body: { action: 'roach_clear', username: currentUser, data: {} }
+            });
             if (error) throw error;
             if (data?.success) {
                 playRoachAudio('roach-applause-audio');
@@ -985,86 +950,45 @@ function initSiteGlobalChat() {
     input.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); submit(); } });
 }
 
-// Превращает технические ошибки Edge Function в понятный текст от сервера.
-async function getAuthErrorMessage(error, fallback) {
-    const context = error?.context;
-    if (context) {
-        try {
-            const response = typeof context.clone === 'function' ? context.clone() : context;
-            const payload = typeof response.json === 'function' ? await response.json() : response;
-            const serverMessage = payload?.error || payload?.message || payload?.msg;
-            if (serverMessage) return String(serverMessage);
-        } catch (_) {
-            try {
-                const response = typeof context.clone === 'function' ? context.clone() : context;
-                const raw = typeof response.text === 'function' ? await response.text() : '';
-                if (raw) {
-                    try {
-                        const payload = JSON.parse(raw);
-                        if (payload?.error || payload?.message) return String(payload.error || payload.message);
-                    } catch (_) {}
-                }
-            } catch (_) {}
-        }
-    }
-
-    const message = String(error?.message || '');
-    if (message && !/Edge Function returned a non-2xx status code/i.test(message)) return message;
-    return fallback;
-}
-
 async function register() {
     const u = document.getElementById('username').value.trim();
     const p = document.getElementById('password').value;
-    const msg = document.getElementById('auth-msg');
-    if (!u || !p) { msg.textContent = 'Введи ник и пароль.'; return; }
-    if (!/^[a-zA-Zа-яА-ЯёЁ0-9_]{3,20}$/.test(u)) { msg.textContent = 'Ник: 3-20 символов, буквы/цифры/_'; return; }
-    if (p.length < 6 || p.length > 128) { msg.textContent = 'Пароль должен содержать от 6 до 128 символов.'; return; }
-    msg.textContent = 'Создаём аккаунт...';
-    try {
-        const { data, error } = await supabaseClient.functions.invoke('player-auth', {
-            body: { action: 'register', username: u, password: p }
-        });
-        if (error) throw error;
-        if (!data?.success) throw new Error(data?.error || 'Не удалось создать аккаунт.');
-        msg.style.color = 'green';
-        msg.textContent = 'Аккаунт создан! Теперь нажми «Войти».';
-    } catch (e) {
-        msg.style.color = '';
-        msg.textContent = 'Ошибка регистрации: ' + await getAuthErrorMessage(e, 'Не удалось создать аккаунт. Проверь данные и попробуй позже.');
-    }
+    if (!u || !p) return;
+    if (!/^[a-zA-Zа-яА-Я0-9_]{3,20}$/.test(u)) { document.getElementById('auth-msg').textContent = "Ник: 3-20 символов, буквы/цифры/_"; return; }
+    const { data: existing } = await supabaseClient.from('players').select('username').eq('username', u);
+    if (existing && existing.length > 0) { document.getElementById('auth-msg').textContent = "Ник занят."; return; }
+    const { error } = await supabaseClient.from('players').insert([{ 
+        username: u, password: p, max_score: 0, coins: 200, inventory: [], item_points: 0,
+        rpg_upgrades: {"ashab":{"hp":0,"atk":0},"apostol":{"hp":0,"atk":0},"mee":{"hp":0,"atk":0}},
+        rpg_max_floors: {"ashab":0,"apostol":0,"mee":0}, pvp_pts: 0
+    }]);
+    if (error) document.getElementById('auth-msg').textContent = "Ошибка: " + error.message;
+    else { document.getElementById('auth-msg').style.color = "green"; document.getElementById('auth-msg').textContent = "Успех! Жми Войти."; }
 }
 
 async function login() {
     const u = document.getElementById('username').value.trim();
     const p = document.getElementById('password').value;
-    const msg = document.getElementById('auth-msg');
-    if (!u || !p) { msg.textContent = 'Введи ник и пароль.'; return; }
-    msg.textContent = 'Входим...';
-    try {
-        const { data, error } = await supabaseClient.functions.invoke('player-auth', {
-            body: { action: 'login', username: u, password: p }
-        });
-        if (error) throw error;
-        if (!data?.success || !data?.player || !data?.token) throw new Error(data?.error || 'Неверный ник или пароль.');
-        const player = data.player;
-        playerSessionToken = data.token;
-        try { localStorage.setItem('pepen-player-session', playerSessionToken); } catch (_) {}
-        currentUser = player.username;
-        currentHighScore = player.max_score || 0;
-        currentCoins = player.coins || 0;
-        currentInventory = player.inventory || [];
-        currentItemPoints = player.item_points || 0;
-        currentPvpPts = player.pvp_pts || 0;
-        currentUpgrades = player.rpg_upgrades || {"ashab":{"hp":0,"atk":0},"apostol":{"hp":0,"atk":0},"mee":{"hp":0,"atk":0}};
+    if (!u || !p) return;
+    const { data, error } = await supabaseClient.from('players').select('*').eq('username', u).eq('password', p).single();
+    if (error || !data) { document.getElementById('auth-msg').textContent = "Неверный ник или пароль."; }
+    else {
+        currentUser = data.username;
+        currentHighScore = data.max_score || 0;
+        currentCoins = data.coins || 0;
+        currentInventory = data.inventory || [];
+        currentItemPoints = data.item_points || 0;
+        currentPvpPts = data.pvp_pts || 0;
+        currentUpgrades = data.rpg_upgrades || {"ashab":{"hp":0,"atk":0},"apostol":{"hp":0,"atk":0},"mee":{"hp":0,"atk":0}};
         ensureRpgGear();
-        currentMaxFloors = player.rpg_max_floors || {"ashab":0,"apostol":0,"mee":0};
+        currentMaxFloors = data.rpg_max_floors || {"ashab":0,"apostol":0,"mee":0};
+        await supabaseClient.from('players').update({ last_online: new Date().toISOString() }).eq('username', u);
 
         document.getElementById('auth-screen').classList.add('hidden');
         document.getElementById('main-screen').classList.remove('hidden');
-        startSheep();
-        startRoachSchedule(ROACH_FIRST_DELAY);
-        preloadSounds();
+        startSheep(); // Баран появляется только после успешной авторизации
+        startRoachSchedule(ROACH_FIRST_DELAY); // Первое нашествие через минуту
+        preloadSounds(); 
         initOnlineCounter();
         initLobby();
         initSiteGlobalChat();
@@ -1072,10 +996,7 @@ async function login() {
         resetGame();
         renderCharStats();
         switchTab('minigames');
-    } catch (e) {
-        playerSessionToken = null;
-        try { localStorage.removeItem('pepen-player-session'); } catch (_) {}
-        msg.textContent = 'Ошибка входа: ' + await getAuthErrorMessage(e, 'Не удалось выполнить вход. Проверь ник и пароль или попробуй позже.');
+
     }
 }
 
