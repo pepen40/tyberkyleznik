@@ -141,7 +141,7 @@ serve(async (req) => {
       'chess_reward', 'daily_status', 'claim_rpg_reward', 'score', 'roach_clear',
       'rpg_win', 'open_case', 'sell_item', 'remove_listing', 'buy_item',
       'consume_item', 'buy_upgrade', 'pvp_result', 'buy_gear', 'equip_gear',
-      'register_room_membership', 'join_room_membership'
+      'register_room_membership', 'join_room_membership', 'validate_room_invitation'
     ]);
     if (!allowedActions.has(action)) {
       return new Response(JSON.stringify({ success: false, error: 'Неизвестное действие.' }), {
@@ -172,7 +172,8 @@ serve(async (req) => {
       consume_item: 1,
       buy_upgrade: 1,
       buy_gear: 1,
-      equip_gear: 1
+      equip_gear: 1,
+      validate_room_invitation: 1
     };
     const cooldownSeconds = cooldowns[action];
     if (cooldownSeconds) {
@@ -243,6 +244,19 @@ serve(async (req) => {
         p_topic: String(data?.topic || '')
       });
       if (roomError) throw new Error('Не удалось присоединиться к комнате: ' + roomError.message);
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: result?.success ? 200 : 403
+      });
+    }
+
+    if (action === 'validate_room_invitation') {
+      const { data: result, error: roomError } = await supabaseAdmin.rpc('validate_realtime_room_invitation', {
+        p_user_id: authData.user.id,
+        p_topic: String(data?.topic || ''),
+        p_kind: String(data?.kind || '')
+      });
+      if (roomError) throw new Error('Не удалось проверить приглашение: ' + roomError.message);
       return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: result?.success ? 200 : 403
