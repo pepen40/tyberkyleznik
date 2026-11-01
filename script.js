@@ -627,22 +627,34 @@ function usernameAuthEmail(username) {
 
 async function register() {
     const u = document.getElementById('username').value.trim();
-    const p = document.getElementById('password').value;
+    const passwordInput = document.getElementById('password');
+    let p = passwordInput.value;
     const msg = document.getElementById('auth-msg');
     msg.style.color = '';
     if (!u || !p) { msg.textContent = "Заполни ник и пароль."; return; }
     if (!/^[a-zA-Zа-яА-Я0-9_]{3,20}$/.test(u)) { msg.textContent = "Ник: 3-20 символов, буквы/цифры/_"; return; }
     if (p.length < 10) { msg.textContent = "Пароль должен содержать минимум 10 символов."; return; }
 
+    // Убираем пароль из поля формы до сетевых запросов; сам пароль отправляется только в Supabase Auth.
+    passwordInput.value = '';
     const { data: existing } = await supabaseClient
         .from('player_public_profiles').select('username').ilike('username', u).limit(1);
-    if (existing?.length) { msg.textContent = "Этот ник уже занят."; return; }
+    if (existing?.length) { p = ''; msg.textContent = "Этот ник уже занят."; return; }
 
-    const { data, error } = await supabaseClient.auth.signUp({
-        email: usernameAuthEmail(u),
-        password: p,
-        options: { data: { username: u } }
-    });
+    let authResult;
+    try {
+        authResult = await supabaseClient.auth.signUp({
+            email: usernameAuthEmail(u),
+            password: p,
+            options: { data: { username: u } }
+        });
+    } catch (e) {
+        p = '';
+        msg.textContent = "Ошибка регистрации: " + (e?.message || e);
+        return;
+    }
+    p = '';
+    const { data, error } = authResult;
     if (error) { msg.textContent = "Ошибка регистрации: " + error.message; return; }
     if (!data.session || !data.user) {
         msg.textContent = "Регистрация не завершилась автоматически. Проверь настройки Supabase Auth.";
@@ -655,14 +667,27 @@ async function register() {
 }
 async function login() {
     const u = document.getElementById('username').value.trim();
-    const p = document.getElementById('password').value;
+    const passwordInput = document.getElementById('password');
+    let p = passwordInput.value;
     const msg = document.getElementById('auth-msg');
     msg.style.color = '';
     if (!u || !p) { msg.textContent = "Введи ник и пароль."; return; }
-    const { data, error } = await supabaseClient.auth.signInWithPassword({
-        email: usernameAuthEmail(u),
-        password: p
-    });
+
+    // Не оставляем пароль в DOM во время запроса авторизации.
+    passwordInput.value = '';
+    let authResult;
+    try {
+        authResult = await supabaseClient.auth.signInWithPassword({
+            email: usernameAuthEmail(u),
+            password: p
+        });
+    } catch (e) {
+        p = '';
+        msg.textContent = "Не удалось войти: проверь ник и пароль.";
+        return;
+    }
+    p = '';
+    const { data, error } = authResult;
     if (error || !data?.user) {
         msg.textContent = "Не удалось войти: проверь ник и пароль.";
         return;
