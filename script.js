@@ -501,7 +501,7 @@ async function finishRoachWave() {
             } else {
                 if (data?.rewardPaused) {
                     const messageEl = document.getElementById('roach-clean-message');
-                    if (messageEl) messageEl.textContent = 'Бойня завершена. Награды временно отключены до серверной проверки.';
+                    if (messageEl) messageEl.textContent = 'Бойня завершена. Монеты и зачёт зачистки временно отключены до серверной проверки.';
                 } else {
                     roachRewardSent = false;
                     console.error('Не удалось начислить награду за бойню:', data?.error);
@@ -2033,7 +2033,7 @@ async function endPvpBattle(isWin, technical = false) {
     const resultLabel = isWin
         ? (technical ? 'ТЕХНИЧЕСКАЯ ПОБЕДА!' : 'ТЫ ПОБЕДИЛ!')
         : (technical ? 'ТЕХНИЧЕСКОЕ ПОРАЖЕНИЕ!' : 'ТЫ ПРОИГРАЛ!');
-    logPvp(resultSaved ? resultLabel + ' Результат отправлен серверу.' : resultLabel + ' Рейтинговые очки временно не начисляются до серверной проверки.');
+    logPvp(resultSaved ? resultLabel + ' Результат отправлен серверу.' : resultLabel + ' Рейтинг временно не изменяется до серверной проверки матча.');
     setTimeout(() => {
         leavePvpRoom(false);
         alert(isWin ? (technical ? 'Техническая победа! +15 PTS' : 'Победа! +15 PTS') : (technical ? 'Техническое поражение! -15 PTS' : 'Поражение! -15 PTS'));
@@ -2457,6 +2457,7 @@ async function winRpg() {
     try {
         const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'rpg_win', username: currentUser, data: { floorMain: wonFloorMain, floorSub: rpgFloorSub, charType: currentCharType } } });
         if (!error && data && data.success) { currentCoins = data.newCoins; if (data.newUpgrades) currentUpgrades = data.newUpgrades; if (data.newMaxFloors) currentMaxFloors = data.newMaxFloors; updateUI(); addLog(`Победа! +${data.earned} монет.${data.bossBonus ? ` БОНУС БОССА: +${data.bossBonus}!` : ''}`); }
+        else if (data && data.rewardPaused) { addLog('Победа! Но монеты и серверный рекорд этажа временно не сохраняются до проверки результата сервером.'); }
         else if (data && data.error) { addLog(`Сервер: ${data.error}`); }
     } catch(e) { addLog(`Ошибка сети: ${e.message}`); }
     finally {
@@ -3316,6 +3317,7 @@ async function handlePadClick(e) {
         try {
             const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'score', username: currentUser, data: { rounds: currentScore } } });
             if (error) { statusText.textContent += ` (Ошибка сети: награда не подтверждена)`; }
+            else if (data.rewardPaused) { statusText.textContent = `ОШИБКА! Пройдено раундов: ${currentScore}. Онлайн-рекорд и награда временно не сохраняются до серверной проверки.`; }
             else if (data.error) { statusText.textContent += ` (${data.error})`; }
             else {
                 currentCoins = data.newCoins;
@@ -3984,7 +3986,7 @@ playMoveSound(playedMove);
         updateUI();
         setStatus(`Партия завершена · +${data.earned} монет`);
       } else if (data?.rewardPaused) {
-        setStatus('Партия завершена. Награды временно отключены до серверной проверки.');
+        setStatus('Партия завершена. Монеты временно не начисляются до серверной проверки результата.');
       } else {
         chessRewardClaimed = false;
         console.error('Шахматная награда не начислена:', data?.error);
