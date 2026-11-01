@@ -618,54 +618,53 @@ async function restoreAuthSession() {
     }
 }
 
+function usernameAuthEmail(username) {
+    const normalized = username.trim().toLowerCase();
+    const bytes = new TextEncoder().encode(normalized);
+    const encoded = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+    return encoded + "@username.pepen.invalid";
+}
+
 async function register() {
     const u = document.getElementById('username').value.trim();
-    const email = document.getElementById('email').value.trim();
     const p = document.getElementById('password').value;
     const msg = document.getElementById('auth-msg');
     msg.style.color = '';
-    if (!u || !email || !p) { msg.textContent = "Заполни ник, email и пароль."; return; }
+    if (!u || !p) { msg.textContent = "Заполни ник и пароль."; return; }
     if (!/^[a-zA-Zа-яА-Я0-9_]{3,20}$/.test(u)) { msg.textContent = "Ник: 3-20 символов, буквы/цифры/_"; return; }
-    if (p.length < 8) { msg.textContent = "Пароль должен содержать минимум 8 символов."; return; }
+    if (p.length < 10) { msg.textContent = "Пароль должен содержать минимум 10 символов."; return; }
+
+    const { data: existing } = await supabaseClient
+        .from('player_public_profiles').select('username').ilike('username', u).limit(1);
+    if (existing?.length) { msg.textContent = "Этот ник уже занят."; return; }
+
     const { data, error } = await supabaseClient.auth.signUp({
-        email,
+        email: usernameAuthEmail(u),
         password: p,
-        options: { emailRedirectTo: window.location.origin + window.location.pathname, data: { username: u } }
+        options: { data: { username: u } }
     });
     if (error) { msg.textContent = "Ошибка регистрации: " + error.message; return; }
-    if (data.session && data.user) {
-        try {
-            await finishAuthLogin(data.user);
-            msg.textContent = "";
-        } catch (e) { msg.textContent = "Аккаунт создан, но профиль не загрузился: " + e.message; }
-    } else {
-        msg.style.color = "green";
-        msg.textContent = "Письмо подтверждения отправлено на email. Подтверди адрес, затем войди.";
+    if (!data.session || !data.user) {
+        msg.textContent = "Регистрация не завершилась автоматически. Проверь настройки Supabase Auth.";
+        return;
     }
+    try {
+        await finishAuthLogin(data.user);
+        msg.textContent = "";
+    } catch (e) { msg.textContent = "Аккаунт создан, но профиль не загрузился: " + e.message; }
 }
-
-
-async function resetPassword() {
-    const email = document.getElementById('email').value.trim();
-    const msg = document.getElementById('auth-msg');
-    msg.style.color = '';
-    if (!email) { msg.textContent = "Сначала введи email."; return; }
-    const redirectTo = window.location.origin + window.location.pathname;
-    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo });
-    if (error) { msg.textContent = "Не удалось отправить письмо: " + error.message; return; }
-    msg.style.color = "green";
-    msg.textContent = "Письмо для сброса пароля отправлено на email.";
-}
-
 async function login() {
-    const email = document.getElementById('email').value.trim();
+    const u = document.getElementById('username').value.trim();
     const p = document.getElementById('password').value;
     const msg = document.getElementById('auth-msg');
     msg.style.color = '';
-    if (!email || !p) { msg.textContent = "Введи email и пароль."; return; }
-    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: p });
+    if (!u || !p) { msg.textContent = "Введи ник и пароль."; return; }
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email: usernameAuthEmail(u),
+        password: p
+    });
     if (error || !data?.user) {
-        msg.textContent = "Не удалось войти: " + (error?.message || "проверь email и пароль.");
+        msg.textContent = "Не удалось войти: проверь ник и пароль.";
         return;
     }
     try {
