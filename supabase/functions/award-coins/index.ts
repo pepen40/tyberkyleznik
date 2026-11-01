@@ -124,6 +124,21 @@ serve(async (req) => {
       }
     }
 
+    const dailyCaps: Record<string, number> = { chess_reward:200, score:500, roach_clear:150, rpg_win:500, pvp_result:150 };
+    if (Object.prototype.hasOwnProperty.call(dailyCaps, action)) {
+      let requested = 0;
+      if (action === 'chess_reward') requested = ({1:25,2:50,3:75,4:150,5:200} as Record<number,number>)[Number(data?.level)] || 0;
+      else if (action === 'score') { const rounds=Math.max(0,Math.min(100,Math.floor(Number(data?.rounds)||0))); requested=Math.min(500,rounds*(rounds+19)); }
+      else if (action === 'roach_clear') requested=150;
+      else if (action === 'rpg_win') { const floor=Math.max(1,Math.min(500,Math.floor(Number(data?.floorMain)||1))); const sub=Math.max(1,Math.min(5,Math.floor(Number(data?.floorSub)||1))); requested=Math.min(100,10+floor*3)+(sub===5?Math.min(90,Math.round(35+floor*1.5)):0); }
+      else if (action === 'pvp_result') requested=15;
+      if (requested>0) {
+        const {data:allowed,error:budgetError}=await supabaseAdmin.rpc('consume_reward_budget',{p_user_id:authData.user.id,p_action:action,p_amount:requested,p_daily_limit:dailyCaps[action]});
+        if(budgetError) throw new Error('Ошибка проверки дневного лимита: '+budgetError.message);
+        if(allowed!==true) return new Response(JSON.stringify({success:false,error:'Дневной лимит наград исчерпан.'}),{headers:{...corsHeaders,'Content-Type':'application/json'},status:429});
+      }
+    }
+
     let currentCoins = player.coins || 0; 
     let currentItemPoints = player.item_points || 0;
     let currentInv = player.inventory || [];
@@ -132,242 +147,137 @@ serve(async (req) => {
     let currentMaxFloors = player.rpg_max_floors || {"ashab":0,"apostol":0,"mee":0};
 
     if (action === 'chess_reward') {
-      const level = Number(data?.level);
-      const rewards: Record<number, number> = { 1: 25, 2: 50, 3: 75, 4: 150, 5: 200 };
-      const earned = rewards[level];
-      if (!earned) {
-        return new Response(JSON.stringify({ success: false, error: 'Некорректный уровень шахматного бота.' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
-      }
-      const newCoins = Number(currentCoins) + earned;
-      const { error: saveError } = await supabaseAdmin.from('players')
-        .update({ coins: newCoins })
-        .eq('id', player.id);
-      if (saveError) throw new Error('Не удалось сохранить шахматную награду: ' + saveError.message);
-      return new Response(JSON.stringify({ success: true, earned, newCoins }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+      const {data:result,error:txError}=await supabaseAdmin.rpc('add_chess_reward_atomic',{p_user_id:authData.user.id,p_level:Number(data?.level)});
+      if(txError) throw new Error('Не удалось сохранить шахматную награду: '+txError.message);
+      return new Response(JSON.stringify(result),{headers:{...corsHeaders,'Content-Type':'application/json'},status:200});
     }
 
     if (action === 'daily_status') {
-      const progress = ensureRpgProgress(currentUpgrades);
-      const { error: saveError } = await supabaseAdmin.from('players').update({ rpg_upgrades: currentUpgrades }).eq('id', player.id);
-      if (saveError) throw new Error("Не удалось обновить контракты: " + saveError.message);
-      return new Response(JSON.stringify({ success: true, progress, newUpgrades: currentUpgrades, newCoins: currentCoins }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+      const {data:result,error:txError}=await supabaseAdmin.rpc('ensure_rpg_daily_status',{p_user_id:authData.user.id});
+      if(txError) throw new Error('Не удалось обновить контракты: '+txError.message);
+      return new Response(JSON.stringify(result),{headers:{...corsHeaders,'Content-Type':'application/json'},status:200});
     }
 
     if (action === 'claim_rpg_reward') {
-      const progress = ensureRpgProgress(currentUpgrades);
-      const kind = String(data?.kind || ''); const id = String(data?.id || '');
-      const catalog: any = kind === 'daily' ? DAILY_QUESTS : kind === 'achievement' ? RPG_ACHIEVEMENTS : null;
-      if (!catalog || !catalog[id]) return new Response(JSON.stringify({ success: false, error: 'Неизвестная награда.' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
-      const def = catalog[id]; const claimedList = kind === 'daily' ? progress.claimed : progress.achievementsClaimed;
-      if (claimedList.includes(id)) return new Response(JSON.stringify({ success: false, error: 'Эта награда уже получена.' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
-      if ((Number(progress[def.metric]) || 0) < def.target) return new Response(JSON.stringify({ success: false, error: 'Контракт ещё не выполнен.' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
-      claimedList.push(id); const earned = def.reward; const newCoins = currentCoins + earned;
-      const { error: saveError } = await supabaseAdmin.from('players').update({ coins: newCoins, rpg_upgrades: currentUpgrades }).eq('id', player.id);
-      if (saveError) throw new Error('Не удалось сохранить награду: ' + saveError.message);
-      return new Response(JSON.stringify({ success: true, earned, newCoins, newUpgrades: currentUpgrades, progress }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+      const {data:result,error:txError}=await supabaseAdmin.rpc('claim_rpg_reward_atomic',{
+        p_user_id:authData.user.id,p_kind:String(data?.kind||''),p_id:String(data?.id||'')
+      });
+      if(txError) throw new Error('Не удалось сохранить награду: '+txError.message);
+      return new Response(JSON.stringify(result),{headers:{...corsHeaders,'Content-Type':'application/json'},status:200});
     }
 
     if (action === 'score') {
-      // Награда за каждый успешно завершённый раунд:
-      // раунд 1 = 20, раунд 2 = 22, раунд 3 = 24 и далее +2 за раунд.
-      // Сумма: 20 + 22 + ... + (20 + 2 * (rounds - 1)).
-      const rounds = Math.max(0, Math.min(100, Math.floor(Number(data?.rounds) || 0)));
-      const earnedCoins = Math.min(500, rounds * (rounds + 19));
-
-      const newCoins = currentCoins + earnedCoins;
-      const newMaxScore = Math.max(player.max_score || 0, rounds);
-      const { error: updateError } = await supabaseAdmin
-        .from('players')
-        .update({ max_score: newMaxScore, coins: newCoins })
-        .eq('id', player.id);
-
-      if (updateError) throw new Error("Ошибка начисления: " + updateError.message);
-
-      return new Response(JSON.stringify({
-        success: true,
-        newCoins,
-        earned: earnedCoins
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
-      });
+      const rounds=Math.max(0,Math.min(100,Math.floor(Number(data?.rounds)||0)));
+      const {data:result,error:txError}=await supabaseAdmin.rpc('record_simon_score_atomic',{p_user_id:authData.user.id,p_rounds:rounds});
+      if(txError) throw new Error('Ошибка начисления: '+txError.message);
+      return new Response(JSON.stringify(result),{headers:{...corsHeaders,'Content-Type':'application/json'},status:200});
     }
 
     if (action === 'roach_clear') {
-      const roachKills = Math.max(0, Number(currentUpgrades.roachKills) || 0);
-      currentUpgrades.roachKills = roachKills + 9;
-      const earned = 150;
-      const newCoins = currentCoins + earned;
-      const { error: saveError } = await supabaseAdmin.from('players')
-        .update({ coins: newCoins, rpg_upgrades: currentUpgrades })
-        .eq('id', player.id);
-      if (saveError) throw new Error('Не удалось сохранить награду за бойню: ' + saveError.message);
-      return new Response(JSON.stringify({
-        success: true, earned, newCoins, newUpgrades: currentUpgrades,
-        roachKills: currentUpgrades.roachKills
-      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+      const {data:result,error:txError}=await supabaseAdmin.rpc('record_roach_clear_atomic',{p_user_id:authData.user.id});
+      if(txError) throw new Error('Не удалось сохранить награду за бойню: '+txError.message);
+      return new Response(JSON.stringify(result),{headers:{...corsHeaders,'Content-Type':'application/json'},status:200});
     }
 
     if (action === 'rpg_win') {
-      const floorMain = Math.max(1, Math.min(500, Math.floor(Number(data.floorMain) || 1)));
-      const floorSub = Math.max(1, Math.min(5, Math.floor(Number(data.floorSub) || 1)));
-      const safeFloor = floorMain; const isBoss = floorSub === 5;
-      const progress = ensureRpgProgress(currentUpgrades);
-      progress.wins += 1; progress.totalWins += 1;
-      if (isBoss) { progress.bosses += 1; progress.totalBosses += 1; }
-      const baseReward = Math.min(100, 10 + (safeFloor * 3));
-      const bossBonus = isBoss ? Math.min(90, Math.round(35 + (safeFloor * 1.5))) : 0;
-      const earnedCoins = baseReward + bossBonus; const newCoins = currentCoins + earnedCoins;
-      const { error: saveError } = await supabaseAdmin.from('players').update({ coins: newCoins, rpg_upgrades: currentUpgrades }).eq('id', player.id);
-      if (saveError) throw new Error('Не удалось сохранить награду за бой: ' + saveError.message);
-      return new Response(JSON.stringify({ success: true, newCoins, earned: earnedCoins, bossBonus, newUpgrades: currentUpgrades, progress }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+      const floorMain=Math.max(1,Math.min(500,Math.floor(Number(data?.floorMain)||1)));
+      const floorSub=Math.max(1,Math.min(5,Math.floor(Number(data?.floorSub)||1)));
+      const {data:result,error:txError}=await supabaseAdmin.rpc('record_rpg_win_atomic',{
+        p_user_id:authData.user.id,p_floor_main:floorMain,p_floor_sub:floorSub
+      });
+      if(txError) throw new Error('Не удалось сохранить награду за бой: '+txError.message);
+      return new Response(JSON.stringify(result),{headers:{...corsHeaders,'Content-Type':'application/json'},status:200});
     }
 
     if (action === 'open_case') {
-      const price = Number(data.price);
-      if (price !== 250 && price !== 390) {
-          return new Response(JSON.stringify({ error: "Неверная цена кейса" }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
-      }
-      const currentLoot = price === 390 ? case2Loot : case1Loot;
-      if (currentCoins < price) {
-          return new Response(JSON.stringify({ error: `Мало монет! Нужно ${price}.` }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
-      }
-      let roll = Math.random() * 100, currentChance = 0, droppedItem = null;
-      for (let item of currentLoot) {
-          currentChance += item.chance;
-          if (roll <= currentChance) { droppedItem = item; break; }
-      }
-      if (!droppedItem) droppedItem = currentLoot[currentLoot.length - 1];
-      let resultMessage = "";
-      if (droppedItem.name !== "Вам не повезло") {
-          currentInv.push({ ...droppedItem, id: Date.now().toString() });
-          currentItemPoints += droppedItem.points;
-          resultMessage = `Выпало: ${droppedItem.name} (${droppedItem.rarity}) +${droppedItem.points} очков!`;
-      } else {
-          resultMessage = "Вам не повезло. Вы нихуя не выиграли.";
-      }
-      await supabaseAdmin.from('players').update({ coins: currentCoins - price, inventory: currentInv, item_points: currentItemPoints }).eq('id', player.id)
-      return new Response(JSON.stringify({ message: resultMessage, newCoins: currentCoins - price, newInventory: currentInv, newItemPoints: currentItemPoints, droppedItem: droppedItem }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
+      const price=Number(data?.price);
+      if(price!==250 && price!==390) return new Response(JSON.stringify({success:false,error:'Неверная цена кейса'}),{headers:{...corsHeaders,'Content-Type':'application/json'},status:200});
+      const currentLoot=price===390?case2Loot:case1Loot;
+      let roll=Math.random()*100,currentChance=0,droppedItem=null;
+      for(const item of currentLoot){currentChance+=item.chance;if(roll<=currentChance){droppedItem=item;break;}}
+      if(!droppedItem)droppedItem=currentLoot[currentLoot.length-1];
+      const {data:result,error:txError}=await supabaseAdmin.rpc('open_player_case',{
+        p_user_id:authData.user.id,p_price:price,p_item:droppedItem
+      });
+      if(txError) throw new Error('Не удалось открыть кейс: '+txError.message);
+      return new Response(JSON.stringify(result),{headers:{...corsHeaders,'Content-Type':'application/json'},status:200});
     }
 
     if (action === 'sell_item') {
-      if (!data.item || !data.item.id) return new Response(JSON.stringify({ error: "Предмет не передан" }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
-      const sellPrice = Math.max(1, Math.floor(Number(data.price) || 1));
-      let itemIndex = currentInv.findIndex((i: any) => i.id === data.item.id);
-      if (itemIndex === -1) return new Response(JSON.stringify({ error: "Предмет не найден" }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
-      let itemToSell = currentInv[itemIndex];
-      currentInv.splice(itemIndex, 1); 
-      currentItemPoints -= itemToSell.points; 
-      await supabaseAdmin.from('players').update({ inventory: currentInv, item_points: currentItemPoints }).eq('id', player.id);
-      await supabaseAdmin.from('marketplace').insert([{
-          seller: player.username, item_name: itemToSell.name, rarity: itemToSell.rarity, points: itemToSell.points, price: sellPrice, img: itemToSell.img || ""
-      }]);
-      return new Response(JSON.stringify({ success: true, newInventory: currentInv, newItemPoints: currentItemPoints }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
+      const itemId = String(data?.item?.id || '');
+      const price = Math.floor(Number(data?.price));
+      const { data: result, error: txError } = await supabaseAdmin.rpc('marketplace_sell_item', {
+        p_user_id: authData.user.id, p_item_id: itemId, p_price: price
+      });
+      if (txError) throw new Error('Ошибка выставления лота: ' + txError.message);
+      return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: result?.success ? 200 : 400 });
     }
 
     if (action === 'remove_listing') {
-      const { data: listing } = await supabaseAdmin.from('marketplace').select('*').eq('id', data.listing_id).single();
-      if (!listing) return new Response(JSON.stringify({ error: "Лот не найден" }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
-      if (listing.seller !== player.username) return new Response(JSON.stringify({ error: "Это не твой лот" }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
-      currentInv.push({ name: listing.item_name, rarity: listing.rarity, points: listing.points, img: listing.img || "", id: Date.now().toString() });
-      currentItemPoints += listing.points; 
-      await supabaseAdmin.from('players').update({ inventory: currentInv, item_points: currentItemPoints }).eq('id', player.id);
-      await supabaseAdmin.from('marketplace').delete().eq('id', listing.id);
-      return new Response(JSON.stringify({ success: true, newInventory: currentInv, newItemPoints: currentItemPoints }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
+      const listingId = Number(data?.listing_id);
+      if (!Number.isSafeInteger(listingId) || listingId < 1) return new Response(JSON.stringify({ success:false,error:'Некорректный лот' }), { headers:{...corsHeaders,'Content-Type':'application/json'},status:400 });
+      const { data: result, error: txError } = await supabaseAdmin.rpc('marketplace_remove_listing', {
+        p_user_id: authData.user.id, p_listing_id: listingId
+      });
+      if (txError) throw new Error('Ошибка снятия лота: ' + txError.message);
+      return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: result?.success ? 200 : 400 });
     }
 
     if (action === 'buy_item') {
-      const { data: listing } = await supabaseAdmin.from('marketplace').select('*').eq('id', data.listing_id).single();
-      if (!listing) return new Response(JSON.stringify({ error: "Лот уже куплен" }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
-      if (listing.seller === player.username) return new Response(JSON.stringify({ error: "Нельзя купить свой лот" }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
-      if (currentCoins < listing.price) return new Response(JSON.stringify({ error: "Мало монет!" }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
-      const { data: seller } = await supabaseAdmin.from('players').select('*').eq('username', listing.seller).single();
-      currentInv.push({ name: listing.item_name, rarity: listing.rarity, points: listing.points, img: listing.img || "", id: Date.now().toString() });
-      currentItemPoints += listing.points; 
-      await supabaseAdmin.from('players').update({ coins: currentCoins - listing.price, inventory: currentInv, item_points: currentItemPoints }).eq('id', player.id);
-      if (seller) await supabaseAdmin.from('players').update({ coins: (seller.coins || 0) + listing.price }).eq('id', seller.id);
-      await supabaseAdmin.from('marketplace').delete().eq('id', listing.id);
-      return new Response(JSON.stringify({ success: true, newCoins: currentCoins - listing.price, newInventory: currentInv, newItemPoints: currentItemPoints }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
+      const listingId = Number(data?.listing_id);
+      if (!Number.isSafeInteger(listingId) || listingId < 1) return new Response(JSON.stringify({ success:false,error:'Некорректный лот' }), { headers:{...corsHeaders,'Content-Type':'application/json'},status:400 });
+      const { data: result, error: txError } = await supabaseAdmin.rpc('marketplace_buy_listing', {
+        p_user_id: authData.user.id, p_listing_id: listingId
+      });
+      if (txError) throw new Error('Ошибка покупки лота: ' + txError.message);
+      return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: result?.success ? 200 : 400 });
     }
 
     if (action === 'consume_item') {
-       let itemIndex = currentInv.findIndex((i: any) => i.id === data.item_id);
-       if (itemIndex === -1) return new Response(JSON.stringify({ error: "Предмет не найден" }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
-       let consumedItem = currentInv[itemIndex];
-       currentInv.splice(itemIndex, 1); 
-       currentItemPoints -= consumedItem.points; 
-       await supabaseAdmin.from('players').update({ inventory: currentInv, item_points: currentItemPoints }).eq('id', player.id);
-       return new Response(JSON.stringify({ success: true, newInventory: currentInv, newItemPoints: currentItemPoints }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
+      const {data:result,error:txError}=await supabaseAdmin.rpc('consume_player_item',{
+        p_user_id:authData.user.id,p_item_id:String(data?.item_id||'')
+      });
+      if(txError) throw new Error('Ошибка использования предмета: '+txError.message);
+      return new Response(JSON.stringify(result),{headers:{...corsHeaders,'Content-Type':'application/json'},status:200});
     }
 
     if (action === 'buy_upgrade') {
-        let charType = data.charType;
-        let statType = data.statType;
-        if (!VALID_CHARS.includes(charType)) return new Response(JSON.stringify({ error: "Неверный персонаж" }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
-        if (statType !== 'hp' && statType !== 'atk') return new Response(JSON.stringify({ error: "Неверный стат" }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
-        let u = currentUpgrades[charType];
-        let cost = statType === 'hp' ? (100 + (u.hp * 50)) : (150 + (u.atk * 50));
-        if (currentCoins < cost) return new Response(JSON.stringify({ error: "Мало монет, бомж!" }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
-        currentCoins -= cost;
-        const progress = ensureRpgProgress(currentUpgrades); progress.spent += cost;
-        currentUpgrades[charType][statType]++;
-        await supabaseAdmin.from('players').update({ coins: currentCoins, rpg_upgrades: currentUpgrades }).eq('id', player.id);
-        return new Response(JSON.stringify({ success: true, newCoins: currentCoins, newUpgrades: currentUpgrades }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
+      const {data:result,error:txError}=await supabaseAdmin.rpc('buy_rpg_upgrade',{
+        p_user_id:authData.user.id,p_char:String(data?.charType||''),p_stat:String(data?.statType||'')
+      });
+      if(txError) throw new Error('Не удалось сохранить улучшение: '+txError.message);
+      return new Response(JSON.stringify(result),{headers:{...corsHeaders,'Content-Type':'application/json'},status:200});
     }
 
     if (action === 'update_floor') {
-        let charType = data.charType;
-        if (!VALID_CHARS.includes(charType)) return new Response(JSON.stringify({ error: "Неверный персонаж" }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
-        let floor = Math.max(0, Math.floor(Number(data.floor) || 0));
-        if (floor > currentMaxFloors[charType]) {
-            currentMaxFloors[charType] = floor;
-            await supabaseAdmin.from('players').update({ rpg_max_floors: currentMaxFloors }).eq('id', player.id);
-        }
-        return new Response(JSON.stringify({ success: true, newMaxFloors: currentMaxFloors }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
+      const charType=String(data?.charType||'');
+      const floor=Math.max(0,Math.min(5000,Math.floor(Number(data?.floor)||0)));
+      const {data:result,error:txError}=await supabaseAdmin.rpc('update_rpg_floor',{p_user_id:authData.user.id,p_char:charType,p_floor:floor});
+      if(txError) throw new Error('Ошибка сохранения этажа: '+txError.message);
+      return new Response(JSON.stringify(result),{headers:{...corsHeaders,'Content-Type':'application/json'},status:200});
     }
 
     if (action === 'pvp_result') {
-        const isWin = data.win === true;
-        let newPts = isWin ? (player.pvp_pts || 0) + 15 : Math.max(0, (player.pvp_pts || 0) - 15);
-        await supabaseAdmin.from('players').update({ pvp_pts: newPts }).eq('id', player.id);
-        return new Response(JSON.stringify({ success: true, newPts: newPts }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
+      const {data:result,error:txError}=await supabaseAdmin.rpc('apply_pvp_result',{p_user_id:authData.user.id,p_win:data?.win===true});
+      if(txError) throw new Error('Ошибка обновления PvP-очков: '+txError.message);
+      return new Response(JSON.stringify(result),{headers:{...corsHeaders,'Content-Type':'application/json'},status:200});
     }
 
 
     if (action === 'buy_gear') {
-      const itemId = String(data?.itemId || '');
-      const item = RPG_GEAR.find((g: any) => g.id === itemId);
-      if (!item) return new Response(JSON.stringify({ success: false, error: "Такого предмета нет в каталоге." }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
-      const gearState = ensureGearState(currentUpgrades);
-      if (gearState.owned.includes(itemId)) return new Response(JSON.stringify({ success: false, error: "Этот предмет уже есть в коллекции." }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
-      if (currentCoins < item.price) return new Response(JSON.stringify({ success: false, error: `Не хватает монет. Нужно ${item.price}.` }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
-      currentCoins -= item.price;
-      const progress = ensureRpgProgress(currentUpgrades); progress.spent += item.price;
-      gearState.owned.push(itemId);
-      const { error: saveError } = await supabaseAdmin.from('players').update({ coins: currentCoins, rpg_upgrades: currentUpgrades }).eq('id', player.id);
-      if (saveError) throw new Error("Не удалось сохранить покупку: " + saveError.message);
-      return new Response(JSON.stringify({ success: true, newCoins: currentCoins, newUpgrades: currentUpgrades, itemId }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+      const {data:result,error:txError}=await supabaseAdmin.rpc('purchase_rpg_gear',{
+        p_user_id:authData.user.id,p_item_id:String(data?.itemId||'')
+      });
+      if(txError) throw new Error('Не удалось сохранить покупку: '+txError.message);
+      return new Response(JSON.stringify(result),{headers:{...corsHeaders,'Content-Type':'application/json'},status:200});
     }
 
     if (action === 'equip_gear') {
-      const itemId = String(data?.itemId || '');
-      const charType = String(data?.charType || '');
-      const shouldUnequip = data?.unequip === true;
-      if (!VALID_CHARS.includes(charType)) return new Response(JSON.stringify({ success: false, error: "Неизвестный боец." }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
-      const gearState = ensureGearState(currentUpgrades);
-      const equipped = gearState.equipped[charType];
-      if (shouldUnequip) {
-        const slot = Object.keys(equipped).find((key: string) => equipped[key] === itemId);
-        if (!slot) return new Response(JSON.stringify({ success: false, error: "Этот предмет не надет на выбранного бойца." }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
-        equipped[slot] = null;
-      } else {
-        const item = RPG_GEAR.find((g: any) => g.id === itemId);
-        if (!item || !gearState.owned.includes(itemId)) return new Response(JSON.stringify({ success: false, error: "Предмет не найден в твоей коллекции." }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
-        equipped[item.slot] = itemId;
-      }
-      const { error: saveError } = await supabaseAdmin.from('players').update({ rpg_upgrades: currentUpgrades }).eq('id', player.id);
-      if (saveError) throw new Error("Не удалось сохранить экипировку: " + saveError.message);
-      return new Response(JSON.stringify({ success: true, newUpgrades: currentUpgrades }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+      const {data:result,error:txError}=await supabaseAdmin.rpc('set_rpg_gear',{
+        p_user_id:authData.user.id,p_char:String(data?.charType||''),p_item_id:String(data?.itemId||''),p_unequip:data?.unequip===true
+      });
+      if(txError) throw new Error('Не удалось сохранить экипировку: '+txError.message);
+      return new Response(JSON.stringify(result),{headers:{...corsHeaders,'Content-Type':'application/json'},status:200});
     }
 
     return new Response(JSON.stringify({ error: "Неизвестное действие" }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
