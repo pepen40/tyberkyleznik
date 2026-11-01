@@ -141,7 +141,7 @@ serve(async (req) => {
       'chess_reward', 'daily_status', 'claim_rpg_reward', 'score', 'roach_clear',
       'rpg_win', 'open_case', 'sell_item', 'remove_listing', 'buy_item',
       'consume_item', 'buy_upgrade', 'pvp_result', 'buy_gear', 'equip_gear',
-      'register_room_membership', 'join_room_membership', 'validate_room_invitation'
+      'register_room_membership', 'join_room_membership', 'validate_room_invitation', 'send_chat_message'
     ]);
     if (!allowedActions.has(action)) {
       return new Response(JSON.stringify({ success: false, error: 'Неизвестное действие.' }), {
@@ -173,7 +173,8 @@ serve(async (req) => {
       buy_upgrade: 1,
       buy_gear: 1,
       equip_gear: 1,
-      validate_room_invitation: 1
+      validate_room_invitation: 1,
+      send_chat_message: 2
     };
     const cooldownSeconds = cooldowns[action];
     if (cooldownSeconds) {
@@ -261,6 +262,93 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: result?.success ? 200 : 403
       });
+    }
+
+    if (action === 'send_chat_message') {
+      const topic = String(data?.topic || '');
+      const messageText = typeof data?.text === 'string' ? data.text.trim() : '';
+      const hasControlCharacters = Array.from(messageText).some(ch => {
+        const code = ch.charCodeAt(0);
+        return code < 32 && code !== 9 && code !== 10 && code !== 13;
+      });
+      if (!messageText || messageText.length > 240 || hasControlCharacters) {
+        return new Response(JSON.stringify({ success: false, error: 'Сообщение должно содержать от 1 до 240 допустимых символов.' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400
+        });
+      }
+
+      const isGlobalChat = topic === 'pepen40-global-chat';
+      const isGameRoom = /^room_[a-z0-9]{9}$/.test(topic) || /^chess-room-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(topic);
+      if (!isGlobalChat && !isGameRoom) {
+        return new Response(JSON.stringify({ success: false, error: 'Неизвестный канал чата.' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400
+        });
+      }
+      const lowerMessage = messageText.toLowerCase();
+      if (isGlobalChat && (
+        lowerMessage.includes('http://') ||
+        lowerMessage.includes('https://') ||
+        lowerMessage.includes('www.') ||
+        lowerMessage.includes('t.me/') ||
+        lowerMessage.includes('discord.gg/')
+      )) {
+        return new Response(JSON.stringify({ success: false, error: 'Ссылки в общем чате запрещены.' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400
+        });
+      }
+
+      if (isGameRoom) {
+        const { data: membership, error: membershipError } = await supabaseAdmin
+          .from('realtime_room_access')
+          .select('topic')
+          .eq('topic', topic)
+          .gt('expires_at', new Date().toISOString())
+          .or('host_user_id.eq.' + authData.user.id + ',guest_user_id.eq.' + authData.user.id)
+          .maybeSingle();
+        if (membershipError) throw new Error('Не удалось проверить доступ к комнате.');
+        if (!membership) {
+          return new Response(JSON.stringify({ success: false, error: 'Ты не состоишь в этой комнате.' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403
+          });
+        }
+      }
+
+      const channel = supabaseAdmin.channel(topic, { config: { private: true, broadcast: { self: false } } });
+      try {
+        const subscribeStatus = await new Promise<string>((resolve) => {
+          let settled = false;
+          const timer = setTimeout(() => {
+            if (!settled) {
+              settled = true;
+              resolve('TIMED_OUT');
+            }
+          }, 8000);
+          channel.subscribe((status) => {
+            if (settled) return;
+            if (status === 'SUBSCRIBED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+              settled = true;
+              clearTimeout(timer);
+              resolve(status);
+            }
+          });
+        });
+        if (subscribeStatus !== 'SUBSCRIBED') {
+          throw new Error('Канал чата временно недоступен.');
+        }
+        const sent = await channel.send({
+          type: 'broadcast',
+          event: isGlobalChat ? 'site_message' : 'chat_message',
+          payload: { nick: player.username, text: messageText }
+        });
+        if (sent !== 'ok') {
+          throw new Error('Не удалось отправить сообщение.');
+        }
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200
+        });
+      } finally {
+        await supabaseAdmin.removeChannel(channel);
+      }
     }
 
     const dailyCaps: Record<string, number> = { chess_reward:200, score:500, roach_clear:150, rpg_win:500, pvp_result:150 };
