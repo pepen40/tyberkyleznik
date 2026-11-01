@@ -944,10 +944,33 @@ function initSiteGlobalChat() {
         messages.scrollTop = messages.scrollHeight;
     };
     siteGlobalChatChannel = supabaseClient.channel('pepen40-global-chat', { config: { broadcast: { self: false } } });
-    siteGlobalChatChannel.on('broadcast', { event: 'site_message' }, ({ payload }) => add(payload?.nick, payload?.text));
+    siteGlobalChatChannel.on('broadcast', { event: 'site_message' }, ({ payload }) => {
+        if (isSiteGlobalChatBanned(payload?.nick)) return;
+        add(payload?.nick, payload?.text);
+    });
     siteGlobalChatChannel.subscribe();
     const submit = () => {
-        const value = input.value.trim(); if (!value) return;
+        const value = input.value.trim();
+        if (!value) return;
+
+        if (isSiteGlobalChatBanned(currentUser)) {
+            alert('Тебе запрещено писать в общем чате.');
+            return;
+        }
+
+        if (containsSiteGlobalChatLink(value)) {
+            alert('Ссылки в общем чате запрещены.');
+            return;
+        }
+
+        const now = Date.now();
+        const remaining = SITE_GLOBAL_CHAT_COOLDOWN_MS - (now - siteGlobalChatLastSentAt);
+        if (remaining > 0) {
+            alert(`Подожди ещё ${Math.ceil(remaining / 1000)} сек. перед следующим сообщением.`);
+            return;
+        }
+
+        siteGlobalChatLastSentAt = now;
         siteGlobalChatChannel?.send({ type: 'broadcast', event: 'site_message', payload: { nick: currentUser, text: value.slice(0, 240) } });
         add(currentUser, value); input.value = ''; input.focus();
     };
