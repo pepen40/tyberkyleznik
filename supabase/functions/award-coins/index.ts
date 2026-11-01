@@ -131,7 +131,7 @@ serve(async (req) => {
       else if (action === 'score') { const rounds=Math.max(0,Math.min(100,Math.floor(Number(data?.rounds)||0))); requested=Math.min(500,rounds*(rounds+19)); }
       else if (action === 'roach_clear') requested=150;
       else if (action === 'rpg_win') { const floor=Math.max(1,Math.min(500,Math.floor(Number(data?.floorMain)||1))); const sub=Math.max(1,Math.min(5,Math.floor(Number(data?.floorSub)||1))); requested=Math.min(100,10+floor*3)+(sub===5?Math.min(90,Math.round(35+floor*1.5)):0); }
-      else if (action === 'pvp_result') requested=15;
+      else if (action === 'pvp_result') requested=data?.win === true ? 15 : 0;
       if (requested>0) {
         const {data:allowed,error:budgetError}=await supabaseAdmin.rpc('consume_reward_budget',{p_user_id:authData.user.id,p_action:action,p_amount:requested,p_daily_limit:dailyCaps[action]});
         if(budgetError) throw new Error('Ошибка проверки дневного лимита: '+budgetError.message);
