@@ -126,7 +126,7 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400
       });
     }
-    const { action, data } = requestBody as { action?: unknown; data?: unknown };
+    const { action, data } = requestBody as { action?: unknown; data?: Record<string, any> };
     if (typeof action !== 'string' || !action || action.length > 40) {
       return new Response(JSON.stringify({ success: false, error: 'Не указано корректное действие.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400
