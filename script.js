@@ -19,7 +19,21 @@ supabaseClient.auth.onAuthStateChange((event) => {
         });
     }
 });
-const EDGE_FUNCTION_NAME = 'award-coins'; 
+const EDGE_FUNCTION_NAME = 'award-coins';
+
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, ch => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[ch]);
+}
+function inlineJsString(value) {
+    return JSON.stringify(String(value ?? ''))
+        .replace(/\\u2028/gi, '\\\\u2028')
+        .replace(/\\u2029/gi, '\\\\u2029');
+}
+function safeInlineArg(value) {
+    return escapeHtml(inlineJsString(value));
+}
 const battleBackgrounds = ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png', 'bg6.png'];
 
 // === БЕЗ АВТОЛОГИНА, ПОГОДА И ЧАСЫ ВКЛЮЧЕНЫ ПО УМОЛЧАНИЮ ===
@@ -1074,8 +1088,11 @@ function sendPvpMessage() {
 }
 
 function getImgTag(imgName) {
-    if (!imgName) return '<span style="font-size: 20px;">📎</span>';
-    return `<img src="${imgName}" class="inv-card-img" onerror="this.src='https://via.placeholder.com/50?text=NO'">`;
+    const safeName = String(imgName || '');
+    if (!/^[a-zA-Z0-9_-]+\\.(?:png|jpe?g|webp|gif)$/i.test(safeName)) {
+        return '<span style="font-size: 20px;">📎</span>';
+    }
+    return `<img src="${safeName}" class="inv-card-img" alt="" loading="lazy" onerror="this.replaceWith(document.createTextNode('📎'))">`;
 }
 
 function getProcessedInventory() {
@@ -1269,7 +1286,7 @@ function openCaseContents(price) {
                 <img src="${item.img}" style="width: 40px; height: 40px; object-fit: contain;" onerror="this.src='https://via.placeholder.com/40?text=NO'">
                 <div><b class="rarity-${item.rarity}">${item.name}</b><div class="case-item-desc">Шанс: ${db.chance}</div></div>
             </div>
-            <button class="info-btn" style="width: 100px;" onclick="openItemInfo('${item.name}')">Подробнее</button>
+            <button class="info-btn" style="width: 100px;" onclick="openItemInfo(${safeInlineArg(item.name)})">Подробнее</button>
         `;
         list.appendChild(div);
     });
@@ -1291,23 +1308,60 @@ function closePvpLobby() { document.getElementById('pvp-lobby-modal').classList.
 
 function renderPvpRooms() {
     const list = document.getElementById('pvp-online-list');
-    if (onlinePlayers.length === 0) { list.innerHTML = '<p style="text-align:center;">Нет онлайн игроков.</p>'; return; }
-    list.innerHTML = '';
-    onlinePlayers.forEach(player => {
-        if (player === currentUser) return;
-        const div = document.createElement('div');
-        div.className = 'pvp-room-item';
-        div.innerHTML = `
-            <div>
-                <b>${player}</b>
-                ${pvpRooms[player] ? '<span style="color:green; font-size:12px;"> (Ждет боя)</span>' : ''}
-            </div>
-            <div style="display:flex; gap:5px;">
-                <button onclick="viewProfile('${player}')" style="margin:0; font-size:14px; background:#87CEEB;">Профиль</button>
-                <button onclick="challengePlayer('${player}')" style="margin:0; font-size:14px; background:#ffcccb;">Вызвать на бой</button>
-            </div>
-        `;
-        list.appendChild(div);
+    if (!list) return;
+    list.replaceChildren();
+    const validUsername = /^[a-zA-Zа-яА-Я0-9_]{3,20}$/;
+    const players = [...new Set((onlinePlayers || []).filter(name =>
+        typeof name === 'string' && validUsername.test(name) && name !== currentUser
+    ))];
+    if (players.length === 0) {
+        const empty = document.createElement('p');
+        empty.style.textAlign = 'center';
+        empty.textContent = 'Нет онлайн игроков.';
+        list.appendChild(empty);
+        return;
+    }
+
+    players.forEach(player => {
+        const row = document.createElement('div');
+        row.className = 'pvp-room-item';
+
+        const info = document.createElement('div');
+        const name = document.createElement('b');
+        name.textContent = player;
+        info.appendChild(name);
+
+        if (pvpRooms[player]) {
+            const waiting = document.createElement('span');
+            waiting.style.color = 'green';
+            waiting.style.fontSize = '12px';
+            waiting.textContent = ' (Ждет боя)';
+            info.appendChild(waiting);
+        }
+
+        const actions = document.createElement('div');
+        actions.style.display = 'flex';
+        actions.style.gap = '5px';
+
+        const profileButton = document.createElement('button');
+        profileButton.type = 'button';
+        profileButton.textContent = 'Профиль';
+        profileButton.style.margin = '0';
+        profileButton.style.fontSize = '14px';
+        profileButton.style.background = '#87CEEB';
+        profileButton.addEventListener('click', () => viewProfile(player));
+
+        const challengeButton = document.createElement('button');
+        challengeButton.type = 'button';
+        challengeButton.textContent = 'Вызвать на бой';
+        challengeButton.style.margin = '0';
+        challengeButton.style.fontSize = '14px';
+        challengeButton.style.background = '#ffcccb';
+        challengeButton.addEventListener('click', () => challengePlayer(player));
+
+        actions.append(profileButton, challengeButton);
+        row.append(info, actions);
+        list.appendChild(row);
     });
 }
 
@@ -1466,7 +1520,7 @@ function renderPvpEnemyBuild(build) {
     if (!box) return;
     if (!build) { box.textContent = 'Соперник ещё не передал данные.'; return; }
     const names = Array.isArray(build.gearNames) && build.gearNames.length ? build.gearNames : ['Нет надетых предметов'];
-    box.innerHTML = `<b>Боец:</b> ${String(build.charType || '—')}<br><b>Прокачка HP:</b> ${Number(build.hpLevel)||0}<br><b>Прокачка ATK:</b> ${Number(build.atkLevel)||0}<br><b>Надетое снаряжение:</b><ul>${names.map(name => `<li>${String(name).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}</li>`).join('')}</ul>`;
+    box.innerHTML = `<b>Боец:</b> ${escapeHtml(build.charType || '—')}<br><b>Прокачка HP:</b> ${Number(build.hpLevel)||0}<br><b>Прокачка ATK:</b> ${Number(build.atkLevel)||0}<br><b>Надетое снаряжение:</b><ul>${names.map(name => `<li>${escapeHtml(name)}</li>`).join('')}</ul>`;
 }
 function togglePvpEnemyBuild(show) {
     document.getElementById('pvp-enemy-build-modal')?.classList.toggle('hidden', !show);
@@ -1813,11 +1867,11 @@ function openPvpItemMenu() {
             if (item.qty > 1) div.innerHTML += `<div class="qty-badge">x${item.qty}</div>`;
             div.innerHTML += `
                 ${getImgTag(item.img)}
-                <div class="inv-card-name"><span class="rarity-${item.rarity}">${item.name}</span></div>
+                <div class="inv-card-name"><span class="rarity-${escapeHtml(item.rarity)}">${escapeHtml(item.name)}</span></div>
                 <div style="font-size:10px; margin-bottom:5px;">${effectText}</div>
                 <div class="inv-card-buttons">
-                    <button onclick="pvpUseItem('${item.name}')" style="background-color: #90ee90;">${btnText}</button>
-                    <button class="info-btn" onclick="openItemInfo('${item.name}')">Подробнее</button>
+                    <button onclick="pvpUseItem(${safeInlineArg(item.name)})" style="background-color: #90ee90;">${btnText}</button>
+                    <button class="info-btn" onclick="openItemInfo(${safeInlineArg(item.name)})">Подробнее</button>
                 </div>
             `;
             list.appendChild(div);
@@ -2002,7 +2056,15 @@ function enablePvpButtons() {
     if (skill) skill.disabled = pvpGameState.myMp < 100;
 }
 
-function logPvp(msg) { const log = document.getElementById('pvp-log'); if (!log) return; log.innerHTML += `<br>> ${msg}`; log.scrollTop = log.scrollHeight; }
+function logPvp(msg) {
+    const log = document.getElementById('pvp-log');
+    if (!log) return;
+    const line = document.createElement('div');
+    line.textContent = '> ' + String(msg ?? '');
+    log.appendChild(line);
+    while (log.children.length > 250) log.firstElementChild.remove();
+    log.scrollTop = log.scrollHeight;
+}
 
 function animatePvpItemUse(item, isDamage) {
     const battlefield = document.getElementById('pvp-battlefield-bg');
@@ -2117,7 +2179,15 @@ function spawnEnemy() {
     isPlayerTurn = true; enemyIsCharging = false; setTurnIndicator(true); checkButtons();
 }
 
-function addLog(msg) { const logBox = document.getElementById('rpg-log'); logBox.innerHTML += `<br>> ${msg}`; logBox.scrollTop = logBox.scrollHeight; }
+function addLog(msg) {
+    const logBox = document.getElementById('rpg-log');
+    if (!logBox) return;
+    const line = document.createElement('div');
+    line.textContent = '> ' + String(msg ?? '');
+    logBox.appendChild(line);
+    while (logBox.children.length > 300) logBox.firstElementChild.remove();
+    logBox.scrollTop = logBox.scrollHeight;
+}
 function setTurnIndicator(isPlayer) { const ind = document.getElementById('rpg-turn-indicator'); if (isPlayer) { ind.innerText = "ВАШ ХОД"; ind.className = "turn-indicator turn-player"; } else { ind.innerText = "ХОД ВРАГА"; ind.className = "turn-indicator turn-enemy"; } }
 
 function updateRpgUI() {
@@ -2814,10 +2884,10 @@ async function renderInventory() {
         if (item.qty > 1) div.innerHTML += `<div class="qty-badge">x${item.qty}</div>`;
         div.innerHTML += `
             ${getImgTag(item.img)}
-            <div class="inv-card-name"><span class="rarity-${item.rarity}">${item.name}</span></div>
+            <div class="inv-card-name"><span class="rarity-${escapeHtml(item.rarity)}">${escapeHtml(item.name)}</span></div>
             <div class="inv-card-buttons">
-                <button onclick="sellItem('${item.name}')" style="background-color: #90ee90;">Продать</button>
-                <button class="info-btn" onclick="openItemInfo('${item.name}')">Подробнее</button>
+                <button onclick="sellItem(${safeInlineArg(item.name)})" style="background-color: #90ee90;">Продать</button>
+                <button class="info-btn" onclick="openItemInfo(${safeInlineArg(item.name)})">Подробнее</button>
             </div>
         `;
         list.appendChild(div);
@@ -2827,11 +2897,11 @@ async function renderInventory() {
             const div = document.createElement('div'); div.className = 'inv-card'; div.style.backgroundColor = '#ffdddd';
             div.innerHTML = `
                 ${getImgTag(item.img)}
-                <div class="inv-card-name"><span class="rarity-${item.rarity}">${item.item_name}</span></div>
+                <div class="inv-card-name"><span class="rarity-${escapeHtml(item.rarity)}">${escapeHtml(item.item_name)}</span></div>
                 <div style="font-size:10px; color:red; margin-bottom:5px;">На продаже: ${item.price}</div>
                 <div class="inv-card-buttons">
                     <button onclick="removeListing(${item.id})" style="background-color: #ffcccb;">Снять</button>
-                    <button class="info-btn" onclick="openItemInfo('${item.item_name}')">Подробнее</button>
+                    <button class="info-btn" onclick="openItemInfo(${safeInlineArg(item.item_name)})">Подробнее</button>
                 </div>
             `;
             list.appendChild(div);
@@ -2873,13 +2943,13 @@ async function renderMarket() {
             <div style="display:flex; align-items:center;">
                 ${getImgTag(item.img)}
                 <div>
-                    <b class="rarity-${item.rarity}">${item.item_name}</b><br>
-                    <small>Продавец: ${item.seller}</small>
+                    <b class="rarity-${escapeHtml(item.rarity)}">${escapeHtml(item.item_name)}</b><br>
+                    <small>Продавец: ${escapeHtml(item.seller)}</small>
                 </div>
             </div>
             <div style="display:flex; flex-direction:column; gap:5px; width:100px;">
                 ${actionBtn}
-                <button class="info-btn" onclick="openItemInfo('${item.item_name}')">Подробнее</button>
+                <button class="info-btn" onclick="openItemInfo(${safeInlineArg(item.item_name)})">Подробнее</button>
             </div>
         `;
         list.appendChild(div);
@@ -2896,18 +2966,53 @@ async function buyItem(listing_id) {
 }
 
 async function renderLeaderboard() {
-    const tbody = document.getElementById('leaderboard-body'); tbody.innerHTML = '<tr><td colspan="6">Загрузка...</td></tr>';
+    const tbody = document.getElementById('leaderboard-body');
+    if (!tbody) return;
+    tbody.replaceChildren();
+    const loading = document.createElement('tr');
+    const loadingCell = document.createElement('td');
+    loadingCell.colSpan = 6;
+    loadingCell.textContent = 'Загрузка...';
+    loading.appendChild(loadingCell);
+    tbody.appendChild(loading);
+
     const { data, error } = await supabaseClient.from('player_public_profiles').select('username, max_score, item_points, pvp_pts');
-    if (!error) {
-        let sorted = data.map(u => ({ ...u, total: (u.max_score||0)+(u.item_points||0) })).sort((a, b) => b.total - a.total).slice(0, 10);
-        tbody.innerHTML = ''; 
-        sorted.forEach((u, i) => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${i+1}</td><td>${u.username}</td><td style="color:orange; font-weight:bold;">${u.pvp_pts||0}</td><td>${u.max_score||0}</td><td>${u.item_points||0}</td><td><button onclick="viewProfile('${u.username}')" style="font-size:12px;">Профиль</button></td>`;
-            if (u.username === currentUser) tr.style.backgroundColor = '#FFFF00';
-            tbody.appendChild(tr);
-        });
+    if (error || !Array.isArray(data)) {
+        loadingCell.textContent = 'Не удалось загрузить таблицу.';
+        return;
     }
+
+    const sorted = data
+        .map(u => ({ ...u, total: (Number(u.max_score) || 0) + (Number(u.item_points) || 0) }))
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 10);
+
+    tbody.replaceChildren();
+    sorted.forEach((u, i) => {
+        const tr = document.createElement('tr');
+        if (u.username === currentUser) tr.style.backgroundColor = '#FFFF00';
+        const cells = [
+            String(i + 1),
+            String(u.username ?? ''),
+            String(Number(u.pvp_pts) || 0),
+            String(Number(u.max_score) || 0),
+            String(Number(u.item_points) || 0)
+        ];
+        cells.forEach(value => {
+            const td = document.createElement('td');
+            td.textContent = value;
+            tr.appendChild(td);
+        });
+        const actionCell = document.createElement('td');
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.style.fontSize = '12px';
+        button.textContent = 'Профиль';
+        button.addEventListener('click', () => viewProfile(String(u.username ?? '')));
+        actionCell.appendChild(button);
+        tr.appendChild(actionCell);
+        tbody.appendChild(tr);
+    });
 }
 
 async function viewProfile(username) {
@@ -2942,9 +3047,9 @@ async function viewProfile(username) {
             if (item.qty > 1) div.innerHTML += `<div class="qty-badge">x${item.qty}</div>`;
             div.innerHTML += `
                 ${getImgTag(item.img)}
-                <div class="inv-card-name"><span class="rarity-${item.rarity}">${item.name}</span></div>
+                <div class="inv-card-name"><span class="rarity-${escapeHtml(item.rarity)}">${escapeHtml(item.name)}</span></div>
                 <div class="inv-card-buttons">
-                    <button class="info-btn" onclick="openItemInfo('${item.name}')">Подробнее</button>
+                    <button class="info-btn" onclick="openItemInfo(${safeInlineArg(item.name)})">Подробнее</button>
                 </div>
             `;
             invEl.appendChild(div);
@@ -2954,10 +3059,10 @@ async function viewProfile(username) {
                 const div = document.createElement('div'); div.className = 'inv-card'; div.style.backgroundColor = '#ffdddd';
                 div.innerHTML = `
                     ${getImgTag(item.img)}
-                    <div class="inv-card-name"><span class="rarity-${item.rarity}">${item.item_name}</span></div>
+                    <div class="inv-card-name"><span class="rarity-${escapeHtml(item.rarity)}">${escapeHtml(item.item_name)}</span></div>
                     <div style="font-size:10px; color:red; margin-bottom:5px;">На продаже</div>
                     <div class="inv-card-buttons">
-                        <button class="info-btn" onclick="openItemInfo('${item.item_name}')">Подробнее</button>
+                        <button class="info-btn" onclick="openItemInfo(${safeInlineArg(item.item_name)})">Подробнее</button>
                     </div>
                 `;
                 invEl.appendChild(div);
@@ -2990,11 +3095,11 @@ function openItemMenu() {
             if (item.qty > 1) div.innerHTML += `<div class="qty-badge">x${item.qty}</div>`;
             div.innerHTML += `
                 ${getImgTag(item.img)}
-                <div class="inv-card-name"><span class="rarity-${item.rarity}">${item.name}</span></div>
+                <div class="inv-card-name"><span class="rarity-${escapeHtml(item.rarity)}">${escapeHtml(item.name)}</span></div>
                 <div style="font-size:10px; margin-bottom:5px;">${effectText}</div>
                 <div class="inv-card-buttons">
-                    <button onclick="useItemInBattle('${item.name}')" style="background-color: #90ee90;">${btnText}</button>
-                    <button class="info-btn" onclick="openItemInfo('${item.name}')">Подробнее</button>
+                    <button onclick="useItemInBattle(${safeInlineArg(item.name)})" style="background-color: #90ee90;">${btnText}</button>
+                    <button class="info-btn" onclick="openItemInfo(${safeInlineArg(item.name)})">Подробнее</button>
                 </div>
             `;
             list.appendChild(div);
