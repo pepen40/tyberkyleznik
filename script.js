@@ -1884,7 +1884,23 @@ function selectChar(type) {
     const equippedHp = baseHp + (u.hp * 20) + gearBonus.hp;
     const rawAtk = baseAtk + (u.atk * 5) + gearBonus.atk;
     rpgChar = { name, class: charClass, maxHp: equippedHp, hp: equippedHp, atk: Math.max(1, Math.round(rawAtk * (1 + (gearBonus.atkPercent || 0) / 100))), mpGain, img: imgUrl, gearBonus };
-    rpgFloorMain = 1; rpgFloorSub = 1; rpgMana = 0; rpgPlayerBorisHp = 0; rpgPlayerParashnikHp = 0; rpgEnemyBorisHp = 0; rpgEnemyParashnikHp = 0; rpgItemUsed = false; rpgPlayerDefending = false; rpgEnemyStunned = false;
+    // Offline checkpoints: only floors already reached by this character are selectable.
+    const maxReachedFloor = Math.max(1, Number(currentMaxFloors?.[type]) || 1);
+    const checkpointChoices = [1];
+    for (let checkpoint = 5; checkpoint <= maxReachedFloor; checkpoint += 5) checkpointChoices.push(checkpoint);
+    let selectedStartFloor = 1;
+    if (checkpointChoices.length > 1) {
+        const choice = prompt(
+            `С какого чекпоинта начать?\nДоступно: ${checkpointChoices.join(', ')}\n\nВведи номер этажа:`,
+            String(checkpointChoices[checkpointChoices.length - 1])
+        );
+        if (choice !== null) {
+            const requested = Number.parseInt(choice, 10);
+            if (checkpointChoices.includes(requested)) selectedStartFloor = requested;
+        }
+    }
+    rpgFloorMain = selectedStartFloor; rpgFloorSub = 1;
+    rpgMana = 0; rpgPlayerBorisHp = 0; rpgPlayerParashnikHp = 0; rpgEnemyBorisHp = 0; rpgEnemyParashnikHp = 0; rpgItemUsed = false; rpgPlayerDefending = false; rpgEnemyStunned = false;
     document.getElementById('rpg-char-select').classList.add('hidden');
     document.getElementById('rpg-battle-screen').classList.remove('hidden');
     document.getElementById('rpg-log').innerHTML = `Ты выбрал ${rpgChar.name}.<br>В БОЙ!<br>`;
@@ -2154,7 +2170,18 @@ async function winRpg() {
             if (phoenixHeal > 0) { rpgChar.hp += phoenixHeal; addLog(`Сердце феникса восстановило ${phoenixHeal} HP перед следующим этажом.`); }
         }
         rpgFloorSub++;
-        if (rpgFloorSub > 5) { rpgFloorSub = 1; rpgFloorMain++; changeBackground(); }
+        if (rpgFloorSub > 5) {
+            rpgFloorSub = 1;
+            rpgFloorMain++;
+            changeBackground();
+            if (rpgFloorMain % 5 === 0) {
+                const checkpointKey = `rpg_offline_checkpoint_seen_${currentUser || 'guest'}_${currentCharType}_${rpgFloorMain}`;
+                if (!localStorage.getItem(checkpointKey)) {
+                    addLog(`🎯 Вы достигли чекпоинта — этаж ${rpgFloorMain}!`);
+                    localStorage.setItem(checkpointKey, '1');
+                }
+            }
+        }
         rpgMana = Math.min(rpgMaxMana, rpgMana + 30);
         enemyTurnTimeout = setTimeout(() => { addLog(`=== ЭТАЖ ${rpgFloorMain}.${rpgFloorSub} ===`); spawnEnemy(); }, 2000);
     }
