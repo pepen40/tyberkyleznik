@@ -553,7 +553,7 @@ async function finishAuthLogin(user) {
     if (!user?.id) throw new Error("Не удалось определить пользователя.");
     const { data, error } = await supabaseClient
         .from('players')
-        .select('*')
+        .select('id,user_id,username,max_score,coins,inventory,item_points,rpg_upgrades,rpg_max_floors,created_at,last_online,pvp_pts')
         .eq('user_id', user.id)
         .single();
     if (error || !data) throw new Error("Профиль игрока не найден: " + (error?.message || "нет записи"));
@@ -2854,7 +2854,7 @@ async function buyItem(listing_id) {
 
 async function renderLeaderboard() {
     const tbody = document.getElementById('leaderboard-body'); tbody.innerHTML = '<tr><td colspan="6">Загрузка...</td></tr>';
-    const { data, error } = await supabaseClient.from('players').select('username, max_score, item_points, pvp_pts');
+    const { data, error } = await supabaseClient.from('player_public_profiles').select('username, max_score, item_points, pvp_pts');
     if (!error) {
         let sorted = data.map(u => ({ ...u, total: (u.max_score||0)+(u.item_points||0) })).sort((a, b) => b.total - a.total).slice(0, 10);
         tbody.innerHTML = ''; 
@@ -2871,7 +2871,7 @@ async function viewProfile(username) {
     const modal = document.getElementById('profile-modal');
     const nameEl = document.getElementById('prof-name'); const statsEl = document.getElementById('prof-stats'); const invEl = document.getElementById('prof-inventory');
     nameEl.textContent = "Профиль: " + username; statsEl.innerHTML = "Загрузка..."; invEl.innerHTML = ''; modal.classList.remove('hidden');
-    const { data, error } = await supabaseClient.from('players').select('*').eq('username', username).single();
+    const { data, error } = await supabaseClient.from('player_public_profiles').select('*').eq('username', username).single();
     if (error || !data) { statsEl.textContent = "Ошибка."; return; }
     const state = onlineChannel ? onlineChannel.presenceState() : {};
     const isOnline = state[username] !== undefined;
