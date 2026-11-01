@@ -255,7 +255,9 @@ serve(async (req) => {
       const price=Number(data?.price);
       if(price!==250 && price!==390) return new Response(JSON.stringify({success:false,error:'Неверная цена кейса'}),{headers:{...corsHeaders,'Content-Type':'application/json'},status:200});
       const currentLoot=price===390?case2Loot:case1Loot;
-      let roll=Math.random()*100,currentChance=0,droppedItem=null;
+      const caseRoll = new Uint32Array(1);
+      crypto.getRandomValues(caseRoll);
+      let roll=(caseRoll[0] / 0x100000000) * 100,currentChance=0,droppedItem=null;
       for(const item of currentLoot){currentChance+=item.chance;if(roll<=currentChance){droppedItem=item;break;}}
       if(!droppedItem)droppedItem=currentLoot[currentLoot.length-1];
       const {data:result,error:txError}=await supabaseAdmin.rpc('open_player_case',{
