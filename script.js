@@ -3,35 +3,37 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // === Безопасная сессия игрока для защищённых Edge Functions ===
-let playerSessionToken = null;
-try { playerSessionToken = localStorage.getItem('pepen-player-session') || null; } catch (_) {}
-const originalFunctionsInvoke = supabaseClient.functions.invoke.bind(supabaseClient.functions);
+// Добавляем заголовок на уровне fetch самого Supabase FunctionsClient.
+// Так заголовок попадёт в реальный HTTP-запрос независимо от invoke options.
+const EDGE_FUNCTION_NAME = 'award-coins';
 
-supabaseClient.functions.invoke = (functionName, options = {}) => {
-    console.log('[award-coins wrapper]', functionName, {
-    tokenExists: !!localStorage.getItem('pepen-player-session')
-});
-    let currentPlayerToken = null;
-
+const originalFunctionsFetch = supabaseClient.functions.fetch.bind(supabaseClient.functions);
+supabaseClient.functions.fetch = (input, init = {}) => {
+    let headers;
     try {
-        currentPlayerToken = localStorage.getItem('pepen-player-session') || null;
+        headers = new Headers(init.headers || {});
+    } catch (_) {
+        headers = new Headers();
+    }
+
+    let requestUrl = '';
+    try {
+        requestUrl = typeof input === 'string' ? input : input?.url || '';
     } catch (_) {}
 
-    if (functionName === 'award-coins' && currentPlayerToken) {
-        options = {
-            ...options,
-            headers: {
-                ...(options.headers || {}),
-                'x-player-session': currentPlayerToken
-            }
-        };
+    if (requestUrl.includes('/functions/v1/' + EDGE_FUNCTION_NAME)) {
+        let token = null;
+        try {
+            token = localStorage.getItem('pepen-player-session') || null;
+        } catch (_) {}
+
+        if (token) {
+            headers.set('x-player-session', token);
+        }
     }
-console.log('[award-coins headers]', functionName, {
-    hasPlayerSession: !!options.headers?.['x-player-session']
-});
-    return originalFunctionsInvoke(functionName, options);
-};
-const EDGE_FUNCTION_NAME = 'award-coins'; 
+
+    return originalFunctionsFetch(input, { ...init, headers });
+}; 
 const battleBackgrounds = ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png', 'bg6.png'];
 
 // === БЕЗ АВТОЛОГИНА, ПОГОДА И ЧАСЫ ВКЛЮЧЕНЫ ПО УМОЛЧАНИЮ ===
