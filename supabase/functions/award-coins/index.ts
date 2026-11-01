@@ -101,6 +101,29 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403
       });
     }
+    const cooldowns: Record<string, number> = {
+      chess_reward: 60,
+      roach_clear: 60,
+      score: 3,
+      rpg_win: 3,
+      pvp_result: 3,
+      claim_rpg_reward: 2
+    };
+    const cooldownSeconds = cooldowns[action];
+    if (cooldownSeconds) {
+      const { data: allowed, error: cooldownError } = await supabaseAdmin.rpc('check_action_cooldown', {
+        p_user_id: authData.user.id,
+        p_action: action,
+        p_cooldown_seconds: cooldownSeconds
+      });
+      if (cooldownError) throw new Error('Не удалось проверить частоту действий: ' + cooldownError.message);
+      if (allowed !== true) {
+        return new Response(JSON.stringify({ success: false, error: 'Слишком часто. Подожди немного.' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 429
+        });
+      }
+    }
+
     // These actions still trust results calculated in the player's browser.
     // Do not pay out currency/rating until their gameplay is validated server-side.
     const temporarilyDisabledClientRewards = new Set([
@@ -130,29 +153,6 @@ serve(async (req) => {
           rewardPaused: true,
           error: 'Награда за победы временно приостановлена до серверной проверки игрового результата.'
         }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
-      }
-    }
-
-    const cooldowns: Record<string, number> = {
-      chess_reward: 60,
-      roach_clear: 60,
-      score: 3,
-      rpg_win: 3,
-      pvp_result: 3,
-      claim_rpg_reward: 2
-    };
-    const cooldownSeconds = cooldowns[action];
-    if (cooldownSeconds) {
-      const { data: allowed, error: cooldownError } = await supabaseAdmin.rpc('check_action_cooldown', {
-        p_user_id: authData.user.id,
-        p_action: action,
-        p_cooldown_seconds: cooldownSeconds
-      });
-      if (cooldownError) throw new Error('Не удалось проверить частоту действий: ' + cooldownError.message);
-      if (allowed !== true) {
-        return new Response(JSON.stringify({ success: false, error: 'Слишком часто. Подожди немного.' }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 429
-        });
       }
     }
 
