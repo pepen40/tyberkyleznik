@@ -1,6 +1,20 @@
 const SUPABASE_URL = 'https://zfvinbamwavibnhmfwnz.supabase.co'; 
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpmdmluYmFtd2F2aWJuaG1md256Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4ODE2MjAsImV4cCI6MjEwODQ1NzYyMH0.FT5tlKgLUCrFs0zzY-BGimCmU9qNZmIzMW8LyysMmgE';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+supabaseClient.auth.onAuthStateChange(async (event) => {
+    if (event === 'PASSWORD_RECOVERY') {
+        const newPassword = prompt("Введи новый пароль (минимум 8 символов):");
+        if (!newPassword || newPassword.length < 8) {
+            alert("Пароль должен содержать минимум 8 символов.");
+            await supabaseClient.auth.signOut();
+            return;
+        }
+        const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+        if (error) alert("Не удалось изменить пароль: " + error.message);
+        else alert("Пароль успешно изменён. Теперь войди с новым паролем.");
+        await supabaseClient.auth.signOut();
+    }
+});
 const EDGE_FUNCTION_NAME = 'award-coins'; 
 const battleBackgrounds = ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png', 'bg6.png'];
 
@@ -624,6 +638,19 @@ async function register() {
         msg.style.color = "green";
         msg.textContent = "Письмо подтверждения отправлено на email. Подтверди адрес, затем войди.";
     }
+}
+
+
+async function resetPassword() {
+    const email = document.getElementById('email').value.trim();
+    const msg = document.getElementById('auth-msg');
+    msg.style.color = '';
+    if (!email) { msg.textContent = "Сначала введи email."; return; }
+    const redirectTo = window.location.origin + window.location.pathname;
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo });
+    if (error) { msg.textContent = "Не удалось отправить письмо: " + error.message; return; }
+    msg.style.color = "green";
+    msg.textContent = "Письмо для сброса пароля отправлено на email.";
 }
 
 async function login() {
