@@ -28,6 +28,10 @@ grant select (
 ) on table public.players to authenticated;
 grant update (last_online) on table public.players to authenticated;
 
+-- Remove the legacy plaintext password fields; Supabase Auth owns credentials now.
+alter table public.players drop column if exists password;
+alter table public.players drop column if exists password_hash;
+
 drop view if exists public.player_public_profiles;
 create table if not exists public.player_public_profiles (
   player_id bigint primary key,
