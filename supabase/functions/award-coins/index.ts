@@ -73,7 +73,7 @@ serve(async (req) => {
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     if (!serviceKey) throw new Error("Нет SUPABASE_SERVICE_ROLE_KEY в секретах!");
     const authorization = req.headers.get('Authorization') || '';
-    const tokenMatch = authorization.match(/^Bearer\\s+(.+)$/i);
+    const tokenMatch = authorization.match(/^Bearer\s+(.+)$/i);
     if (!tokenMatch) {
       return new Response(JSON.stringify({ success: false, error: 'Требуется авторизация.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401
