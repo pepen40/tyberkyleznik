@@ -5,7 +5,7 @@ Project: `zfvinbamwavibnhmfwnz`
 ## Current deployment
 
 - Edge Function: `award-coins`
-- Active version at the latest security pass: `47`
+- Active version at the latest security pass: `48`
 - JWT verification: enabled
 - Browser client uses only the publishable key. The service-role key must remain exclusively in Edge Function secrets.
 
@@ -15,7 +15,8 @@ Project: `zfvinbamwavibnhmfwnz`
 - Browser roles cannot directly write to player balances, inventory, marketplace listings, action cooldowns, reward guardrails, or room membership records.
 - Economy and account mutations are routed through the JWT-verifying Edge Function and service-role-only SQL functions.
 - Room membership is server-managed; Realtime room policies check the authenticated user's membership.
-- Global and private-room chat sends are routed through the Edge Function. Direct client broadcasts for `site_message` and `chat_message` are denied by the Realtime INSERT policy.
+- Global and private-room chat sends are routed through the Edge Function. The sender nickname is sourced from the authenticated profile; direct client broadcasts for `site_message` and `chat_message` are denied by the Realtime INSERT policy.
+- Chat room admission is checked through the service-role-only `join_realtime_room` RPC; browser roles have no direct access to the membership table.
 - Game-result rewards that are not verified by a server-authoritative game engine remain deliberately paused.
 
 ## Migration history caveat
