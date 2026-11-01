@@ -2266,14 +2266,11 @@ async function winRpg() {
     let reward = Math.min(100, 10 + (rpgFloorMain * 3));
     const wonFloorMain = rpgFloorMain;
     try {
-        const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'rpg_win', username: currentUser, data: { floorMain: wonFloorMain, floorSub: rpgFloorSub } } });
-        if (!error && data && data.success) { currentCoins = data.newCoins; if (data.newUpgrades) currentUpgrades = data.newUpgrades; updateUI(); addLog(`Победа! +${data.earned} монет.${data.bossBonus ? ` БОНУС БОССА: +${data.bossBonus}!` : ''}`); }
+        const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'rpg_win', username: currentUser, data: { floorMain: wonFloorMain, floorSub: rpgFloorSub, charType: currentCharType } } });
+        if (!error && data && data.success) { currentCoins = data.newCoins; if (data.newUpgrades) currentUpgrades = data.newUpgrades; if (data.newMaxFloors) currentMaxFloors = data.newMaxFloors; updateUI(); addLog(`Победа! +${data.earned} монет.${data.bossBonus ? ` БОНУС БОССА: +${data.bossBonus}!` : ''}`); }
         else if (data && data.error) { addLog(`Сервер: ${data.error}`); }
     } catch(e) { addLog(`Ошибка сети: ${e.message}`); }
     finally {
-        try {
-            await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'update_floor', username: currentUser, data: { charType: currentCharType, floor: wonFloorMain } } });
-        } catch(e) { console.error(e); }
         const gearState = ensureRpgGear();
         const equippedCharm = gearState.equipped[currentCharType]?.charm;
         if (equippedCharm === 'phoenix_heart' && rpgChar && rpgChar.hp > 0) {
