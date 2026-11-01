@@ -1107,55 +1107,6 @@ function initSiteGlobalChat() {
     input.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); submit(); } });
 }
 
-async function register() {
-    const u = document.getElementById('username').value.trim();
-    const p = document.getElementById('password').value;
-    if (!u || !p) return;
-    if (!/^[a-zA-Zа-яА-Я0-9_]{3,20}$/.test(u)) { document.getElementById('auth-msg').textContent = "Ник: 3-20 символов, буквы/цифры/_"; return; }
-    const { data: existing } = await supabaseClient.from('players').select('username').eq('username', u);
-    if (existing && existing.length > 0) { document.getElementById('auth-msg').textContent = "Ник занят."; return; }
-    const { error } = await supabaseClient.from('players').insert([{ 
-        username: u, password: p, max_score: 0, coins: 200, inventory: [], item_points: 0,
-        rpg_upgrades: {"ashab":{"hp":0,"atk":0},"apostol":{"hp":0,"atk":0},"mee":{"hp":0,"atk":0}},
-        rpg_max_floors: {"ashab":0,"apostol":0,"mee":0}, pvp_pts: 0
-    }]);
-    if (error) document.getElementById('auth-msg').textContent = "Ошибка: " + error.message;
-    else { document.getElementById('auth-msg').style.color = "green"; document.getElementById('auth-msg').textContent = "Успех! Жми Войти."; }
-}
-
-async function login() {
-    const u = document.getElementById('username').value.trim();
-    const p = document.getElementById('password').value;
-    if (!u || !p) return;
-    const { data, error } = await supabaseClient.from('players').select('*').eq('username', u).eq('password', p).single();
-    if (error || !data) { document.getElementById('auth-msg').textContent = "Неверный ник или пароль."; }
-    else {
-        currentUser = data.username;
-        currentHighScore = data.max_score || 0;
-        currentCoins = data.coins || 0;
-        currentInventory = data.inventory || [];
-        currentItemPoints = data.item_points || 0;
-        currentPvpPts = data.pvp_pts || 0;
-        currentUpgrades = data.rpg_upgrades || {"ashab":{"hp":0,"atk":0},"apostol":{"hp":0,"atk":0},"mee":{"hp":0,"atk":0}};
-        ensureRpgGear();
-        currentMaxFloors = data.rpg_max_floors || {"ashab":0,"apostol":0,"mee":0};
-        await supabaseClient.from('players').update({ last_online: new Date().toISOString() }).eq('username', u);
-
-        document.getElementById('auth-screen').classList.add('hidden');
-        document.getElementById('main-screen').classList.remove('hidden');
-        startSheep(); // Баран появляется только после успешной авторизации
-        startRoachSchedule(ROACH_FIRST_DELAY); // Первое нашествие через минуту
-        preloadSounds(); 
-        initOnlineCounter();
-        initLobby();
-        initSiteGlobalChat();
-        updateUI();
-        resetGame();
-        renderCharStats();
-        switchTab('minigames');
-
-    }
-}
 
 function updateUI() {
     document.getElementById('ui-username').textContent = currentUser;
