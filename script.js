@@ -3034,10 +3034,17 @@ document.getElementById("freeotp-modal")?.addEventListener("click", function(eve
     b: { k: 'kingb.png', q: 'queenb.png', r: 'rookb.png', b: 'bishopb.png', n: 'knightb.png', p: 'pawnb.png' }
   };
   const levels = {
-    1: { skill: 0, depth: 1 }, 2: { skill: 3, depth: 5 },
-    3: { skill: 7, depth: 9 }, 4: { skill: 13, depth: 13 }, 5: { skill: 20, depth: 17 }
+    1: { depth: null, random: 100, best: 0, alternative: 0 },
+    2: { depth: 2, random: 35, best: 15, alternative: 50 },
+    3: { depth: 4, random: 15, best: 30, alternative: 55 },
+    4: { depth: 7, random: 5, best: 55, alternative: 40 },
+    5: { depth: 12, random: 0, best: 85, alternative: 15 }
   };
   let game = null, engine = null, engineReady = false, engineBusy = false;
+  // Список ходов, которые Stockfish вернул через MultiPV для текущей позиции.
+  let enginePvCandidates = new Map();
+  let enginePvDepth = 0;
+  let engineSearchFen = null;
   let humanColor = 'w', level = 3, selectedSquare = null, legalTargets = [], ended = false;
   let onlineChessMode = false, onlineChessRoomId = null, onlineChessChannel = null, onlineChessOpponent = '', applyingRemoteChessMove = false;
   const $ = id => document.getElementById(id);
@@ -3095,21 +3102,71 @@ document.getElementById("freeotp-modal")?.addEventListener("click", function(eve
       engine = new Worker(workerUrl);
       engine.onmessage = event => {
         const line = String(event.data || '');
+
         if (line === 'uciok') {
-          engine.postMessage('isready');
+          // Настройки движка применяются до первого поиска.
+          configureEngine();
         } else if (line === 'readyok') {
           engineReady = true;
           if (!onlineChessMode) {
             setEngineStatus('PEPENAI: подключён');
-            if (game && !ended && game.turn() !== humanColor) askEngineMove();
+            if (game && !ended) {
+              if (game.turn() !== humanColor) {
+                askEngineMove();
+              } else {
+                setStatus(humanColor === 'w' ? 'Твой ход — белые.' : 'Твой ход — чёрные.');
+              }
+            }
+          }
+        } else if (line.startsWith('info ')) {
+          // Сохраняем MultiPV-кандидаты только для текущей позиции и самой глубокой итерации.
+          if (!engineBusy || !engineSearchFen || !game || game.fen() !== engineSearchFen) return;
+          const depthMatch = line.match(/\bdepth\s+(\d+)/);
+          const pvMatch = line.match(/\bmultipv\s+(\d+)/);
+          const moveMatch = line.match(/\bpv\s+([a-h][1-8][a-h][1-8][qrbn]?)/);
+          if (!depthMatch || !pvMatch || !moveMatch) return;
+
+          const depth = Number(depthMatch[1]);
+          const rank = Number(pvMatch[1]);
+          if (depth > enginePvDepth) {
+            enginePvDepth = depth;
+            enginePvCandidates.clear();
+          }
+          if (depth === enginePvDepth && rank >= 1 && rank <= 5) {
+            enginePvCandidates.set(rank, moveMatch[1]);
           }
         } else if (line.startsWith('bestmove')) {
+          if (onlineChessMode) {
+            engineBusy = false;
+            return;
+          }
+          // Игнорируем bestmove от stop/старого поиска, если для него нет активной позиции.
+          if (!engineBusy || !engineSearchFen) return;
           engineBusy = false;
-          if (onlineChessMode) return;
+
           const match = line.match(/^bestmove\s+([a-h][1-8][a-h][1-8][qrbn]?)/);
-          if (!match || !game || ended) return;
-          const uci = match[1];
-          const positionAtReply = game.fen();
+          if (!match || !game || ended) {
+            enginePvCandidates.clear();
+            engineSearchFen = null;
+            enginePvDepth = 0;
+            return;
+          }
+
+          const positionAtReply = engineSearchFen || game.fen();
+          if (game.fen() !== positionAtReply) {
+            enginePvCandidates.clear();
+            engineSearchFen = null;
+            enginePvDepth = 0;
+            return;
+          }
+
+          const uci = chooseEngineMove(match[1]);
+          enginePvCandidates.clear();
+          engineSearchFen = null;
+          enginePvDepth = 0;
+
+          if (!uci) return;
+
           // Небольшая пауза для естественного ощущения, что бот обдумывает ход.
           setStatus('PEPENAI обдумывает ход…');
           window.setTimeout(() => {
@@ -3118,16 +3175,21 @@ document.getElementById("freeotp-modal")?.addEventListener("click", function(eve
               const from = uci.slice(0, 2), to = uci.slice(2, 4);
               const movingPiece = capturePieceForAnimation(from);
               const playedMove = game.move({
-    from,
-    to,
-    promotion: uci[4] || 'q'
-});
-playMoveSound(playedMove);
-              selectedSquare = null; legalTargets = [];
+                from,
+                to,
+                promotion: uci[4] || 'q'
+              });
+              if (!playedMove) throw new Error('Stockfish выбрал недопустимый ход');
+              playMoveSound(playedMove);
+              selectedSquare = null;
+              legalTargets = [];
               renderBoard();
               animatePieceMove(movingPiece, to);
               updateGameStatus();
-            } catch (e) { setStatus('Не удалось применить ход движка. Начни новую партию.'); }
+            } catch (e) {
+              console.error('Ошибка хода PEPENAI:', e);
+              setStatus('Не удалось применить ход движка. Начни новую партию.');
+            }
           }, 1000);
         } else if (line.startsWith('id name')) {
           if (!onlineChessMode) setEngineStatus('Stockfish: ' + line.slice(7));
@@ -3135,6 +3197,7 @@ playMoveSound(playedMove);
       };
       engine.onerror = () => {
         engineReady = false;
+        engineBusy = false;
         if (!onlineChessMode) {
           setEngineStatus('PEPENAI: ошибка загрузки');
           setStatus('Не удалось загрузить PEPENAI. Проверь подключение к интернету и перезагрузи страницу.');
@@ -3172,14 +3235,28 @@ playMoveSound(playedMove);
       $('chess-setup').classList.add('hidden');
       $('chess-play').classList.remove('hidden');
       renderBoard();
-      startEngine();
 
-      if (engineReady) configureEngine();
-      if (humanColor === 'b') {
-        setStatus(engineReady ? 'PEPENAI думает…' : 'Загружаю PEPENAI. Подожди первого хода…');
-        if (engineReady) askEngineMove();
+      if (level === 1) {
+        // Первый уровень вообще не запускает Stockfish: только случайные легальные ходы.
+        engineBusy = false;
+        setEngineStatus('Уровень 1: 100% случайные ходы');
       } else {
-        setStatus(engineReady ? 'Твой ход — белые.' : 'Твой ход — белые. PEPENAI загружается…');
+        startEngine();
+        // Если Worker уже загружен, применяем настройки нового уровня.
+        // Если ещё загружается, configureEngine() вызовется после uciok.
+        if (engineReady) configureEngine();
+      }
+
+      if (humanColor === 'b') {
+        if (level === 1) {
+          setStatus('Лёгкий бот думает…');
+          askEngineMove();
+        } else {
+          setStatus('Загружаю PEPENAI. Подожди первого хода…');
+          if (engineReady) askEngineMove();
+        }
+      } else {
+        setStatus(level === 1 ? 'Твой ход — белые.' : 'Твой ход — белые. PEPENAI загружается…');
       }
     } catch (error) {
       console.error('Ошибка запуска шахмат:', error);
@@ -3188,63 +3265,129 @@ playMoveSound(playedMove);
     }
   }
   function configureEngine() {
-    const cfg = levels[level];
-    engine.postMessage('setoption name Skill Level value ' + cfg.skill);
+    if (!engine) return;
+
+    // Skill Level 20 нужен, чтобы MultiPV показывал честный рейтинг вариантов,
+    // а слабость уровней задавалась глубиной и вероятностями из таблицы.
+    engineReady = false;
+    engineBusy = false;
+    engineSearchFen = null;
+    enginePvDepth = 0;
+    enginePvCandidates.clear();
+
+    engine.postMessage('stop');
+    engine.postMessage('setoption name Skill Level value 20');
+    engine.postMessage('setoption name MultiPV value 5');
     engine.postMessage('isready');
   }
 
-function askEngineMove() {
-    if (onlineChessMode || !engine || !engineReady || engineBusy || ended ||
-        !game || game.turn() === humanColor) return;
+  function moveToUci(move) {
+    return move ? move.from + move.to + (move.promotion || '') : null;
+  }
 
-    // Первый уровень: очень слабый бот со случайными допустимыми ходами.
-    if (level === 1) {
-        engineBusy = true;
-        setStatus('Лёгкий бот думает…');
+  function randomLegalMoveUci(excludeUci = null) {
+    if (!game) return null;
+    const moves = game.moves({ verbose: true })
+      .map(moveToUci)
+      .filter(uci => uci && uci !== excludeUci);
+    if (!moves.length) return null;
+    return moves[Math.floor(Math.random() * moves.length)];
+  }
 
-        const positionAtStart = game.fen();
+  function chooseEngineMove(bestUci) {
+    const cfg = levels[level];
+    if (!cfg || !game) return bestUci;
 
-        window.setTimeout(() => {
-            if (!game || ended || game.fen() !== positionAtStart) {
-                engineBusy = false;
-                return;
-            }
+    const roll = Math.random() * 100;
 
-            const moves = game.moves({ verbose: true });
-            if (!moves.length) {
-                engineBusy = false;
-                return;
-            }
-
-            const move = moves[Math.floor(Math.random() * moves.length)];
-            const movingPiece = capturePieceForAnimation(move.from);
-
-            game.move({
-                from: move.from,
-                to: move.to,
-                promotion: move.promotion || 'q'
-            });
-
-            selectedSquare = null;
-            legalTargets = [];
-            renderBoard();
-            animatePieceMove(movingPiece, move.to);
-            playMoveSound(move);
-            updateGameStatus();
-
-            engineBusy = false;
-        }, 1000);
-
-        return;
+    // Сначала проверяем долю полностью случайных легальных ходов.
+    if (roll < cfg.random) {
+      return randomLegalMoveUci() || bestUci;
     }
 
-    engineBusy = true;
-    setStatus('PEPENAI рассчитывает ход...');
+    // Следующая доля — лучший ход, который Stockfish вернул как bestmove.
+    if (roll < cfg.random + cfg.best) {
+      return bestUci;
+    }
+
+    // Остаток заданного процента — альтернативные варианты Stockfish №2–5.
+    if (roll < cfg.random + cfg.best + cfg.alternative) {
+      const alternatives = Array.from(enginePvCandidates.entries())
+      .filter(([rank, uci]) => rank > 1 && uci && uci !== bestUci)
+      .sort((a, b) => a[0] - b[0])
+      .map(([, uci]) => uci);
+
+      if (alternatives.length) {
+        return alternatives[Math.floor(Math.random() * alternatives.length)];
+      }
+
+      // Резерв на случай, если движок не вернул строки MultiPV №2–5.
+      // Не подменяем альтернативу лучшим ходом, пока есть другие легальные ходы.
+      return randomLegalMoveUci(bestUci) || bestUci;
+    }
+
+    return bestUci;
+  }
+
+  function askEngineMove() {
+    if (onlineChessMode || engineBusy || ended || !game ||
+        game.turn() === humanColor) return;
+
+    // Уровень 1: 100% случайные допустимые ходы; Stockfish не нужен.
+    if (level === 1) {
+      engineBusy = true;
+      setStatus('Лёгкий бот думает…');
+      const positionAtStart = game.fen();
+
+      window.setTimeout(() => {
+        if (!game || ended || game.fen() !== positionAtStart) {
+          engineBusy = false;
+          return;
+        }
+
+        const moves = game.moves({ verbose: true });
+        if (!moves.length) {
+          engineBusy = false;
+          return;
+        }
+
+        const move = moves[Math.floor(Math.random() * moves.length)];
+        const movingPiece = capturePieceForAnimation(move.from);
+        const playedMove = game.move({
+          from: move.from,
+          to: move.to,
+          promotion: move.promotion || 'q'
+        });
+
+        selectedSquare = null;
+        legalTargets = [];
+        renderBoard();
+        animatePieceMove(movingPiece, move.to);
+        playMoveSound(playedMove);
+        updateGameStatus();
+        engineBusy = false;
+      }, 1000);
+
+      return;
+    }
+
+    if (!engine || !engineReady) {
+      setStatus('Загружаю PEPENAI. Подожди первого хода…');
+      return;
+    }
 
     const cfg = levels[level];
-    engine.postMessage('position fen ' + game.fen());
+    if (!cfg || !cfg.depth) return;
+
+    engineBusy = true;
+    enginePvCandidates.clear();
+    enginePvDepth = 0;
+    engineSearchFen = game.fen();
+
+    setStatus('PEPENAI рассчитывает ход...');
+    engine.postMessage('position fen ' + engineSearchFen);
     engine.postMessage('go depth ' + cfg.depth);
-}
+  }
 
   function capturePieceForAnimation(square) {
     const board = boardEl();
