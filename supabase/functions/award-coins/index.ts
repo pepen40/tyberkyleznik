@@ -298,16 +298,15 @@ serve(async (req) => {
       }
 
       if (isGameRoom) {
-        const { data: membership, error: membershipError } = await supabaseAdmin
-          .from('realtime_room_access')
-          .select('topic')
-          .eq('topic', topic)
-          .gt('expires_at', new Date().toISOString())
-          .or('host_user_id.eq.' + authData.user.id + ',guest_user_id.eq.' + authData.user.id)
-          .maybeSingle();
+        // Use the service-role-only membership RPC. Do not grant browser access
+        // to the room-membership table just so the Edge Function can read it.
+        const { data: membership, error: membershipError } = await supabaseAdmin.rpc('join_realtime_room', {
+          p_user_id: authData.user.id,
+          p_topic: topic
+        });
         if (membershipError) throw new Error('Не удалось проверить доступ к комнате.');
-        if (!membership) {
-          return new Response(JSON.stringify({ success: false, error: 'Ты не состоишь в этой комнате.' }), {
+        if (!membership?.success) {
+          return new Response(JSON.stringify({ success: false, error: membership?.error || 'Ты не состоишь в этой комнате.' }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403
           });
         }
