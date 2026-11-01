@@ -101,41 +101,15 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403
       });
     }
-    // Room membership is managed only after this function has verified the caller's JWT.
-    if (action === 'register_room_membership') {
-      const { data: result, error: roomError } = await supabaseAdmin.rpc('register_realtime_room', {
-        p_user_id: authData.user.id,
-        p_topic: String(data?.topic || ''),
-        p_kind: String(data?.kind || ''),
-        p_invitee_username: data?.inviteeUsername ? String(data.inviteeUsername) : null,
-        p_is_public: data?.isPublic === true
-      });
-      if (roomError) throw new Error('Не удалось зарегистрировать комнату: ' + roomError.message);
-      return new Response(JSON.stringify(result), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: result?.success ? 200 : 400
-      });
-    }
-
-    if (action === 'join_room_membership') {
-      const { data: result, error: roomError } = await supabaseAdmin.rpc('join_realtime_room', {
-        p_user_id: authData.user.id,
-        p_topic: String(data?.topic || '')
-      });
-      if (roomError) throw new Error('Не удалось присоединиться к комнате: ' + roomError.message);
-      return new Response(JSON.stringify(result), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: result?.success ? 200 : 403
-      });
-    }
-
     const cooldowns: Record<string, number> = {
       chess_reward: 60,
       roach_clear: 60,
       score: 3,
       rpg_win: 3,
       pvp_result: 3,
-      claim_rpg_reward: 2
+      claim_rpg_reward: 2,
+      register_room_membership: 10,
+      join_room_membership: 2
     };
     const cooldownSeconds = cooldowns[action];
     if (cooldownSeconds) {
@@ -182,6 +156,34 @@ serve(async (req) => {
           error: 'Награда за победы временно приостановлена до серверной проверки игрового результата.'
         }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
       }
+    }
+
+    // Room membership is managed only after this function has verified the caller's JWT.
+    if (action === 'register_room_membership') {
+      const { data: result, error: roomError } = await supabaseAdmin.rpc('register_realtime_room', {
+        p_user_id: authData.user.id,
+        p_topic: String(data?.topic || ''),
+        p_kind: String(data?.kind || ''),
+        p_invitee_username: data?.inviteeUsername ? String(data.inviteeUsername) : null,
+        p_is_public: data?.isPublic === true
+      });
+      if (roomError) throw new Error('Не удалось зарегистрировать комнату: ' + roomError.message);
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: result?.success ? 200 : 400
+      });
+    }
+
+    if (action === 'join_room_membership') {
+      const { data: result, error: roomError } = await supabaseAdmin.rpc('join_realtime_room', {
+        p_user_id: authData.user.id,
+        p_topic: String(data?.topic || '')
+      });
+      if (roomError) throw new Error('Не удалось присоединиться к комнате: ' + roomError.message);
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: result?.success ? 200 : 403
+      });
     }
 
     const dailyCaps: Record<string, number> = { chess_reward:200, score:500, roach_clear:150, rpg_win:500, pvp_result:150 };
