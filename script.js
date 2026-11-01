@@ -1442,29 +1442,36 @@ async function executeChallenge() {
 
 function listenForChallenges() {
     if(!onlineChannel) return;
-    onlineChannel.on('broadcast', { event: 'challenge' }, (payload) => {
-        const data = payload.payload;
-if (data && data.target === currentUser) {
-    if (localStorage.getItem('rpgInvitesEnabled') === 'false') {
-        onlineChannel.send({
-            type: 'broadcast',
-            event: 'challenge_response',
-            payload: {
-                roomId: data.roomId,
-                from: currentUser,
-                target: data.host,
-                accepted: false,
-                reason: 'disabled'
-            }
-        });
-        return;
-    }
+    onlineChannel.on('broadcast', { event: 'challenge' }, async (payload) => {
+        const data = payload?.payload;
+        if (!data || data.target !== currentUser || typeof data.roomId !== 'string') return;
+        if (!/^room_[a-z0-9]{9}$/.test(data.roomId)) return;
 
-    pendingChallengeRoomId = data.roomId;
-            pendingChallengeHost = data.host;
-            document.getElementById('pvp-receive-host-name').innerText = "Игрок: " + data.host;
-            document.getElementById('pvp-receive-modal').classList.remove('hidden');
+        const { data: invitation, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
+            body: { action: 'validate_room_invitation', data: { topic: data.roomId, kind: 'rpg' } }
+        });
+        if (error || !invitation?.success || invitation.kind !== 'rpg' || !invitation.hostUsername) return;
+
+        const trustedHost = String(invitation.hostUsername);
+        if (localStorage.getItem('rpgInvitesEnabled') === 'false') {
+            onlineChannel.send({
+                type: 'broadcast',
+                event: 'challenge_response',
+                payload: {
+                    roomId: data.roomId,
+                    from: currentUser,
+                    target: trustedHost,
+                    accepted: false,
+                    reason: 'disabled'
+                }
+            });
+            return;
         }
+
+        pendingChallengeRoomId = data.roomId;
+        pendingChallengeHost = trustedHost;
+        document.getElementById('pvp-receive-host-name').textContent = "Игрок: " + trustedHost;
+        document.getElementById('pvp-receive-modal').classList.remove('hidden');
     });
 
     onlineChannel.on('broadcast', { event: 'challenge_response' }, async (payload) => {
@@ -4520,29 +4527,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function handleIncomingInvite(payload) {
-        const data = payload.payload;
+    async function handleIncomingInvite(payload) {
+        const data = payload?.payload;
+        if (!data || data.target !== currentUser || typeof data.id !== 'string') return;
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(data.id)) return;
 
-        if (!data || data.target !== currentUser || !data.from || !data.id) return;
+        const { data: invitation, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
+            body: { action: 'validate_room_invitation', data: { topic: 'chess-room-' + data.id, kind: 'chess' } }
+        });
+        if (error || !invitation?.success || invitation.kind !== 'chess' || !invitation.hostUsername) return;
 
+        const trustedInvite = { id: data.id, from: String(invitation.hostUsername) };
         if (localStorage.getItem('chessInvitesEnabled') === 'false') {
-    chessInviteChannel.send({
-        type: 'broadcast',
-        event: 'chess_invite_answer',
-        payload: {
-            id: data.id,
-            from: currentUser,
-            target: data.from,
-            accepted: false,
-            reason: 'disabled'
+            chessInviteChannel.send({
+                type: 'broadcast',
+                event: 'chess_invite_answer',
+                payload: {
+                    id: trustedInvite.id,
+                    from: currentUser,
+                    target: trustedInvite.from,
+                    accepted: false,
+                    reason: 'disabled'
+                }
+            });
+            return;
         }
-    });
-    return;
-}
 
-        incomingInvite = data;
-
-        if (inviteFrom) inviteFrom.textContent = data.from;
+        incomingInvite = trustedInvite;
+        if (inviteFrom) inviteFrom.textContent = trustedInvite.from;
         if (inviteModal) inviteModal.classList.remove('hidden');
     }
 
