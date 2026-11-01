@@ -1070,21 +1070,45 @@ function addPvpChatMessage(nick, text) {
     msg.style.color = '#00ffff';
     const nickSpan = document.createElement('span');
     nickSpan.style.fontWeight = 'bold';
-    nickSpan.textContent = '[ЧАТ] ' + nick + ':';
+    nickSpan.textContent = '[ЧАТ] ' + String(nick || 'Игрок').slice(0, 24) + ':';
     msg.appendChild(nickSpan);
-    msg.appendChild(document.createTextNode(' ' + text));
+    msg.appendChild(document.createTextNode(' ' + String(text || '').slice(0, 240)));
     logBox.appendChild(msg);
+    while (logBox.children.length > 250) logBox.firstElementChild.remove();
     logBox.scrollTop = logBox.scrollHeight;
 }
 
-function sendPvpMessage() {
+let pvpChatSending = false;
+async function sendPvpMessage() {
     const input = document.getElementById('pvp-chat-input');
-    if (!input || !roomChannel) return;
-    const text = input.value.trim();
-    if (!text) return;
-    roomChannel.send({ type: 'broadcast', event: 'chat_message', payload: { nick: currentUser, text: text } });
-    addPvpChatMessage(currentUser, text);
-    input.value = '';
+    if (!input || !roomChannel || !myRoomId || pvpChatSending) return;
+    const messageText = input.value.trim();
+    if (!messageText) return;
+    if (messageText.length > 240) {
+        alert('Сообщение не должно превышать 240 символов.');
+        return;
+    }
+
+    pvpChatSending = true;
+    const sendButton = document.getElementById('pvp-chat-send');
+    if (sendButton) sendButton.disabled = true;
+    try {
+        const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
+            body: { action: 'send_chat_message', data: { topic: myRoomId, text: messageText } }
+        });
+        if (error || !data?.success) {
+            alert(data?.error || error?.message || 'Не удалось отправить сообщение.');
+            return;
+        }
+        addPvpChatMessage(currentUser, messageText);
+        input.value = '';
+    } catch (e) {
+        console.error('Ошибка отправки сообщения:', e);
+        alert('Не удалось отправить сообщение. Попробуй ещё раз.');
+    } finally {
+        pvpChatSending = false;
+        if (sendButton) sendButton.disabled = false;
+    }
 }
 
 function getImgTag(imgName) {
@@ -1105,56 +1129,74 @@ function getProcessedInventory() {
 }
 
 let siteGlobalChatChannel = null;
+let siteGlobalChatSending = false;
 function initSiteGlobalChat() {
     if (siteGlobalChatChannel || !supabaseClient || !currentUser) return;
     const messages = document.getElementById('site-global-chat-messages');
     const input = document.getElementById('site-global-chat-input');
     const send = document.getElementById('site-global-chat-send');
     if (!messages || !input || !send) return;
-    messages.innerHTML = '<div>Общий чат подключён. Сообщения видны тем, кто сейчас онлайн.</div>';
+
+    messages.replaceChildren();
     const add = (nick, text) => {
-        const row = document.createElement('div'); row.className = 'site-global-chat-message';
+        const row = document.createElement('div');
+        row.className = 'site-global-chat-message';
         const strong = document.createElement('b');
-        const displayNick = String(nick || 'Игрок');
-        strong.textContent = displayNick + ': ';
-        const body = document.createElement('span'); body.textContent = String(text || '').slice(0, 240);
-        row.append(strong, body); messages.appendChild(row);
+        strong.textContent = String(nick || 'Игрок').slice(0, 24) + ': ';
+        const body = document.createElement('span');
+        body.textContent = String(text || '').slice(0, 240);
+        row.append(strong, body);
+        messages.appendChild(row);
         while (messages.children.length > 80) messages.firstElementChild.remove();
         messages.scrollTop = messages.scrollHeight;
     };
-    siteGlobalChatChannel = supabaseClient.channel('pepen40-global-chat', { config: { broadcast: { self: false }, private: true } });
+
+    siteGlobalChatChannel = supabaseClient.channel('pepen40-global-chat', {
+        config: { broadcast: { self: false }, private: true }
+    });
     siteGlobalChatChannel.on('broadcast', { event: 'site_message' }, ({ payload }) => {
-        if (isSiteGlobalChatBanned(payload?.nick)) return;
-        add(payload?.nick, payload?.text);
+        if (!payload || typeof payload.text !== 'string') return;
+        add(payload.nick, payload.text);
     });
     siteGlobalChatChannel.subscribe();
-    const submit = () => {
+
+    const submit = async () => {
         const value = input.value.trim();
-        if (!value) return;
-
-        if (isSiteGlobalChatBanned(currentUser)) {
-            alert('Тебе запрещено писать в общем чате.');
+        if (!value || siteGlobalChatSending) return;
+        if (value.length > 240) {
+            alert('Сообщение не должно превышать 240 символов.');
             return;
         }
 
-        if (containsSiteGlobalChatLink(value)) {
-            alert('Ссылки в общем чате запрещены.');
-            return;
+        siteGlobalChatSending = true;
+        send.disabled = true;
+        try {
+            const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
+                body: { action: 'send_chat_message', data: { topic: 'pepen40-global-chat', text: value } }
+            });
+            if (error || !data?.success) {
+                alert(data?.error || error?.message || 'Не удалось отправить сообщение.');
+                return;
+            }
+            add(currentUser, value);
+            input.value = '';
+            input.focus();
+        } catch (e) {
+            console.error('Ошибка отправки сообщения в общий чат:', e);
+            alert('Не удалось отправить сообщение. Попробуй ещё раз.');
+        } finally {
+            siteGlobalChatSending = false;
+            send.disabled = false;
         }
-
-        const now = Date.now();
-        const remaining = SITE_GLOBAL_CHAT_COOLDOWN_MS - (now - siteGlobalChatLastSentAt);
-        if (remaining > 0) {
-            alert(`Подожди ещё ${Math.ceil(remaining / 1000)} сек. перед следующим сообщением.`);
-            return;
-        }
-
-        siteGlobalChatLastSentAt = now;
-        siteGlobalChatChannel?.send({ type: 'broadcast', event: 'site_message', payload: { nick: currentUser, text: value.slice(0, 240) } });
-        add(currentUser, value); input.value = ''; input.focus();
     };
+
     send.addEventListener('click', submit);
-    input.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); submit(); } });
+    input.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            submit();
+        }
+    });
 }
 
 
