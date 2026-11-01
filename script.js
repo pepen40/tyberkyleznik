@@ -1,6 +1,24 @@
 const SUPABASE_URL = 'https://zfvinbamwavibnhmfwnz.supabase.co'; 
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpmdmluYmFtd2F2aWJuaG1md256Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4ODE2MjAsImV4cCI6MjEwODQ1NzYyMH0.FT5tlKgLUCrFs0zzY-BGimCmU9qNZmIzMW8LyysMmgE';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+supabaseClient.auth.onAuthStateChange((event) => {
+    if (event === 'PASSWORD_RECOVERY') {
+        queueMicrotask(() => {
+            (async () => {
+                const newPassword = prompt("Введи новый пароль (минимум 8 символов):");
+                if (!newPassword || newPassword.length < 8) {
+                    alert("Пароль должен содержать минимум 8 символов.");
+                    await supabaseClient.auth.signOut();
+                    return;
+                }
+                const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+                if (error) alert("Не удалось изменить пароль: " + error.message);
+                else alert("Пароль успешно изменён. Теперь войди с новым паролем.");
+                await supabaseClient.auth.signOut();
+            })();
+        });
+    }
+});
 const EDGE_FUNCTION_NAME = 'award-coins'; 
 const battleBackgrounds = ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png', 'bg6.png'];
 
@@ -8,6 +26,8 @@ const battleBackgrounds = ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png'
 window.addEventListener('load', () => {
     // Всегда показываем экран входа — никакого автологина
     document.getElementById('auth-screen').classList.remove('hidden');
+    document.getElementById('auth-screen').classList.remove('hidden');
+    restoreAuthSession();
     initSiteBackground();
     initSheepSetting();
     initRoachSetting();
@@ -534,11 +554,127 @@ function initRoachControls() {
 }
 
 
-function logout() {
+async function logout() {
     if (!confirm("Выйти с аккаунта?")) return;
     stopSheep();
     stopRoachEvent(false);
+    const { error } = await supabaseClient.auth.signOut();
+    if (error) {
+        alert("Не удалось выйти: " + error.message);
+        return;
+    }
+    currentUser = null;
     location.reload();
+}
+
+async function finishAuthLogin(user) {
+    if (!user?.id) throw new Error("Не удалось определить пользователя.");
+    const { data, error } = await supabaseClient
+        .from('players')
+        .select('id,user_id,username,max_score,coins,inventory,item_points,rpg_upgrades,rpg_max_floors,created_at,last_online,pvp_pts')
+        .eq('user_id', user.id)
+        .single();
+    if (error || !data) throw new Error("Профиль игрока не найден: " + (error?.message || "нет записи"));
+
+    currentUser = data.username;
+    currentHighScore = data.max_score || 0;
+    currentCoins = data.coins || 0;
+    currentInventory = data.inventory || [];
+    currentItemPoints = data.item_points || 0;
+    currentPvpPts = data.pvp_pts || 0;
+    currentUpgrades = data.rpg_upgrades || {"ashab":{"hp":0,"atk":0},"apostol":{"hp":0,"atk":0},"mee":{"hp":0,"atk":0}};
+    ensureRpgGear();
+    currentMaxFloors = data.rpg_max_floors || {"ashab":0,"apostol":0,"mee":0};
+    await supabaseClient.from('players').update({ last_online: new Date().toISOString() }).eq('user_id', user.id);
+
+    document.getElementById('auth-screen').classList.add('hidden');
+    document.getElementById('main-screen').classList.remove('hidden');
+    startSheep();
+    startRoachSchedule(ROACH_FIRST_DELAY);
+    preloadSounds();
+    initOnlineCounter();
+    initLobby();
+    initSiteGlobalChat();
+    updateUI();
+    resetGame();
+    renderCharStats();
+    switchTab('minigames');
+}
+
+async function restoreAuthSession() {
+    const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+    if (sessionError || !sessionData?.session) return;
+    const { data: userData, error: userError } = await supabaseClient.auth.getUser();
+    if (userError || !userData?.user) {
+        await supabaseClient.auth.signOut();
+        return;
+    }
+    try {
+        await finishAuthLogin(userData.user);
+    } catch (error) {
+        console.error("Ошибка восстановления сессии:", error);
+        document.getElementById('auth-msg').textContent = "Не удалось загрузить профиль: " + error.message;
+        await supabaseClient.auth.signOut();
+    }
+}
+
+async function register() {
+    const u = document.getElementById('username').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const p = document.getElementById('password').value;
+    const msg = document.getElementById('auth-msg');
+    msg.style.color = '';
+    if (!u || !email || !p) { msg.textContent = "Заполни ник, email и пароль."; return; }
+    if (!/^[a-zA-Zа-яА-Я0-9_]{3,20}$/.test(u)) { msg.textContent = "Ник: 3-20 символов, буквы/цифры/_"; return; }
+    if (p.length < 8) { msg.textContent = "Пароль должен содержать минимум 8 символов."; return; }
+    const { data, error } = await supabaseClient.auth.signUp({
+        email,
+        password: p,
+        options: { emailRedirectTo: window.location.origin + window.location.pathname, data: { username: u } }
+    });
+    if (error) { msg.textContent = "Ошибка регистрации: " + error.message; return; }
+    if (data.session && data.user) {
+        try {
+            await finishAuthLogin(data.user);
+            msg.textContent = "";
+        } catch (e) { msg.textContent = "Аккаунт создан, но профиль не загрузился: " + e.message; }
+    } else {
+        msg.style.color = "green";
+        msg.textContent = "Письмо подтверждения отправлено на email. Подтверди адрес, затем войди.";
+    }
+}
+
+
+async function resetPassword() {
+    const email = document.getElementById('email').value.trim();
+    const msg = document.getElementById('auth-msg');
+    msg.style.color = '';
+    if (!email) { msg.textContent = "Сначала введи email."; return; }
+    const redirectTo = window.location.origin + window.location.pathname;
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo });
+    if (error) { msg.textContent = "Не удалось отправить письмо: " + error.message; return; }
+    msg.style.color = "green";
+    msg.textContent = "Письмо для сброса пароля отправлено на email.";
+}
+
+async function login() {
+    const email = document.getElementById('email').value.trim();
+    const p = document.getElementById('password').value;
+    const msg = document.getElementById('auth-msg');
+    msg.style.color = '';
+    if (!email || !p) { msg.textContent = "Введи email и пароль."; return; }
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: p });
+    if (error || !data?.user) {
+        msg.textContent = "Не удалось войти: " + (error?.message || "проверь email и пароль.");
+        return;
+    }
+    try {
+        await finishAuthLogin(data.user);
+        msg.textContent = "";
+    } catch (e) {
+        msg.textContent = "Ошибка загрузки профиля: " + e.message;
+        await supabaseClient.auth.signOut();
+    }
 }
 
 const itemDatabase = {
@@ -975,55 +1111,6 @@ function initSiteGlobalChat() {
     input.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); submit(); } });
 }
 
-async function register() {
-    const u = document.getElementById('username').value.trim();
-    const p = document.getElementById('password').value;
-    if (!u || !p) return;
-    if (!/^[a-zA-Zа-яА-Я0-9_]{3,20}$/.test(u)) { document.getElementById('auth-msg').textContent = "Ник: 3-20 символов, буквы/цифры/_"; return; }
-    const { data: existing } = await supabaseClient.from('players').select('username').eq('username', u);
-    if (existing && existing.length > 0) { document.getElementById('auth-msg').textContent = "Ник занят."; return; }
-    const { error } = await supabaseClient.from('players').insert([{ 
-        username: u, password: p, max_score: 0, coins: 200, inventory: [], item_points: 0,
-        rpg_upgrades: {"ashab":{"hp":0,"atk":0},"apostol":{"hp":0,"atk":0},"mee":{"hp":0,"atk":0}},
-        rpg_max_floors: {"ashab":0,"apostol":0,"mee":0}, pvp_pts: 0
-    }]);
-    if (error) document.getElementById('auth-msg').textContent = "Ошибка: " + error.message;
-    else { document.getElementById('auth-msg').style.color = "green"; document.getElementById('auth-msg').textContent = "Успех! Жми Войти."; }
-}
-
-async function login() {
-    const u = document.getElementById('username').value.trim();
-    const p = document.getElementById('password').value;
-    if (!u || !p) return;
-    const { data, error } = await supabaseClient.from('players').select('*').eq('username', u).eq('password', p).single();
-    if (error || !data) { document.getElementById('auth-msg').textContent = "Неверный ник или пароль."; }
-    else {
-        currentUser = data.username;
-        currentHighScore = data.max_score || 0;
-        currentCoins = data.coins || 0;
-        currentInventory = data.inventory || [];
-        currentItemPoints = data.item_points || 0;
-        currentPvpPts = data.pvp_pts || 0;
-        currentUpgrades = data.rpg_upgrades || {"ashab":{"hp":0,"atk":0},"apostol":{"hp":0,"atk":0},"mee":{"hp":0,"atk":0}};
-        ensureRpgGear();
-        currentMaxFloors = data.rpg_max_floors || {"ashab":0,"apostol":0,"mee":0};
-        await supabaseClient.from('players').update({ last_online: new Date().toISOString() }).eq('username', u);
-
-        document.getElementById('auth-screen').classList.add('hidden');
-        document.getElementById('main-screen').classList.remove('hidden');
-        startSheep(); // Баран появляется только после успешной авторизации
-        startRoachSchedule(ROACH_FIRST_DELAY); // Первое нашествие через минуту
-        preloadSounds(); 
-        initOnlineCounter();
-        initLobby();
-        initSiteGlobalChat();
-        updateUI();
-        resetGame();
-        renderCharStats();
-        switchTab('minigames');
-
-    }
-}
 
 function updateUI() {
     document.getElementById('ui-username').textContent = currentUser;
@@ -2749,7 +2836,7 @@ async function buyItem(listing_id) {
 
 async function renderLeaderboard() {
     const tbody = document.getElementById('leaderboard-body'); tbody.innerHTML = '<tr><td colspan="6">Загрузка...</td></tr>';
-    const { data, error } = await supabaseClient.from('players').select('username, max_score, item_points, pvp_pts');
+    const { data, error } = await supabaseClient.from('player_public_profiles').select('username, max_score, item_points, pvp_pts');
     if (!error) {
         let sorted = data.map(u => ({ ...u, total: (u.max_score||0)+(u.item_points||0) })).sort((a, b) => b.total - a.total).slice(0, 10);
         tbody.innerHTML = ''; 
@@ -2766,7 +2853,7 @@ async function viewProfile(username) {
     const modal = document.getElementById('profile-modal');
     const nameEl = document.getElementById('prof-name'); const statsEl = document.getElementById('prof-stats'); const invEl = document.getElementById('prof-inventory');
     nameEl.textContent = "Профиль: " + username; statsEl.innerHTML = "Загрузка..."; invEl.innerHTML = ''; modal.classList.remove('hidden');
-    const { data, error } = await supabaseClient.from('players').select('*').eq('username', username).single();
+    const { data, error } = await supabaseClient.from('player_public_profiles').select('*').eq('username', username).single();
     if (error || !data) { statsEl.textContent = "Ошибка."; return; }
     const state = onlineChannel ? onlineChannel.presenceState() : {};
     const isOnline = state[username] !== undefined;

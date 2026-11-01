@@ -122,11 +122,13 @@
 </div>
 <div class="panel hidden" id="auth-screen">
 <h1>добро пожаловать</h1>
-<input id="username" placeholder="Твой ник" type="text"/>
-<input id="password" placeholder="Пароль" type="password"/>
+<input id="username" placeholder="Ник (при регистрации)" type="text"/>
+<input id="email" autocomplete="email" placeholder="Email" type="email"/>
+<input id="password" autocomplete="current-password" placeholder="Пароль (минимум 8 символов)" type="password"/>
 <br/>
 <button onclick="register()">Зарегаться</button>
 <button onclick="login()">Войти</button>
+<button onclick="resetPassword()">Забыл пароль</button>
 <div class="gosuslugi-container">
 <img alt="Вход через Госуслуги" class="gosuslugi-btn" onclick="window.open('https://www.gosuslugi.ru', '_blank')" src="gosyslygi.png"/>
 </div>
