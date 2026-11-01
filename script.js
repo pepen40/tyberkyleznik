@@ -485,8 +485,13 @@ async function finishRoachWave() {
                 const messageEl = document.getElementById('roach-clean-message');
                 if (messageEl) messageEl.textContent = 'зачищено · +150 монет';
             } else {
-                roachRewardSent = false;
-                console.error('Не удалось начислить награду за бойню:', data?.error);
+                if (data?.rewardPaused) {
+                    const messageEl = document.getElementById('roach-clean-message');
+                    if (messageEl) messageEl.textContent = 'Бойня завершена. Награды временно отключены до серверной проверки.';
+                } else {
+                    roachRewardSent = false;
+                    console.error('Не удалось начислить награду за бойню:', data?.error);
+                }
             }
         }
     } catch (e) {
@@ -3816,6 +3821,8 @@ playMoveSound(playedMove);
         currentCoins = Number(data.newCoins ?? currentCoins);
         updateUI();
         setStatus(`Партия завершена · +${data.earned} монет`);
+      } else if (data?.rewardPaused) {
+        setStatus('Партия завершена. Награды временно отключены до серверной проверки.');
       } else {
         chessRewardClaimed = false;
         console.error('Шахматная награда не начислена:', data?.error);
