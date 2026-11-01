@@ -573,7 +573,7 @@ table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
 
 #performance-overlay {
     position: fixed !important;
-    top: 15px !important;
+    top: 30px !important;
     right: 12px !important;
     bottom: auto !important;
     left: auto !important;
