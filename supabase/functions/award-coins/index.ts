@@ -101,6 +101,34 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403
       });
     }
+    // Room membership is managed only after this function has verified the caller's JWT.
+    if (action === 'register_room_membership') {
+      const { data: result, error: roomError } = await supabaseAdmin.rpc('register_realtime_room', {
+        p_user_id: authData.user.id,
+        p_topic: String(data?.topic || ''),
+        p_kind: String(data?.kind || ''),
+        p_invitee_username: data?.inviteeUsername ? String(data.inviteeUsername) : null,
+        p_is_public: data?.isPublic === true
+      });
+      if (roomError) throw new Error('Не удалось зарегистрировать комнату: ' + roomError.message);
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: result?.success ? 200 : 400
+      });
+    }
+
+    if (action === 'join_room_membership') {
+      const { data: result, error: roomError } = await supabaseAdmin.rpc('join_realtime_room', {
+        p_user_id: authData.user.id,
+        p_topic: String(data?.topic || '')
+      });
+      if (roomError) throw new Error('Не удалось присоединиться к комнате: ' + roomError.message);
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: result?.success ? 200 : 403
+      });
+    }
+
     const cooldowns: Record<string, number> = {
       chess_reward: 60,
       roach_clear: 60,
