@@ -630,7 +630,7 @@ async function register() {
     const { data, error } = await supabaseClient.auth.signUp({
         email,
         password: p,
-        options: { data: { username: u } }
+        options: { emailRedirectTo: window.location.origin + window.location.pathname, data: { username: u } }
     });
     if (error) { msg.textContent = "Ошибка регистрации: " + error.message; return; }
     if (data.session && data.user) {
