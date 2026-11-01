@@ -1337,11 +1337,10 @@ async function executeChallenge() {
     let img = charType === 'ashab' ? "IMG_3545.jpeg" : (charType === 'apostol' ? "IMG_3544.jpeg" : "IMG_3546.jpeg");
 
     myRoomId = 'room_' + Math.random().toString(36).substr(2, 9);
-    const { data: roomRegistration, error: roomRegistrationError } = await supabaseClient.rpc('register_realtime_room', {
-        p_topic: myRoomId,
-        p_kind: 'rpg',
-        p_invitee_username: targetUser,
-        p_is_public: false
+    const { data: roomRegistration, error: roomRegistrationError } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
+        body: { action: 'register_room_membership', data: {
+            topic: myRoomId, kind: 'rpg', inviteeUsername: targetUser, isPublic: false
+        } }
     });
     if (roomRegistrationError || !roomRegistration?.success) {
         myRoomId = null;
@@ -1485,11 +1484,10 @@ async function createPvpRoom() {
     let img = charType === 'ashab' ? "IMG_3545.jpeg" : (charType === 'apostol' ? "IMG_3544.jpeg" : "IMG_3546.jpeg");
 
     myRoomId = 'room_' + Math.random().toString(36).substr(2, 9);
-    const { data: roomRegistration, error: roomRegistrationError } = await supabaseClient.rpc('register_realtime_room', {
-        p_topic: myRoomId,
-        p_kind: 'rpg',
-        p_invitee_username: null,
-        p_is_public: true
+    const { data: roomRegistration, error: roomRegistrationError } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
+        body: { action: 'register_room_membership', data: {
+            topic: myRoomId, kind: 'rpg', inviteeUsername: null, isPublic: true
+        } }
     });
     if (roomRegistrationError || !roomRegistration?.success) {
         myRoomId = null;
@@ -1530,8 +1528,8 @@ async function createPvpRoom() {
 }
 
 async function joinPvpRoom(roomId, charType) {
-    const { data: roomJoin, error: roomJoinError } = await supabaseClient.rpc('join_realtime_room', {
-        p_topic: roomId
+    const { data: roomJoin, error: roomJoinError } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
+        body: { action: 'join_room_membership', data: { topic: roomId } }
     });
     if (roomJoinError || !roomJoin?.success) {
         alert(roomJoin?.error || 'У тебя нет доступа к этой RPG-комнате.');
@@ -4276,8 +4274,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeChessRoomChannel = null;
 
     window.joinChessRoom = async function joinChessRoom(roomId, color, opponentName) {
-        const { data: roomJoin, error: roomJoinError } = await supabaseClient.rpc('join_realtime_room', {
-            p_topic: 'chess-room-' + roomId
+        const { data: roomJoin, error: roomJoinError } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
+            body: { action: 'join_room_membership', data: { topic: 'chess-room-' + roomId } }
         });
         if (roomJoinError || !roomJoin?.success) {
             if (outgoingStatus) outgoingStatus.textContent = roomJoin?.error || 'Нет доступа к этой шахматной комнате.';
@@ -4368,11 +4366,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const inviteId = crypto.randomUUID();
-        const { data: roomRegistration, error: roomRegistrationError } = await supabaseClient.rpc('register_realtime_room', {
-            p_topic: 'chess-room-' + inviteId,
-            p_kind: 'chess',
-            p_invitee_username: target,
-            p_is_public: false
+        const { data: roomRegistration, error: roomRegistrationError } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
+            body: { action: 'register_room_membership', data: {
+                topic: 'chess-room-' + inviteId, kind: 'chess', inviteeUsername: target, isPublic: false
+            } }
         });
         if (roomRegistrationError || !roomRegistration?.success) {
             if (outgoingStatus) outgoingStatus.textContent = roomRegistration?.error || 'Не удалось создать защищённую шахматную комнату.';
