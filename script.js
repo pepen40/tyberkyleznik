@@ -1332,6 +1332,17 @@ async function executeChallenge() {
     let img = charType === 'ashab' ? "IMG_3545.jpeg" : (charType === 'apostol' ? "IMG_3544.jpeg" : "IMG_3546.jpeg");
 
     myRoomId = 'room_' + Math.random().toString(36).substr(2, 9);
+    const { data: roomRegistration, error: roomRegistrationError } = await supabaseClient.rpc('register_realtime_room', {
+        p_topic: myRoomId,
+        p_kind: 'rpg',
+        p_invitee_username: targetUser,
+        p_is_public: false
+    });
+    if (roomRegistrationError || !roomRegistration?.success) {
+        myRoomId = null;
+        alert(roomRegistration?.error || 'Не удалось создать защищённую комнату дуэли.');
+        return;
+    }
     isPvpHost = true;
     currentPvpChar = charType;
     if(lobbyChannel) await lobbyChannel.track({ room: { roomId: myRoomId, roomName: "Вызов от " + currentUser, hostName: currentUser, hostPts: currentPvpPts, charName, hp, atk } });
@@ -1469,6 +1480,17 @@ async function createPvpRoom() {
     let img = charType === 'ashab' ? "IMG_3545.jpeg" : (charType === 'apostol' ? "IMG_3544.jpeg" : "IMG_3546.jpeg");
 
     myRoomId = 'room_' + Math.random().toString(36).substr(2, 9);
+    const { data: roomRegistration, error: roomRegistrationError } = await supabaseClient.rpc('register_realtime_room', {
+        p_topic: myRoomId,
+        p_kind: 'rpg',
+        p_invitee_username: null,
+        p_is_public: true
+    });
+    if (roomRegistrationError || !roomRegistration?.success) {
+        myRoomId = null;
+        alert(roomRegistration?.error || 'Не удалось создать защищённую RPG-комнату.');
+        return;
+    }
     isPvpHost = true;
     currentPvpChar = charType;
     if(lobbyChannel) await lobbyChannel.track({ room: { roomId: myRoomId, roomName, hostName: currentUser, hostPts: currentPvpPts, charName, hp, atk } });
@@ -1503,6 +1525,13 @@ async function createPvpRoom() {
 }
 
 async function joinPvpRoom(roomId, charType) {
+    const { data: roomJoin, error: roomJoinError } = await supabaseClient.rpc('join_realtime_room', {
+        p_topic: roomId
+    });
+    if (roomJoinError || !roomJoin?.success) {
+        alert(roomJoin?.error || 'У тебя нет доступа к этой RPG-комнате.');
+        return;
+    }
     isPvpHost = false;
     currentPvpChar = charType;
     myRoomId = roomId;
@@ -1879,13 +1908,21 @@ async function endPvpBattle(isWin, technical = false) {
     disablePvpButtons();
     const bgMusic = document.getElementById('battle-music');
     bgMusic.pause();
-    let newPts = isWin ? currentPvpPts + 15 : Math.max(0, currentPvpPts - 15);
+    let resultSaved = false;
     try {
         const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'pvp_result', username: currentUser, data: { win: isWin } } });
-        if (!error && data && data.success) { currentPvpPts = data.newPts; updateUI(); }
-        else { currentPvpPts = newPts; updateUI(); }
-    } catch(e) { currentPvpPts = newPts; updateUI(); }
-    logPvp(isWin ? (technical ? 'ТЕХНИЧЕСКАЯ ПОБЕДА! +15 PTS' : 'ТЫ ПОБЕДИЛ! +15 PTS') : (technical ? 'ТЕХНИЧЕСКОЕ ПОРАЖЕНИЕ! -15 PTS' : 'ТЫ ПРОИГРАЛ! -15 PTS'));
+        if (!error && data && data.success) {
+            currentPvpPts = Number(data.newPts ?? currentPvpPts);
+            updateUI();
+            resultSaved = true;
+        }
+    } catch(e) {
+        console.warn('Рейтинг PvP не обновлён:', e);
+    }
+    const resultLabel = isWin
+        ? (technical ? 'ТЕХНИЧЕСКАЯ ПОБЕДА!' : 'ТЫ ПОБЕДИЛ!')
+        : (technical ? 'ТЕХНИЧЕСКОЕ ПОРАЖЕНИЕ!' : 'ТЫ ПРОИГРАЛ!');
+    logPvp(resultSaved ? resultLabel + ' Результат отправлен серверу.' : resultLabel + ' Рейтинговые очки временно не начисляются до серверной проверки.');
     setTimeout(() => {
         leavePvpRoom(false);
         alert(isWin ? (technical ? 'Техническая победа! +15 PTS' : 'Победа! +15 PTS') : (technical ? 'Техническое поражение! -15 PTS' : 'Поражение! -15 PTS'));
@@ -4232,6 +4269,14 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeChessRoomChannel = null;
 
     window.joinChessRoom = async function joinChessRoom(roomId, color, opponentName) {
+        const { data: roomJoin, error: roomJoinError } = await supabaseClient.rpc('join_realtime_room', {
+            p_topic: 'chess-room-' + roomId
+        });
+        if (roomJoinError || !roomJoin?.success) {
+            if (outgoingStatus) outgoingStatus.textContent = roomJoin?.error || 'Нет доступа к этой шахматной комнате.';
+            if (status) status.textContent = roomJoin?.error || 'Нет доступа к этой шахматной комнате.';
+            return;
+        }
         if (activeChessRoomChannel) {
             await supabaseClient.removeChannel(activeChessRoomChannel);
             activeChessRoomChannel = null;
@@ -4316,6 +4361,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const inviteId = crypto.randomUUID();
+        const { data: roomRegistration, error: roomRegistrationError } = await supabaseClient.rpc('register_realtime_room', {
+            p_topic: 'chess-room-' + inviteId,
+            p_kind: 'chess',
+            p_invitee_username: target,
+            p_is_public: false
+        });
+        if (roomRegistrationError || !roomRegistration?.success) {
+            if (outgoingStatus) outgoingStatus.textContent = roomRegistration?.error || 'Не удалось создать защищённую шахматную комнату.';
+            return;
+        }
 
         outgoingInvite = { id: inviteId, target };
 
