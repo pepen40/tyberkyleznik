@@ -1045,7 +1045,7 @@ function initLobby() {
     lobbyChannel = supabaseClient.channel('pvp_lobby', { config: { presence: { key: currentUser }, private: true } });
     lobbyChannel.on('presence', { event: 'sync' }, () => {
         const state = lobbyChannel.presenceState();
-        pvpRooms = {};
+        pvpRooms = Object.create(null);
         for (const id in state) {
             state[id].forEach(presence => {
                 if (presence.room) { pvpRooms[presence.room.roomId] = presence.room; }
@@ -1096,8 +1096,8 @@ function getImgTag(imgName) {
 }
 
 function getProcessedInventory() {
-    let grouped = {};
-    currentInventory.forEach(item => {
+    const grouped = Object.create(null);
+    (Array.isArray(currentInventory) ? currentInventory : []).forEach(item => {
         if (!grouped[item.name]) grouped[item.name] = { ...item, qty: 0 };
         grouped[item.name].qty++;
     });
@@ -1232,7 +1232,9 @@ async function buyUpgrade(charType, statType) {
 }
 
 function openItemInfo(itemName) {
-    const db = itemDatabase[itemName] || { desc: "Описание отсутствует.", chance: "???" };
+    const db = Object.prototype.hasOwnProperty.call(itemDatabase, itemName)
+        ? itemDatabase[itemName]
+        : { desc: "Описание отсутствует.", chance: "???" };
     let rarity = "Мусор"; let img = "";
     let foundItem = currentInventory.find(i => i.name === itemName);
     if (foundItem) { rarity = foundItem.rarity; img = foundItem.img; } 
@@ -1246,12 +1248,15 @@ function openItemInfo(itemName) {
         };
         if (lootTable[itemName]) { rarity = lootTable[itemName].r; img = lootTable[itemName].i; }
     }
-    document.getElementById('info-img').src = img || 'https://via.placeholder.com/100?text=ITEM';
-    document.getElementById('info-img').onerror = function() { this.src = 'https://via.placeholder.com/100?text=NO+IMG'; };
-    document.getElementById('info-name').innerText = itemName;
-    document.getElementById('info-rarity').innerText = rarity;
-    document.getElementById('info-rarity').className = `rarity-${rarity}`;
-    document.getElementById('info-desc').innerHTML = `<b>Шанс выпадения:</b> ${db.chance}<br><br>${db.desc}`;
+    const safeImage = /^[a-zA-Z0-9_-]+\\.(?:png|jpe?g|webp|gif)$/i.test(String(img || '')) ? img : '';
+    const imageEl = document.getElementById('info-img');
+    imageEl.src = safeImage || 'https://via.placeholder.com/100?text=ITEM';
+    imageEl.onerror = function() { this.src = 'https://via.placeholder.com/100?text=NO+IMG'; };
+    document.getElementById('info-name').textContent = String(itemName ?? '');
+    const safeRarity = ['Обычное', 'Редкое', 'Сверхредкое', 'Эпическое', 'Легендарное', 'Мусор'].includes(rarity) ? rarity : 'Мусор';
+    document.getElementById('info-rarity').textContent = safeRarity;
+    document.getElementById('info-rarity').className = `rarity-${safeRarity}`;
+    document.getElementById('info-desc').innerHTML = `<b>Шанс выпадения:</b> ${escapeHtml(db.chance)}<br><br>${escapeHtml(db.desc)}`;
     document.getElementById('item-info-modal').classList.remove('hidden');
 }
 
@@ -3026,19 +3031,24 @@ async function viewProfile(username) {
     let onlineStatusHtml = isOnline ? '<span style="color: #00ff00; font-weight: bold;">● ОНЛАЙН</span>' : '<span style="color: #ff0000; font-weight: bold;">● ОФФЛАЙН</span>';
     let createdStr = data.created_at ? new Date(data.created_at).toLocaleString('ru-RU') : 'Неизвестно';
     let lastOnlineStr = data.last_online ? new Date(data.last_online).toLocaleString('ru-RU') : 'Неизвестно';
-    let maxF = data.rpg_max_floors || {}; let ups = data.rpg_upgrades || {};
+    const maxF = data.rpg_max_floors && typeof data.rpg_max_floors === 'object' ? data.rpg_max_floors : {};
+    const ups = data.rpg_upgrades && typeof data.rpg_upgrades === 'object' ? data.rpg_upgrades : {};
+    const safeNumber = value => {
+        const n = Number(value);
+        return Number.isFinite(n) ? Math.max(0, Math.min(1000000, n)) : 0;
+    };
     statsEl.innerHTML = `
-        Статус: ${onlineStatusHtml}<br>Зареган: ${createdStr}<br>Был в сети: ${lastOnlineStr}<hr style="margin: 5px 0;">
-        <b>PTS: <span style="color:orange;">${data.pvp_pts || 0}</span></b> | Общий счет: ${(data.max_score || 0) + (data.item_points || 0)}<hr style="margin: 5px 0;">
-        <b>Тараканов переебашил за всё время:</b> ${Math.max(0, Number(ups.roachKills) || 0)}<br><hr style="margin: 5px 0;">
+        Статус: ${onlineStatusHtml}<br>Зареган: ${escapeHtml(createdStr)}<br>Был в сети: ${escapeHtml(lastOnlineStr)}<hr style="margin: 5px 0;">
+        <b>PTS: <span style="color:orange;">${safeNumber(data.pvp_pts)}</span></b> | Общий счет: ${safeNumber(data.max_score) + safeNumber(data.item_points)}<hr style="margin: 5px 0;">
+        <b>Тараканов переебашил за всё время:</b> ${safeNumber(ups.roachKills)}<br><hr style="margin: 5px 0;">
         <b>Статы РПГ:</b><br>
-        <span style="color: #d32f2f;">Ashab:</span> Этаж ${(maxF.ashab || 0).toFixed(1)} | HP ур.${ups.ashab?.hp || 0} | ATK ур.${ups.ashab?.atk || 0}<br>
-        <span style="color: #d32f2f;">Apostol:</span> Этаж ${(maxF.apostol || 0).toFixed(1)} | HP ур.${ups.apostol?.hp || 0} | ATK ур.${ups.apostol?.atk || 0}<br>
-        <span style="color: #d32f2f;">Мээ:</span> Этаж ${(maxF.mee || 0).toFixed(1)} | HP ур.${ups.mee?.hp || 0} | ATK ур.${ups.mee?.atk || 0}
+        <span style="color: #d32f2f;">Ashab:</span> Этаж ${safeNumber(maxF.ashab).toFixed(1)} | HP ур.${safeNumber(ups.ashab?.hp)} | ATK ур.${safeNumber(ups.ashab?.atk)}<br>
+        <span style="color: #d32f2f;">Apostol:</span> Этаж ${safeNumber(maxF.apostol).toFixed(1)} | HP ур.${safeNumber(ups.apostol?.hp)} | ATK ур.${safeNumber(ups.apostol?.atk)}<br>
+        <span style="color: #d32f2f;">Мээ:</span> Этаж ${safeNumber(maxF.mee).toFixed(1)} | HP ур.${safeNumber(ups.mee?.hp)} | ATK ур.${safeNumber(ups.mee?.atk)}
     `;
     const { data: marketItems } = await supabaseClient.from('marketplace').select('*').eq('seller', username);
-    let inv = data.inventory || [];
-    let grouped = {}; inv.forEach(item => { if (!grouped[item.name]) grouped[item.name] = { ...item, qty: 0 }; grouped[item.name].qty++; });
+    let inv = Array.isArray(data.inventory) ? data.inventory : [];
+    let grouped = Object.create(null); inv.forEach(item => { const key = String(item?.name ?? ''); if (!grouped[key]) grouped[key] = { ...item, qty: 0 }; grouped[key].qty++; });
     let processedInv = Object.values(grouped).sort((a, b) => (rarityWeight[b.rarity] || 0) - (rarityWeight[a.rarity] || 0));
     if (processedInv.length === 0 && (!marketItems || marketItems.length === 0)) { invEl.innerHTML = "<p style='grid-column: 1/-1;'>Инвентарь пуст.</p>"; }
     else {
