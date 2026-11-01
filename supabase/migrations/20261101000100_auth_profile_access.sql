@@ -28,16 +28,89 @@ grant select (
 ) on table public.players to authenticated;
 grant update (last_online) on table public.players to authenticated;
 
-create or replace view public.player_public_profiles
-with (security_invoker = false)
-as
-select
-  username, max_score, item_points, pvp_pts,
-  created_at, last_online, rpg_upgrades, rpg_max_floors, inventory
-from public.players;
-
+drop view if exists public.player_public_profiles;
+create table if not exists public.player_public_profiles (
+  player_id bigint primary key,
+  username text not null unique,
+  max_score integer not null default 0,
+  item_points integer not null default 0,
+  pvp_pts integer not null default 0,
+  created_at timestamptz,
+  last_online timestamptz,
+  rpg_upgrades jsonb not null default '{}'::jsonb,
+  rpg_max_floors jsonb not null default '{}'::jsonb,
+  inventory jsonb not null default '[]'::jsonb
+);
+alter table public.player_public_profiles enable row level security;
+drop policy if exists player_public_profiles_read on public.player_public_profiles;
+create policy player_public_profiles_read
+  on public.player_public_profiles
+  for select
+  to anon, authenticated
+  using (true);
 revoke all on public.player_public_profiles from public;
 grant select on public.player_public_profiles to anon, authenticated;
+
+create or replace function public.sync_player_public_profile()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+begin
+  if tg_op = 'DELETE' then
+    delete from public.player_public_profiles where player_id = old.id;
+    return old;
+  end if;
+
+  insert into public.player_public_profiles (
+    player_id, username, max_score, item_points, pvp_pts,
+    created_at, last_online, rpg_upgrades, rpg_max_floors, inventory
+  ) values (
+    new.id, new.username, coalesce(new.max_score, 0), coalesce(new.item_points, 0),
+    coalesce(new.pvp_pts, 0), new.created_at, new.last_online,
+    coalesce(new.rpg_upgrades, '{}'::jsonb), coalesce(new.rpg_max_floors, '{}'::jsonb),
+    coalesce(new.inventory, '[]'::jsonb)
+  )
+  on conflict (player_id) do update set
+    username = excluded.username,
+    max_score = excluded.max_score,
+    item_points = excluded.item_points,
+    pvp_pts = excluded.pvp_pts,
+    created_at = excluded.created_at,
+    last_online = excluded.last_online,
+    rpg_upgrades = excluded.rpg_upgrades,
+    rpg_max_floors = excluded.rpg_max_floors,
+    inventory = excluded.inventory;
+  return new;
+end;
+$function$;
+
+revoke all on function public.sync_player_public_profile() from public, anon, authenticated;
+drop trigger if exists sync_player_public_profile_trigger on public.players;
+create trigger sync_player_public_profile_trigger
+  after insert or update or delete on public.players
+  for each row execute function public.sync_player_public_profile();
+
+insert into public.player_public_profiles (
+  player_id, username, max_score, item_points, pvp_pts,
+  created_at, last_online, rpg_upgrades, rpg_max_floors, inventory
+)
+select id, username, coalesce(max_score, 0), coalesce(item_points, 0),
+       coalesce(pvp_pts, 0), created_at, last_online,
+       coalesce(rpg_upgrades, '{}'::jsonb), coalesce(rpg_max_floors, '{}'::jsonb),
+       coalesce(inventory, '[]'::jsonb)
+from public.players
+on conflict (player_id) do update set
+  username = excluded.username,
+  max_score = excluded.max_score,
+  item_points = excluded.item_points,
+  pvp_pts = excluded.pvp_pts,
+  created_at = excluded.created_at,
+  last_online = excluded.last_online,
+  rpg_upgrades = excluded.rpg_upgrades,
+  rpg_max_floors = excluded.rpg_max_floors,
+  inventory = excluded.inventory;
 
 -- The signup trigger is invoked by Postgres on auth.users INSERT, never by the Data API.
 revoke execute on function public.handle_new_auth_user() from public, anon, authenticated;
@@ -52,6 +125,13 @@ create table if not exists public.action_cooldowns (
   primary key (user_id, action)
 );
 alter table public.action_cooldowns enable row level security;
+drop policy if exists action_cooldowns_service_role on public.action_cooldowns;
+create policy action_cooldowns_service_role
+  on public.action_cooldowns
+  for all
+  to service_role
+  using (true)
+  with check (true);
 revoke all on public.action_cooldowns from public, anon, authenticated;
 grant all on public.action_cooldowns to service_role;
 
