@@ -183,7 +183,7 @@ serve(async (req) => {
       const floorMain=Math.max(1,Math.min(500,Math.floor(Number(data?.floorMain)||1)));
       const floorSub=Math.max(1,Math.min(5,Math.floor(Number(data?.floorSub)||1)));
       const {data:result,error:txError}=await supabaseAdmin.rpc('record_rpg_win_atomic',{
-        p_user_id:authData.user.id,p_floor_main:floorMain,p_floor_sub:floorSub
+        p_user_id:authData.user.id,p_char:String(data?.charType||''),p_floor_main:floorMain,p_floor_sub:floorSub
       });
       if(txError) throw new Error('Не удалось сохранить награду за бой: '+txError.message);
       return new Response(JSON.stringify(result),{headers:{...corsHeaders,'Content-Type':'application/json'},status:200});
@@ -246,14 +246,6 @@ serve(async (req) => {
         p_user_id:authData.user.id,p_char:String(data?.charType||''),p_stat:String(data?.statType||'')
       });
       if(txError) throw new Error('Не удалось сохранить улучшение: '+txError.message);
-      return new Response(JSON.stringify(result),{headers:{...corsHeaders,'Content-Type':'application/json'},status:200});
-    }
-
-    if (action === 'update_floor') {
-      const charType=String(data?.charType||'');
-      const floor=Math.max(0,Math.min(5000,Math.floor(Number(data?.floor)||0)));
-      const {data:result,error:txError}=await supabaseAdmin.rpc('update_rpg_floor',{p_user_id:authData.user.id,p_char:charType,p_floor:floor});
-      if(txError) throw new Error('Ошибка сохранения этажа: '+txError.message);
       return new Response(JSON.stringify(result),{headers:{...corsHeaders,'Content-Type':'application/json'},status:200});
     }
 
