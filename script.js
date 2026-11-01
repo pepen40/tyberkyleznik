@@ -1,5 +1,5 @@
 const SUPABASE_URL = 'https://zfvinbamwavibnhmfwnz.supabase.co'; 
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpmdmluYmFtd2F2aWJuaG1md256Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4ODE2MjAsImV4cCI6MjEwODQ1NzYyMH0.FT5tlKgLUCrFs0zzY-BGimCmU9qNZmIzMW8LyysMmgE';
+const SUPABASE_KEY = 'sb_publishable_CGBVyvay_OcFjWohU8b6-w_logZw0y5';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 supabaseClient.auth.onAuthStateChange((event) => {
     if (event === 'PASSWORD_RECOVERY') {
