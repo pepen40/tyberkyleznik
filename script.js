@@ -3269,6 +3269,7 @@ document.getElementById("freeotp-modal")?.addEventListener("click", function(eve
       game = new ChessClass();
 
       ended = false;
+      chessRewardClaimed = false;
       selectedSquare = null;
       legalTargets = [];
       engineBusy = false;
@@ -3664,7 +3665,11 @@ playMoveSound(playedMove);
     if (game.isCheckmate()) {
       ended = true;
       setStatus(game.turn() === humanColor ? 'Мат. Ты проиграл.' : 'Мат! Ты победил!');
-      playChessResultSound(game.turn() === humanColor ? 'lose' : 'win');
+      const playerWon = game.turn() !== humanColor;
+      playChessResultSound(playerWon ? 'win' : 'lose');
+      if (playerWon && !onlineChessMode) {
+        awardOfflineChessCoins();
+      }
     } else if (game.isDraw()) {
       ended = true; setStatus('Ничья.'); playChessResultSound('draw');
 } else if (game.isCheck()) {
