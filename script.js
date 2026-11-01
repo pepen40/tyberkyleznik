@@ -982,7 +982,7 @@ function flashRedScreen() {
 }
 
 function initOnlineCounter() {
-    onlineChannel = supabaseClient.channel('online-users', { config: { presence: { key: currentUser } } });
+    onlineChannel = supabaseClient.channel('online-users', { config: { presence: { key: currentUser }, private: true } });
     onlineChannel.on('presence', { event: 'sync' }, () => {
         const state = onlineChannel.presenceState();
         onlinePlayers = Object.keys(state);
@@ -998,7 +998,7 @@ function initOnlineCounter() {
 
 function initLobby() {
     if(lobbyChannel) supabaseClient.removeChannel(lobbyChannel);
-    lobbyChannel = supabaseClient.channel('pvp_lobby', { config: { presence: { key: currentUser } } });
+    lobbyChannel = supabaseClient.channel('pvp_lobby', { config: { presence: { key: currentUser }, private: true } });
     lobbyChannel.on('presence', { event: 'sync' }, () => {
         const state = lobbyChannel.presenceState();
         pvpRooms = {};
@@ -1075,7 +1075,7 @@ function initSiteGlobalChat() {
         while (messages.children.length > 80) messages.firstElementChild.remove();
         messages.scrollTop = messages.scrollHeight;
     };
-    siteGlobalChatChannel = supabaseClient.channel('pepen40-global-chat', { config: { broadcast: { self: false } } });
+    siteGlobalChatChannel = supabaseClient.channel('pepen40-global-chat', { config: { broadcast: { self: false }, private: true } });
     siteGlobalChatChannel.on('broadcast', { event: 'site_message' }, ({ payload }) => {
         if (isSiteGlobalChatBanned(payload?.nick)) return;
         add(payload?.nick, payload?.text);
@@ -1316,7 +1316,7 @@ async function executeChallenge() {
     closePvpLobby();
     
     if(roomChannel) supabaseClient.removeChannel(roomChannel);
-    roomChannel = supabaseClient.channel(myRoomId, { config: { broadcast: { self: false } } });
+    roomChannel = supabaseClient.channel(myRoomId, { config: { broadcast: { self: false }, private: true } });
     roomChannel.on('broadcast', { event: 'join_request' }, (payload) => {
         const guest = payload.payload;
         startPvpBattle(guest.charName, guest.hp, guest.atk, guest.username, guest.charType, guest.crit || 0, guest.defense || 0, guest.build);
@@ -1450,7 +1450,7 @@ async function createPvpRoom() {
     closePvpLobby();
     
     if(roomChannel) supabaseClient.removeChannel(roomChannel);
-    roomChannel = supabaseClient.channel(myRoomId, { config: { broadcast: { self: false } } });
+    roomChannel = supabaseClient.channel(myRoomId, { config: { broadcast: { self: false }, private: true } });
     roomChannel.on('broadcast', { event: 'join_request' }, (payload) => {
         const guest = payload.payload;
         startPvpBattle(guest.charName, guest.hp, guest.atk, guest.username, guest.charType, guest.crit || 0, guest.defense || 0, guest.build);
@@ -1501,7 +1501,7 @@ async function joinPvpRoom(roomId, charType) {
     disablePvpButtons();
     
     if(roomChannel) supabaseClient.removeChannel(roomChannel);
-    roomChannel = supabaseClient.channel(roomId, { config: { broadcast: { self: false } } });
+    roomChannel = supabaseClient.channel(roomId, { config: { broadcast: { self: false }, private: true } });
     roomChannel.on('broadcast', { event: 'start_game' }, (payload) => {
         const host = payload.payload;
         startPvpBattle(host.charName, host.hp, host.atk, host.username, host.charType, host.crit || 0, host.defense || 0, host.build);
@@ -4215,7 +4215,7 @@ document.addEventListener('DOMContentLoaded', () => {
             activeChessRoomChannel = null;
         }
         const room = supabaseClient.channel('chess-room-' + roomId, {
-            config: { broadcast: { self: false } }
+            config: { broadcast: { self: false }, private: true }
         });
         activeChessRoomChannel = room;
         room.on('broadcast', { event: 'chess_move' }, message => {
@@ -4408,7 +4408,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     chessInviteChannel = supabaseClient.channel('chess-invitations', {
-        config: { broadcast: { self: false } }
+        config: { broadcast: { self: false }, private: true }
     });
 
     chessInviteChannel
