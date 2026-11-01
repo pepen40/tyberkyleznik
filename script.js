@@ -28,8 +28,8 @@ function escapeHtml(value) {
 }
 function inlineJsString(value) {
     return JSON.stringify(String(value ?? ''))
-        .replace(/\\u2028/gi, '\\\\u2028')
-        .replace(/\\u2029/gi, '\\\\u2029');
+        .replace(/\u2028/g, '\\u2028')
+        .replace(/\u2029/g, '\\u2029');
 }
 function safeInlineArg(value) {
     return escapeHtml(inlineJsString(value));
@@ -1089,7 +1089,7 @@ function sendPvpMessage() {
 
 function getImgTag(imgName) {
     const safeName = String(imgName || '');
-    if (!/^[a-zA-Z0-9_-]+\\.(?:png|jpe?g|webp|gif)$/i.test(safeName)) {
+    if (!/^[a-zA-Z0-9_-]+\.(?:png|jpe?g|webp|gif)$/i.test(safeName)) {
         return '<span style="font-size: 20px;">📎</span>';
     }
     return `<img src="${safeName}" class="inv-card-img" alt="" loading="lazy" onerror="this.replaceWith(document.createTextNode('📎'))">`;
