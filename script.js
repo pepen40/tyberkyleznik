@@ -5,9 +5,9 @@ supabaseClient.auth.onAuthStateChange((event) => {
     if (event === 'PASSWORD_RECOVERY') {
         queueMicrotask(() => {
             (async () => {
-                const newPassword = prompt("Введи новый пароль (минимум 8 символов):");
-                if (!newPassword || newPassword.length < 8) {
-                    alert("Пароль должен содержать минимум 8 символов.");
+                let newPassword = prompt("Введи новый пароль (минимум 10 символов):");
+                if (!newPassword || newPassword.length < 10) {
+                    alert("Пароль должен содержать минимум 10 символов.");
                     await supabaseClient.auth.signOut();
                     return;
                 }
