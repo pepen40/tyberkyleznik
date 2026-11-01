@@ -932,7 +932,12 @@ function initSiteGlobalChat() {
     messages.innerHTML = '<div>Общий чат подключён. Сообщения видны тем, кто сейчас онлайн.</div>';
     const add = (nick, text) => {
         const row = document.createElement('div'); row.className = 'site-global-chat-message';
-        const strong = document.createElement('b'); strong.textContent = String(nick || 'Игрок') + ': ';
+        const strong = document.createElement('b');
+        const displayNick = String(nick || 'Игрок');
+        strong.textContent = displayNick + ': ';
+        if (['vlad', 'витя_програмист'].includes(displayNick.toLowerCase())) {
+            strong.style.color = '#ff3333';
+        }
         const body = document.createElement('span'); body.textContent = String(text || '').slice(0, 240);
         row.append(strong, body); messages.appendChild(row);
         while (messages.children.length > 80) messages.firstElementChild.remove();
@@ -3625,6 +3630,36 @@ playMoveSound(playedMove);
     }
     renderBoard();
   }
+  let chessRewardClaimed = false;
+  async function awardOfflineChessCoins() {
+    if (onlineChessMode || chessRewardClaimed || !currentUser) return;
+    const rewards = { 1: 25, 2: 50, 3: 75, 4: 150, 5: 200 };
+    const opponentLevel = Number(level);
+    if (!rewards[opponentLevel]) return;
+    chessRewardClaimed = true;
+    try {
+      const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
+        body: {
+          action: 'chess_reward',
+          username: currentUser,
+          data: { level: opponentLevel }
+        }
+      });
+      if (error) throw error;
+      if (data?.success) {
+        currentCoins = Number(data.newCoins ?? currentCoins);
+        updateUI();
+        setStatus(`Партия завершена · +${data.earned} монет`);
+      } else {
+        chessRewardClaimed = false;
+        console.error('Шахматная награда не начислена:', data?.error);
+      }
+    } catch (e) {
+      chessRewardClaimed = false;
+      console.error('Ошибка шахматной награды:', e);
+    }
+  }
+
   function updateGameStatus() {
     if (game.isCheckmate()) {
       ended = true;
