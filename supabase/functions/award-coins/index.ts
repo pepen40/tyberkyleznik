@@ -164,7 +164,7 @@ serve(async (req) => {
     const allowedActions = new Set([
       'chess_reward', 'daily_status', 'claim_rpg_reward', 'score', 'roach_clear',
       'rpg_win', 'open_case', 'sell_item', 'remove_listing', 'buy_item',
-      'consume_item', 'buy_upgrade', 'pvp_result', 'buy_gear', 'equip_gear',
+      'consume_item', 'buy_upgrade', 'buy_gear', 'equip_gear',
       'register_room_membership', 'join_room_membership', 'validate_room_invitation', 'send_chat_message',
       'register_rpg_invitation', 'deliver_rpg_invitation', 'respond_rpg_invitation', 'close_rpg_invitation'
     ]);
@@ -185,7 +185,6 @@ serve(async (req) => {
       roach_clear: 60,
       score: 3,
       rpg_win: 3,
-      pvp_result: 3,
       claim_rpg_reward: 2,
       register_room_membership: 10,
       join_room_membership: 2,
@@ -227,7 +226,6 @@ serve(async (req) => {
       'score',
       'roach_clear',
       'rpg_win',
-      'pvp_result'
     ]);
     if (temporarilyDisabledClientRewards.has(action)) {
       return new Response(JSON.stringify({
@@ -448,14 +446,13 @@ serve(async (req) => {
       }
     }
 
-    const dailyCaps: Record<string, number> = { chess_reward:200, score:500, roach_clear:150, rpg_win:500, pvp_result:150 };
+    const dailyCaps: Record<string, number> = { chess_reward:200, score:500, roach_clear:150, rpg_win:500 };
     if (Object.prototype.hasOwnProperty.call(dailyCaps, action)) {
       let requested = 0;
       if (action === 'chess_reward') requested = ({1:25,2:50,3:75,4:150,5:200} as Record<number,number>)[Number(data?.level)] || 0;
       else if (action === 'score') { const rounds=Math.max(0,Math.min(100,Math.floor(Number(data?.rounds)||0))); requested=Math.min(500,rounds*(rounds+19)); }
       else if (action === 'roach_clear') requested=150;
       else if (action === 'rpg_win') { const floor=Math.max(1,Math.min(500,Math.floor(Number(data?.floorMain)||1))); const sub=Math.max(1,Math.min(5,Math.floor(Number(data?.floorSub)||1))); requested=Math.min(100,10+floor*3)+(sub===5?Math.min(90,Math.round(35+floor*1.5)):0); }
-      else if (action === 'pvp_result') requested=data?.win === true ? 15 : 0;
       if (requested>0) {
         const {data:allowed,error:budgetError}=await supabaseAdmin.rpc('consume_reward_budget',{p_user_id:authData.user.id,p_action:action,p_amount:requested,p_daily_limit:dailyCaps[action]});
         if(budgetError) throw new Error('Ошибка проверки дневного лимита: '+budgetError.message);
@@ -574,13 +571,6 @@ serve(async (req) => {
       if(txError) throw new Error('Не удалось сохранить улучшение: '+txError.message);
       return new Response(JSON.stringify(result),{headers:{...corsHeaders,'Content-Type':'application/json'},status:200});
     }
-
-    if (action === 'pvp_result') {
-      const {data:result,error:txError}=await supabaseAdmin.rpc('apply_pvp_result',{p_user_id:authData.user.id,p_win:data?.win===true});
-      if(txError) throw new Error('Ошибка обновления PvP-очков: '+txError.message);
-      return new Response(JSON.stringify(result),{headers:{...corsHeaders,'Content-Type':'application/json'},status:200});
-    }
-
 
     if (action === 'buy_gear') {
       const {data:result,error:txError}=await supabaseAdmin.rpc('purchase_rpg_gear',{
