@@ -29,7 +29,14 @@ select ok(
   'only service_role can execute invitation close'
 );
 
-select has_policy('realtime', 'messages', 'authenticated_receive_own_rpg_invitation_inbox', 'private inbox receive policy exists');
+select ok(
+  exists (
+    select 1 from pg_policy
+    where polrelid = 'realtime.messages'::regclass
+      and polname = 'authenticated_receive_own_rpg_invitation_inbox'
+  ),
+  'private inbox receive policy exists'
+);
 select ok(
   (select polcmd = 'r'
       and polroles = array[(select oid from pg_roles where rolname = 'authenticated')]::oid[]
