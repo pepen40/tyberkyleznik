@@ -104,6 +104,56 @@ Deno.test('browser deduplicates room invitations and joins the same room id on a
   assert(source.includes("action: 'close_rpg_invitation'"));
 });
 
+Deno.test('acceptance waits for the subscribed room to deliver start_game before acknowledging the host', async () => {
+  const source = await Deno.readTextFile(new URL('../../../script.js', import.meta.url));
+  const joinStart = source.indexOf('async function joinPvpRoom(roomId, charType)');
+  const joinEnd = source.indexOf('\nfunction startPvpBattle(', joinStart);
+  const joinRoom = source.slice(joinStart, joinEnd);
+  const acceptStart = source.indexOf('async function executeAcceptChallenge()');
+  const acceptEnd = source.indexOf('\nasync function getPvpBuildSnapshot(', acceptStart);
+  const accept = source.slice(acceptStart, acceptEnd);
+  assert(joinRoom.includes("channel.on('broadcast', { event: 'start_game' }"));
+  assert(joinRoom.includes('await startGamePromise'));
+  assert(joinRoom.includes('setTimeout(() => finishStartGame(false), 15000)'));
+  assert(joinRoom.includes("if (sent !== 'ok') finishStartGame(false)"));
+  assert(joinRoom.includes('if (!startResult)'));
+  assert(joinRoom.includes('if (myRoomId === roomId) myRoomId = null'));
+  assert(accept.indexOf('await joinPvpRoom(roomId, charType)') < accept.indexOf("sendRpgInvitationResponse(roomId, 'accepted')"));
+  assert(accept.includes("classList.remove('hidden')"));
+});
+
+Deno.test('host invitation timeout stays active until the invitee confirms start_game', async () => {
+  const source = await Deno.readTextFile(new URL('../../../script.js', import.meta.url));
+  const challengeStart = source.indexOf('async function executeChallenge()');
+  const challengeEnd = source.indexOf('\nfunction listenForChallenges(', challengeStart);
+  const challenge = source.slice(challengeStart, challengeEnd);
+  const joinHandlerStart = challenge.indexOf("roomChannel.on('broadcast', { event: 'join_request' }");
+  const joinHandlerEnd = challenge.indexOf("roomChannel.on('broadcast', { event: 'enemy_action' }", joinHandlerStart);
+  const joinHandler = challenge.slice(joinHandlerStart, joinHandlerEnd);
+  assert(joinHandler.includes("event: 'start_game'"));
+  assert(joinHandler.includes('hostJoinHandled'));
+  assert(!joinHandler.includes('clearTimeout(pendingOutgoingChallenge.timer)'));
+  const responseStart = source.indexOf("if (data.status === 'accepted')");
+  const responseEnd = source.indexOf('const statuses = {', responseStart);
+  assert(source.slice(responseStart, responseEnd).includes('clearTimeout(pending.timer)'));
+});
+
+Deno.test('delivery timeout clears host state and exposes retry instead of leaving an endless wait', async () => {
+  const source = await Deno.readTextFile(new URL('../../../script.js', import.meta.url));
+  const clearStart = source.indexOf('async function clearOutgoingRpgChallenge(message)');
+  const clearEnd = source.indexOf('\nconst soundCache', clearStart);
+  const clear = source.slice(clearStart, clearEnd);
+  const executeStart = source.indexOf('async function executeChallenge()');
+  const executeEnd = source.indexOf('\nfunction listenForChallenges(', executeStart);
+  const execute = source.slice(executeStart, executeEnd);
+  assert(source.includes('const RPG_INVITATION_TIMEOUT_MS = 30000'));
+  assert(clear.includes('pendingOutgoingChallenge = null'));
+  assert(clear.includes('myRoomId = null'));
+  assert(clear.includes('close_rpg_invitation'));
+  assert(execute.includes('pendingOutgoingChallenge.timer = setTimeout('));
+  assert(execute.includes('Можно повторить вызов'));
+});
+
 Deno.test('RPG changes keep shared chat and chess invitation channels intact', async () => {
   const source = await Deno.readTextFile(new URL('../../../script.js', import.meta.url));
   assert(source.includes("supabaseClient.channel('chess-invitations'"));

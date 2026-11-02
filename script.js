@@ -1561,13 +1561,11 @@ async function executeChallenge() {
     closePvpLobby();
     if (roomChannel) await supabaseClient.removeChannel(roomChannel);
     roomChannel = supabaseClient.channel(roomId, { config: { broadcast: { self: false }, private: true } });
+    let hostJoinHandled = false;
     roomChannel.on('broadcast', { event: 'join_request' }, (payload) => {
         const guest = payload?.payload;
-        if (!guest || myRoomId !== roomId) return;
-        if (pendingOutgoingChallenge?.roomId === roomId) {
-            clearTimeout(pendingOutgoingChallenge.timer);
-            pendingOutgoingChallenge = null;
-        }
+        if (!guest || myRoomId !== roomId || hostJoinHandled) return;
+        hostJoinHandled = true;
         startPvpBattle(guest.charName, guest.hp, guest.atk, guest.username, guest.charType, guest.crit || 0, guest.defense || 0, guest.build);
         roomChannel.send({ type: 'broadcast', event: 'start_game', payload: { charName, hp, atk, username: currentUser, charType, crit: gearBonus.crit || 0, defense: gearBonus.defense || 0, build: getPvpBuildSnapshot(charType) } });
     });
@@ -1689,12 +1687,15 @@ async function executeAcceptChallenge() {
     const receiveStatus = document.getElementById('pvp-receive-status');
     if (receiveStatus) receiveStatus.textContent = 'Подключаемся к комнате…';
     const charType = document.getElementById('pvp-receive-char-select').value;
-    await joinPvpRoom(roomId, charType);
-    if (myRoomId === roomId) {
+    let joined = false;
+    try { joined = await joinPvpRoom(roomId, charType); } catch (_) {}
+    if (joined && myRoomId === roomId) {
         pendingChallengeRoomId = null;
         pendingChallengeHost = null;
         await sendRpgInvitationResponse(roomId, 'accepted');
     } else {
+        const receiveStatus = document.getElementById('pvp-receive-status');
+        if (receiveStatus) receiveStatus.textContent = 'Не удалось подключиться к бою. Проверьте соединение и попробуйте принять приглашение ещё раз.';
         document.getElementById('pvp-receive-modal').classList.remove('hidden');
     }
 }
@@ -1801,21 +1802,59 @@ async function joinPvpRoom(roomId, charType) {
     document.getElementById('pvp-turn-indicator').className = "turn-indicator";
     disablePvpButtons();
     
-    if(roomChannel) supabaseClient.removeChannel(roomChannel);
-    roomChannel = supabaseClient.channel(roomId, { config: { broadcast: { self: false }, private: true } });
-    roomChannel.on('broadcast', { event: 'start_game' }, (payload) => {
+    if(roomChannel) await supabaseClient.removeChannel(roomChannel);
+    const channel = supabaseClient.channel(roomId, { config: { broadcast: { self: false }, private: true } });
+    roomChannel = channel;
+    let resolveStartGame;
+    let joinRequestSent = false;
+    const startGamePromise = new Promise(resolve => { resolveStartGame = resolve; });
+    const finishStartGame = started => {
+        if (!resolveStartGame) return;
+        const resolve = resolveStartGame;
+        resolveStartGame = null;
+        resolve(started);
+    };
+    channel.on('broadcast', { event: 'start_game' }, (payload) => {
+        if (!resolveStartGame) return;
         const host = payload.payload;
         startPvpBattle(host.charName, host.hp, host.atk, host.username, host.charType, host.crit || 0, host.defense || 0, host.build);
         setPvpTurn(false);
+        finishStartGame(true);
     });
-    roomChannel.on('broadcast', { event: 'enemy_action' }, (payload) => { handlePvpEnemyAction(payload.payload); });
-    roomChannel.on('broadcast', { event: 'chat_message' }, (payload) => {
+    channel.on('broadcast', { event: 'enemy_action' }, (payload) => { handlePvpEnemyAction(payload.payload); });
+    channel.on('broadcast', { event: 'chat_message' }, (payload) => {
         addPvpChatMessage(payload.payload.nick || '???', payload.payload.text || '');
     });
-    roomChannel.subscribe((status) => {
-        if (status === 'SUBSCRIBED') { roomChannel.send({ type: 'broadcast', event: 'join_request', payload: { username: currentUser, charName, hp, atk, charType, crit: getGearBonuses(charType).crit || 0, defense: getGearBonuses(charType).defense || 0, build: getPvpBuildSnapshot(charType) } }); }
+    const joinTimer = setTimeout(() => finishStartGame(false), 15000);
+    channel.subscribe(async status => {
+        if (channel !== roomChannel) return;
+        if (status === 'SUBSCRIBED') {
+            if (joinRequestSent) return;
+            joinRequestSent = true;
+            try {
+                const sent = await channel.send({ type: 'broadcast', event: 'join_request', payload: { username: currentUser, charName, hp, atk, charType, crit: gearBonus.crit || 0, defense: gearBonus.defense || 0, build: getPvpBuildSnapshot(charType) } });
+                if (sent !== 'ok') finishStartGame(false);
+            } catch (_) { finishStartGame(false); }
+        } else if (['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'].includes(status)) finishStartGame(false);
     });
     initPvpChat(roomId);
+    const startResult = await startGamePromise;
+    clearTimeout(joinTimer);
+    if (!startResult) {
+        if (roomChannel === channel) {
+            roomChannel = null;
+            try { await supabaseClient.removeChannel(channel); } catch (_) {}
+        }
+        if (myRoomId === roomId) myRoomId = null;
+        isPvpHost = false;
+        currentPvpChar = null;
+        pvpBattleStarted = false;
+        document.getElementById('pvp-battle-screen').classList.add('hidden');
+        document.getElementById('rpg-char-select').classList.remove('hidden');
+        document.getElementById('pvp-log').textContent = 'Не удалось подключиться к бою. Попробуйте принять приглашение ещё раз.';
+        return false;
+    }
+    return true;
 }
 
 function startPvpBattle(enemyName, enemyHp, enemyAtk, enemyUsername, enemyCharType, enemyCrit = 0, enemyDefense = 0, enemyBuild = null) {
