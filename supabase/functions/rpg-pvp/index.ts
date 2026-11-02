@@ -63,6 +63,28 @@ serve(async (req) => {
       })
       if (error) throw error
       result = rpcData
+    } else if (action === 'submit_action') {
+      const roomTopic = String(data.room_topic || '')
+      const actionId = String(data.action_id || '')
+      const expectedVersion = Number(data.expected_version)
+      const actionKind = String(data.action_kind || '')
+      const itemId = data.item_id == null ? null : String(data.item_id)
+      if (!/^room_[a-z0-9]{9}$/.test(roomTopic) ||
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(actionId) ||
+          !Number.isSafeInteger(expectedVersion) || expectedVersion < 0 ||
+          !['attack', 'defend', 'skill', 'leave'].includes(actionKind)) {
+        return json({ success: false, error: 'Некорректное боевое действие.' }, 400)
+      }
+      const { data: rpcData, error } = await admin.rpc('apply_rpg_pvp_action', {
+        p_user_id: userId,
+        p_room_topic: roomTopic,
+        p_action_id: actionId,
+        p_expected_version: expectedVersion,
+        p_action_kind: actionKind,
+        p_item_id: itemId,
+      })
+      if (error) throw error
+      result = rpcData
     } else if (action === 'get_match') {
       const roomTopic = String(data.room_topic || '')
       if (!/^room_[a-z0-9]{9}$/.test(roomTopic)) return json({ success: false, error: 'Некорректная комната.' }, 400)
