@@ -25,4 +25,4 @@ jobs:
       - name: Check Supabase Edge Function
         run: deno check supabase/functions/award-coins/index.ts
       - name: Test RPG invitation delivery protocol
-        run: deno test supabase/functions/_shared/rpg-invitations.test.ts
+        run: deno test --allow-read=script.js supabase/functions/_shared/rpg-invitations.test.ts
