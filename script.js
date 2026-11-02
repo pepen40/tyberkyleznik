@@ -1136,15 +1136,29 @@ async function initializeRpgInvitationInbox(userId) {
 async function clearOutgoingRpgChallenge(message) {
     const pending = pendingOutgoingChallenge;
     if (!pending) return;
+    if (myRoomId === pending.roomId && pvpMatchId) {
+        try {
+            await invokeRpgPvp('cancel_match', { room_topic: pending.roomId });
+        } catch (_) {
+            try {
+                const match = await invokeRpgPvp('get_match', { room_topic: pending.roomId });
+                applyAuthoritativePvpMatch(match);
+                if (['active', 'completed', 'cancelled', 'expired'].includes(match.status)) return false;
+            } catch (_) {}
+
+            pending.timer = setTimeout(() => clearOutgoingRpgChallenge(message), RPG_INVITATION_TIMEOUT_MS);
+            const log = document.getElementById('pvp-log');
+            if (log) log.textContent = 'Не удалось подтвердить отмену матча. Проверяем серверное состояние; не закрывайте эту комнату.';
+            return false;
+        }
+    }
+
     clearTimeout(pending.timer);
     pendingOutgoingChallenge = null;
     outgoingChallengeRegistrationInProgress = false;
-    const cancelMatch = myRoomId === pending.roomId && pvpMatchId
-        ? invokeRpgPvp('cancel_match', { room_topic: pending.roomId }).catch(() => {})
-        : Promise.resolve();
-    void cancelMatch.then(() => supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
+    void supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
         body: { action: 'close_rpg_invitation', data: { roomId: pending.roomId } }
-    })).catch(() => {});
+    }).catch(() => {});
     if (roomChannel) {
         const oldChannel = roomChannel;
         roomChannel = null;
@@ -1166,6 +1180,7 @@ async function clearOutgoingRpgChallenge(message) {
     document.getElementById('rpg-char-select')?.classList.remove('hidden');
     const log = document.getElementById('pvp-log');
     if (log) log.textContent = message;
+    return true;
 }
 
 const soundCache = {};
@@ -2081,7 +2096,8 @@ async function joinPvpRoom(roomId, charType) {
 async function leavePvpRoom(sendSignal = true) {
     if (sendSignal && isPvpHost && pendingOutgoingChallenge) await syncPvpMatch();
     if (sendSignal && isPvpHost && pendingOutgoingChallenge) {
-        await clearOutgoingRpgChallenge('Вызов отменён.');
+        const cancelled = await clearOutgoingRpgChallenge('Вызов отменён.');
+        if (!cancelled && pvpBattleStarted) return submitPvpIntent('leave');
         return;
     }
     if (sendSignal && pvpMatchId && !pvpBattleFinished) {

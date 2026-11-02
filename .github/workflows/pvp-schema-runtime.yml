@@ -8,12 +8,14 @@ on:
     branches: [main]
     paths:
       - supabase/migrations/20261102120000_create_pvp_match_storage.sql
+      - supabase/migrations/20261102130000_add_private_rpg_invitation_inbox.sql
       - supabase/migrations/20261103100000_add_rpg_pvp_server_build.sql
       - supabase/migrations/20261103110000_rpg_pvp_match_lifecycle.sql
       - supabase/migrations/20261103120000_rpg_pvp_atomic_actions.sql
       - supabase/migrations/20261103130000_rpg_pvp_waiting_cancel.sql
       - supabase/migrations/20261103140000_rpg_pvp_turn_timeout.sql
       - supabase/tests/database/pvp_match_storage_test.sql
+      - supabase/tests/database/rpg_invitation_inbox_test.sql
       - supabase/tests/database/rpg_pvp_server_build_test.sql
       - supabase/tests/database/rpg_pvp_match_lifecycle_test.sql
       - supabase/tests/database/rpg_pvp_atomic_actions_test.sql
@@ -108,6 +110,7 @@ jobs:
             supabase/migrations/20261102115900_pvp_test_preflight.sql
           for migration in \
             20261102120000_create_pvp_match_storage.sql \
+            20261102130000_add_private_rpg_invitation_inbox.sql \
             20261103100000_add_rpg_pvp_server_build.sql \
             20261103110000_rpg_pvp_match_lifecycle.sql \
             20261103120000_rpg_pvp_atomic_actions.sql \
@@ -117,6 +120,7 @@ jobs:
           done
           for test in \
             pvp_match_storage_test.sql \
+            rpg_invitation_inbox_test.sql \
             rpg_pvp_server_build_test.sql \
             rpg_pvp_match_lifecycle_test.sql \
             rpg_pvp_atomic_actions_test.sql \
@@ -132,7 +136,7 @@ jobs:
           supabase start
           --exclude imgproxy,storage-api,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
 
-      - name: Apply only the PvP migration and test harness preflight
+      - name: Apply PvP and private-invitation migrations with test harness preflight
         working-directory: ${{ runner.temp }}/pvp-schema-supabase
         run: supabase db reset --local --yes
 
@@ -141,7 +145,7 @@ jobs:
         shell: bash
         run: bash "$GITHUB_WORKSPACE/.github/pvp-schema-test/concurrency.sh"
 
-      - name: Run the PvP pgTAP suite
+      - name: Run the PvP and private-invitation pgTAP suites
         working-directory: ${{ runner.temp }}/pvp-schema-supabase
         run: supabase test db --local
 

@@ -25,6 +25,9 @@ values
   ('$host_user','{"ashab":{"hp":0,"atk":0}}','[]',0),
   ('$guest_user','{"ashab":{"hp":0,"atk":0}}','[]',0);
 
+insert into public.realtime_room_access (topic, room_kind, host_user_id, guest_user_id, invitee_user_id, is_public, expires_at)
+values ('$room_topic','rpg','$host_user','$guest_user','$guest_user',false,now() + interval '10 minutes');
+
 select public.create_rpg_pvp_match('$host_user','$match_id','$room_topic','ashab');
 select public.join_rpg_pvp_match('$guest_user','$room_topic','ashab');
 SQL
@@ -72,6 +75,7 @@ end
 
 delete from public.pvp_match_actions where match_id='$match_id';
 delete from public.pvp_matches where match_id='$match_id';
+delete from public.realtime_room_access where topic='$room_topic';
 delete from public.players where user_id in ('$host_user','$guest_user');
 delete from auth.users where id in ('$host_user','$guest_user');
 SQL

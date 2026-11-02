@@ -240,6 +240,8 @@ Deno.test('delivery timeout clears host state and exposes retry instead of leavi
   assert(clear.includes('pendingOutgoingChallenge = null'));
   assert(clear.includes('myRoomId = null'));
   assert(clear.includes("invokeRpgPvp('cancel_match', { room_topic: pending.roomId })"));
+  assert(clear.includes("invokeRpgPvp('get_match', { room_topic: pending.roomId })"));
+  assert(clear.includes("['active', 'completed', 'cancelled', 'expired'].includes(match.status)"));
   assert(clear.includes('close_rpg_invitation'));
   assert(clear.indexOf("invokeRpgPvp('cancel_match'") < clear.indexOf('close_rpg_invitation'));
   const leaveStart = source.indexOf('async function leavePvpRoom(sendSignal = true)');
@@ -247,6 +249,7 @@ Deno.test('delivery timeout clears host state and exposes retry instead of leavi
   const leave = source.slice(leaveStart, leaveEnd);
   assert(leave.includes('isPvpHost && pendingOutgoingChallenge'));
   assert(leave.includes("clearOutgoingRpgChallenge('Вызов отменён.')"));
+  assert(leave.includes('if (!cancelled && pvpBattleStarted) return submitPvpIntent(\'leave\')'));
   assert(execute.includes('pendingOutgoingChallenge.timer = setTimeout('));
   assert(execute.includes('Можно повторить вызов'));
 });
