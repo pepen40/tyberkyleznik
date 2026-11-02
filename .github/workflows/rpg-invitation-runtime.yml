@@ -115,6 +115,35 @@ jobs:
         working-directory: ${{ runner.temp }}/rpg-invitation-supabase
         run: supabase test db --local
 
+      - name: Serve award-coins locally with disposable Supabase credentials
+        working-directory: ${{ runner.temp }}/rpg-invitation-supabase
+        shell: bash
+        run: |
+          set -euo pipefail
+          edge_env="$RUNNER_TEMP/rpg-invitation-edge.env"
+          printf 'SUPABASE_URL=%s\nSUPABASE_SERVICE_ROLE_KEY=%s\n' \
+            "$RPG_TEST_API_URL" "$RPG_TEST_SERVICE_ROLE_KEY" > "$edge_env"
+          chmod 600 "$edge_env"
+          nohup supabase functions serve award-coins --env-file "$edge_env" \
+            > "$RUNNER_TEMP/rpg-invitation-edge.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/rpg-invitation-edge.pid"
+
+          for attempt in $(seq 1 60); do
+            status="$(curl --silent --output /dev/null --write-out '%{http_code}' \
+              --request POST "$RPG_TEST_API_URL/functions/v1/award-coins" \
+              --header "apikey: $RPG_TEST_ANON_KEY" \
+              --header 'Content-Type: application/json' --data '{}' || true)"
+            if [[ "$status" == 400 || "$status" == 401 ]]; then
+              echo "Local award-coins Edge Function is ready (HTTP $status)."
+              exit 0
+            fi
+            sleep 1
+          done
+
+          tail -n 100 "$RUNNER_TEMP/rpg-invitation-edge.log" >&2
+          echo "Local award-coins Edge Function did not become ready." >&2
+          exit 1
+
       - name: Verify direct private inbox authorization and broadcast
         run: >-
           deno test --allow-env=RPG_TEST_API_URL,RPG_TEST_ANON_KEY,RPG_TEST_SERVICE_ROLE_KEY
@@ -131,7 +160,12 @@ jobs:
         if: always()
         shell: bash
         run: |
+          if [[ -f "$RUNNER_TEMP/rpg-invitation-edge.pid" ]]; then
+            kill "$(cat "$RUNNER_TEMP/rpg-invitation-edge.pid")" 2>/dev/null || true
+          fi
+          rm -f "$RUNNER_TEMP/rpg-invitation-edge.pid" "$RUNNER_TEMP/rpg-invitation-edge.env"
           harness_dir="$RUNNER_TEMP/rpg-invitation-supabase"
           if [[ -f "$harness_dir/supabase/config.toml" ]]; then
             supabase --workdir "$harness_dir" stop --no-backup || true
           fi
+
