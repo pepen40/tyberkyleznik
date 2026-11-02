@@ -1,0 +1,101 @@
+name: PvP schema runtime tests
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - supabase/migrations/20261102120000_create_pvp_match_storage.sql
+      - supabase/tests/database/pvp_match_storage_test.sql
+      - .github/pvp-schema-test/preflight.sql
+      - .github/workflows/pvp-schema-runtime.yml
+  push:
+    paths:
+      - supabase/migrations/20261102120000_create_pvp_match_storage.sql
+      - supabase/tests/database/pvp_match_storage_test.sql
+      - .github/pvp-schema-test/preflight.sql
+      - .github/workflows/pvp-schema-runtime.yml
+  workflow_dispatch:
+
+jobs:
+  pvp-schema:
+    name: PostgreSQL 17 + local Supabase + pgTAP
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v3
+        with:
+          version: 2.84.2
+
+      - name: Create isolated Supabase test project
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          harness_dir="$RUNNER_TEMP/pvp-schema-supabase"
+          mkdir -p "$harness_dir"
+          cd "$harness_dir"
+          supabase init
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          config = Path("supabase/config.toml")
+          contents = config.read_text(encoding="utf-8")
+          contents, version_count = re.subn(
+              r"(?m)^(\s*major_version\s*=\s*)\d+(\s*)$",
+              r"\g<1>17\g<2>",
+              contents,
+          )
+          if version_count != 1:
+              raise SystemExit(
+                  f"Expected exactly one db.major_version entry in {config}, found {version_count}"
+              )
+          contents, project_count = re.subn(
+              r'(?m)^\s*project_id\s*=\s*"[^"]*"\s*$',
+              'project_id = "pvp_schema_ci"',
+              contents,
+          )
+          if project_count != 1:
+              raise SystemExit(
+                  f"Expected exactly one project_id entry in {config}, found {project_count}"
+              )
+          config.write_text(contents, encoding="utf-8")
+          PY
+
+          mkdir -p supabase/migrations supabase/tests/database
+          cp "$GITHUB_WORKSPACE/.github/pvp-schema-test/preflight.sql" \
+            supabase/migrations/20261102115900_pvp_test_preflight.sql
+          cp "$GITHUB_WORKSPACE/supabase/migrations/20261102120000_create_pvp_match_storage.sql" \
+            supabase/migrations/
+          cp "$GITHUB_WORKSPACE/supabase/tests/database/pvp_match_storage_test.sql" \
+            supabase/tests/database/
+
+      - name: Start disposable Supabase Auth and Realtime with PostgreSQL
+        working-directory: ${{ runner.temp }}/pvp-schema-supabase
+        run: >-
+          supabase start
+          --exclude imgproxy,storage-api,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+
+      - name: Apply only the PvP migration and test harness preflight
+        working-directory: ${{ runner.temp }}/pvp-schema-supabase
+        run: supabase db reset --local --yes
+
+      - name: Run the 22 pgTAP assertions
+        working-directory: ${{ runner.temp }}/pvp-schema-supabase
+        run: supabase test db --local
+
+      - name: Stop disposable Supabase stack
+        if: always()
+        shell: bash
+        run: |
+          harness_dir="$RUNNER_TEMP/pvp-schema-supabase"
+          if [[ -f "$harness_dir/supabase/config.toml" ]]; then
+            supabase --workdir "$harness_dir" stop --no-backup || true
+          fi
