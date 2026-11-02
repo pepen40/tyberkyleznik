@@ -52,7 +52,7 @@ if ! { [[ "$status_a" -eq 0 && "$status_b" -ne 0 ]] || [[ "$status_a" -ne 0 && "
   exit 1
 fi
 
-if ! rg -q 'Stale match version' "$RUNNER_TEMP/pvp-race-a.log" "$RUNNER_TEMP/pvp-race-b.log"; then
+if ! grep -q 'Stale match version' "$RUNNER_TEMP/pvp-race-a.log" "$RUNNER_TEMP/pvp-race-b.log"; then
   cat "$RUNNER_TEMP/pvp-race-a.log" "$RUNNER_TEMP/pvp-race-b.log" >&2
   echo "The losing request did not fail as a stale version" >&2
   exit 1
