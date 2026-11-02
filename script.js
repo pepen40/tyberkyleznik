@@ -1,5 +1,5 @@
 const SUPABASE_URL = 'https://zfvinbamwavibnhmfwnz.supabase.co'; 
-const SUPABASE_KEY = 'sb_publishable_CGBVyvay_OcFjWohU8b6-w_logZw0y5';
+const SUPABASE_KEY = 'sb_publishable_ytzpwBslnHFtTsheZGDTJw_ouursAih';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 supabaseClient.auth.onAuthStateChange((event) => {
     if (event === 'PASSWORD_RECOVERY') {
