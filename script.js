@@ -1136,6 +1136,23 @@ async function initializeRpgInvitationInbox(userId) {
 async function clearOutgoingRpgChallenge(message) {
     const pending = pendingOutgoingChallenge;
     if (!pending) return;
+    if (myRoomId === pending.roomId && pvpMatchId) {
+        try {
+            await invokeRpgPvp('cancel_match', { room_topic: pending.roomId });
+        } catch (_) {
+            try {
+                const match = await invokeRpgPvp('get_match', { room_topic: pending.roomId });
+                applyAuthoritativePvpMatch(match);
+                if (['active', 'completed', 'cancelled', 'expired'].includes(match.status)) return false;
+            } catch (_) {}
+
+            pending.timer = setTimeout(() => clearOutgoingRpgChallenge(message), RPG_INVITATION_TIMEOUT_MS);
+            const log = document.getElementById('pvp-log');
+            if (log) log.textContent = 'Не удалось подтвердить отмену матча. Проверяем серверное состояние; не закрывайте эту комнату.';
+            return false;
+        }
+    }
+
     clearTimeout(pending.timer);
     pendingOutgoingChallenge = null;
     outgoingChallengeRegistrationInProgress = false;
@@ -1147,14 +1164,23 @@ async function clearOutgoingRpgChallenge(message) {
         roomChannel = null;
         try { await supabaseClient.removeChannel(oldChannel); } catch (_) {}
     }
+    if (pvpSyncTimer) clearInterval(pvpSyncTimer);
+    pvpSyncTimer = null;
     if (lobbyChannel) { try { await lobbyChannel.track({ online: true }); } catch (_) {} }
     myRoomId = null;
+    pvpMatchId = null;
+    pvpMatchVersion = null;
     isPvpHost = false;
     currentPvpChar = null;
+    pvpBattleStarted = false;
+    pvpBattleFinished = false;
+    pvpPendingAction = null;
+    pvpOpponentName = null;
     document.getElementById('pvp-battle-screen')?.classList.add('hidden');
     document.getElementById('rpg-char-select')?.classList.remove('hidden');
     const log = document.getElementById('pvp-log');
     if (log) log.textContent = message;
+    return true;
 }
 
 const soundCache = {};
@@ -1514,6 +1540,13 @@ function closeCaseContents() { document.getElementById('case-contents-modal').cl
 let currentPvpChar = null;
 let isPvpHost = false;
 let pvpGameState = { myHp: 0, enemyHp: 0, myMaxHp: 0, enemyMaxHp: 0, myMp: 0, enemyMp: 0, isMyTurn: false, myBorisHp: 0, enemyBorisHp: 0, myParashnikHp: 0, enemyParashnikHp: 0, myDefending: false, enemyDefending: false, myItemUsed: false, myBonusAttacks: 0, myPotatoBuff: false };
+let pvpMatchId = null;
+let pvpMatchVersion = null;
+let pvpSyncTimer = null;
+let pvpSyncBusy = false;
+let pvpActionBusy = false;
+let pvpPendingAction = null;
+let pvpOpponentName = null;
 
 async function openPvpLobby() {
     if (rpgInvitationChannelStatus !== 'SUBSCRIBED') {
@@ -1666,8 +1699,29 @@ async function executeChallenge() {
         return;
     }
 
+    let match;
+    try {
+        match = await invokeRpgPvp('create_match', {
+            match_id: newPvpActionId(), room_topic: roomId, char_type: charType
+        });
+    } catch (error) {
+        outgoingChallengeRegistrationInProgress = false;
+        myRoomId = null;
+        void supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
+            body: { action: 'close_rpg_invitation', data: { roomId } }
+        }).catch(() => {});
+        alert(error.message || 'Не удалось создать серверный PvP-матч.');
+        return;
+    }
+
     isPvpHost = true;
     currentPvpChar = charType;
+    pvpMatchId = match.match_id;
+    pvpMatchVersion = Number(match.version);
+    pvpBattleStarted = false;
+    pvpBattleFinished = false;
+    pvpPendingAction = null;
+    pvpOpponentName = targetUser;
     pendingOutgoingChallenge = { roomId, target: normalizeRpgUsername(targetUser), timer: null };
     outgoingChallengeRegistrationInProgress = false;
     if (lobbyChannel) {
@@ -1677,16 +1731,6 @@ async function executeChallenge() {
     closePvpLobby();
     if (roomChannel) await supabaseClient.removeChannel(roomChannel);
     roomChannel = supabaseClient.channel(roomId, { config: { broadcast: { self: false }, private: true } });
-    let hostJoinHandled = false;
-    roomChannel.on('broadcast', { event: 'join_request' }, (payload) => {
-        const guest = payload?.payload;
-        if (!guest || myRoomId !== roomId || hostJoinHandled) return;
-        hostJoinHandled = true;
-        startPvpBattle(guest.charName, guest.hp, guest.atk, guest.username, guest.charType, guest.crit || 0, guest.defense || 0, guest.build);
-        roomChannel.send({ type: 'broadcast', event: 'start_game', payload: { charName, hp, atk, username: currentUser, charType, crit: gearBonus.crit || 0, defense: gearBonus.defense || 0, build: getPvpBuildSnapshot(charType) } });
-    });
-    roomChannel.on('broadcast', { event: 'enemy_action' }, payload => handlePvpEnemyAction(payload?.payload));
-    roomChannel.on('broadcast', { event: 'leave' }, () => handlePvpOpponentLeave());
     roomChannel.on('broadcast', { event: 'chat_message' }, payload => addPvpChatMessage(payload?.payload?.nick || '???', payload?.payload?.text || ''));
 
     try {
@@ -1706,6 +1750,7 @@ async function executeChallenge() {
     document.getElementById('pvp-turn-indicator').innerText = 'ОЖИДАНИЕ';
     document.getElementById('pvp-turn-indicator').className = 'turn-indicator';
     disablePvpButtons();
+    startPvpMatchSync();
 
     pendingOutgoingChallenge.timer = setTimeout(() => clearOutgoingRpgChallenge('Игрок не ответил: он отключён или приглашение не было подтверждено. Можно повторить вызов.'), RPG_INVITATION_TIMEOUT_MS);
     try {
@@ -1799,6 +1844,7 @@ async function closeReceiveModal() {
 async function executeAcceptChallenge() {
     if (!pendingChallengeRoomId) return;
     const roomId = pendingChallengeRoomId;
+    pvpOpponentName = pendingChallengeHost;
     document.getElementById('pvp-receive-modal').classList.add('hidden');
     const receiveStatus = document.getElementById('pvp-receive-status');
     if (receiveStatus) receiveStatus.textContent = 'Подключаемся к комнате…';
@@ -1833,518 +1879,241 @@ function togglePvpEnemyBuild(show) {
     document.getElementById('pvp-enemy-build-modal')?.classList.toggle('hidden', !show);
 }
 
-async function createPvpRoom() {
-    const roomName = document.getElementById('pvp-room-name').value.trim() || "Комната " + currentUser;
-    const charType = document.getElementById('pvp-char-select').value;
-    let baseHp = charType === 'ashab' ? 150 : (charType === 'apostol' ? 80 : 110);
-    let baseAtk = charType === 'ashab' ? 20 : (charType === 'apostol' ? 30 : 18);
-    const gearBonus = getGearBonuses(charType);
-    let hp = baseHp + (currentUpgrades[charType].hp * 20) + gearBonus.hp;
-    let atk = Math.round((baseAtk + (currentUpgrades[charType].atk * 5) + gearBonus.atk) * (1 + (gearBonus.atkPercent || 0) / 100));
-    let charName = charType === 'ashab' ? "Ашаб" : (charType === 'apostol' ? "Апостол" : "Мээ");
-    let img = charType === 'ashab' ? "IMG_3545.jpeg" : (charType === 'apostol' ? "IMG_3544.jpeg" : "IMG_3546.jpeg");
+function newPvpActionId() { return crypto.randomUUID(); }
 
-    myRoomId = 'room_' + Math.random().toString(36).substr(2, 9);
-    const { data: roomRegistration, error: roomRegistrationError } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
-        body: { action: 'register_room_membership', data: {
-            topic: myRoomId, kind: 'rpg', inviteeUsername: null, isPublic: true
-        } }
-    });
-    if (roomRegistrationError || !roomRegistration?.success) {
-        myRoomId = null;
-        alert(roomRegistration?.error || 'Не удалось создать защищённую RPG-комнату.');
-        return;
+async function invokeRpgPvp(action, data) {
+    const { data: result, error } = await supabaseClient.functions.invoke('rpg-pvp', { body: { action, data } });
+    if (error) {
+        let message = error.message || 'PvP request failed';
+        try { message = (await error.context.clone().json())?.error || message; } catch (_) {}
+        throw new Error(message);
     }
-    isPvpHost = true;
-    currentPvpChar = charType;
-    if(lobbyChannel) await lobbyChannel.track({ room: { roomId: myRoomId, roomName, hostName: currentUser, hostPts: currentPvpPts, charName, hp, atk } });
-    closePvpLobby();
-    
-    if(roomChannel) supabaseClient.removeChannel(roomChannel);
-    roomChannel = supabaseClient.channel(myRoomId, { config: { broadcast: { self: false }, private: true } });
-    roomChannel.on('broadcast', { event: 'join_request' }, (payload) => {
-        const guest = payload.payload;
-        startPvpBattle(guest.charName, guest.hp, guest.atk, guest.username, guest.charType, guest.crit || 0, guest.defense || 0, guest.build);
-        roomChannel.send({ type: 'broadcast', event: 'start_game', payload: { charName: charName, hp, atk, username: currentUser, charType: charType, crit: gearBonus.crit || 0, defense: gearBonus.defense || 0, build: getPvpBuildSnapshot(charType) } });
-    });
-    roomChannel.on('broadcast', { event: 'enemy_action' }, (payload) => { handlePvpEnemyAction(payload.payload); });
-    roomChannel.on('broadcast', { event: 'leave' }, () => handlePvpOpponentLeave());
-    roomChannel.on('broadcast', { event: 'chat_message' }, (payload) => {
-        addPvpChatMessage(payload.payload.nick || '???', payload.payload.text || '');
-    });
-    roomChannel.subscribe();
-    initPvpChat(myRoomId);
-    
-    switchTab('rpg');
-    document.getElementById('rpg-char-select').classList.add('hidden');
-    document.getElementById('pvp-battle-screen').classList.remove('hidden');
-    document.getElementById('pvp-player-img').src = img;
-    document.getElementById('pvp-player-name').innerText = "Ты (" + charName + ")";
-    document.getElementById('pvp-log').innerHTML = "Ожидаем соперника...";
-    document.getElementById('pvp-turn-indicator').innerText = "ОЖИДАНИЕ";
-    document.getElementById('pvp-turn-indicator').className = "turn-indicator";
-    disablePvpButtons();
-    const bgMusic = document.getElementById('battle-music');
-    bgMusic.currentTime = 0; bgMusic.volume = 0.3; bgMusic.play().catch(e => console.log("Audio blocked"));
+    if (!result?.success) throw new Error(result?.error || 'PvP request failed');
+    return result;
 }
 
-async function joinPvpRoom(roomId, charType) {
-    const { data: roomJoin, error: roomJoinError } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
-        body: { action: 'join_room_membership', data: { topic: roomId } }
-    });
-    if (roomJoinError || !roomJoin?.success) {
-        alert(roomJoin?.error || 'У тебя нет доступа к этой RPG-комнате.');
+function applyAuthoritativePvpMatch(match) {
+    if (!match?.state || !match.status) return;
+    if (match.match_id) pvpMatchId = match.match_id;
+    if (match.status === 'active' && pendingOutgoingChallenge?.roomId === myRoomId) {
+        clearTimeout(pendingOutgoingChallenge.timer);
+        pendingOutgoingChallenge = null;
+    } else if (['completed', 'cancelled', 'expired'].includes(match.status) && pendingOutgoingChallenge?.roomId === myRoomId) {
+        clearTimeout(pendingOutgoingChallenge.timer);
+        pendingOutgoingChallenge = null;
+    }
+    const version = Number(match.version);
+    if (Number.isSafeInteger(version)) {
+        if (pvpMatchVersion !== null && version < pvpMatchVersion) return;
+        pvpMatchVersion = version;
+    }
+    const ownSide = isPvpHost ? 'host' : 'guest';
+    const otherSide = isPvpHost ? 'guest' : 'host';
+    const own = match.state[ownSide];
+    const other = match.state[otherSide];
+    if (!own || !other) {
+        pvpGameState.isMyTurn = false;
+        disablePvpButtons();
+        if (['completed', 'cancelled', 'expired'].includes(match.status)) {
+            finishPvpFromServer(match.winner_side === ownSide, match.status);
+            return;
+        }
+        if (match.status === 'waiting') {
+            document.getElementById('pvp-turn-indicator').textContent = 'ОЖИДАНИЕ СОПЕРНИКА';
+            document.getElementById('pvp-log').textContent = 'Матч создан. Ожидаем подключения соперника…';
+        }
         return;
     }
-    isPvpHost = false;
-    currentPvpChar = charType;
-    myRoomId = roomId;
-    let baseHp = charType === 'ashab' ? 150 : (charType === 'apostol' ? 80 : 110);
-    let baseAtk = charType === 'ashab' ? 20 : (charType === 'apostol' ? 30 : 18);
-    const gearBonus = getGearBonuses(charType);
-    let hp = baseHp + (currentUpgrades[charType].hp * 20) + gearBonus.hp;
-    let atk = Math.round((baseAtk + (currentUpgrades[charType].atk * 5) + gearBonus.atk) * (1 + (gearBonus.atkPercent || 0) / 100));
-    let charName = charType === 'ashab' ? "Ашаб" : (charType === 'apostol' ? "Апостол" : "Мээ");
-    let img = charType === 'ashab' ? "IMG_3545.jpeg" : (charType === 'apostol' ? "IMG_3544.jpeg" : "IMG_3546.jpeg");
-    
-    closePvpLobby();
-    switchTab('rpg');
-    document.getElementById('rpg-char-select').classList.add('hidden');
-    document.getElementById('pvp-battle-screen').classList.remove('hidden');
-    document.getElementById('pvp-player-img').src = img;
-    document.getElementById('pvp-player-name').innerText = "Ты (" + charName + ")";
-    document.getElementById('pvp-log').innerHTML = "Подключаемся к бою...";
-    document.getElementById('pvp-turn-indicator').innerText = "ОЖИДАНИЕ";
-    document.getElementById('pvp-turn-indicator').className = "turn-indicator";
-    disablePvpButtons();
-    
-    if(roomChannel) await supabaseClient.removeChannel(roomChannel);
-    const channel = supabaseClient.channel(roomId, { config: { broadcast: { self: false }, private: true } });
-    roomChannel = channel;
-    let resolveStartGame;
-    let joinRequestSent = false;
-    const startGamePromise = new Promise(resolve => { resolveStartGame = resolve; });
-    const finishStartGame = started => {
-        if (!resolveStartGame) return;
-        const resolve = resolveStartGame;
-        resolveStartGame = null;
-        resolve(started);
+    const ownBuild = own.fighter || match.server_builds?.[ownSide] || {};
+    const otherBuild = other.fighter || match.server_builds?.[otherSide] || {};
+    const images = { ashab: 'IMG_3545.jpeg', apostol: 'IMG_3544.jpeg', mee: 'IMG_3546.jpeg' };
+    document.getElementById('pvp-player-img').src = images[ownBuild.char_type] || images.ashab;
+    document.getElementById('pvp-enemy-img').src = images[otherBuild.char_type] || images.ashab;
+    document.getElementById('pvp-player-name').textContent = 'Ты (' + (ownBuild.char_type || 'бой') + ')';
+    document.getElementById('pvp-enemy-name').textContent = pvpOpponentName || 'Соперник';
+    const gearNames = Object.values(otherBuild.equipped_gear || {}).map(id => RPG_GEAR.find(item => item.id === id)?.name || id);
+    renderPvpEnemyBuild({ charType: otherBuild.char_type, hpLevel: otherBuild.upgrade_hp, atkLevel: otherBuild.upgrade_atk, gearNames });
+    pvpGameState = {
+        myHp: Number(own.hp) || 0, myMaxHp: Number(ownBuild.max_hp) || 1,
+        myAtk: Number(ownBuild.attack) || 0, myCrit: Number(ownBuild.crit) || 0,
+        myDefense: Number(ownBuild.defense) || 0, myFlatAtkBonus: Number(ownBuild.flat_atk) || 0,
+        myAtkPercent: Number(ownBuild.atk_percent) || 0,
+        enemyHp: Number(other.hp) || 0, enemyMaxHp: Number(otherBuild.max_hp) || 1,
+        enemyName: pvpOpponentName || 'Соперник', enemyMp: Number(other.mp) || 0,
+        myMp: Number(own.mp) || 0, isMyTurn: match.status === 'active' && match.current_turn_side === ownSide,
+        myBorisHp: Number(own.boris_hp) || 0, enemyBorisHp: Number(other.boris_hp) || 0,
+        myParashnikHp: Number(own.parashnik_hp) || 0, enemyParashnikHp: Number(other.parashnik_hp) || 0,
+        myDefending: own.defending === true, enemyDefending: other.defending === true,
+        myItemUsed: own.item_used === true, myBonusAttacks: Number(own.bonus_attacks) || 0,
+        myPotatoBuff: own.potato_buff === true
     };
-    channel.on('broadcast', { event: 'start_game' }, (payload) => {
-        if (!resolveStartGame) return;
-        const host = payload.payload;
-        startPvpBattle(host.charName, host.hp, host.atk, host.username, host.charType, host.crit || 0, host.defense || 0, host.build);
-        setPvpTurn(false);
-        finishStartGame(true);
-    });
-    channel.on('broadcast', { event: 'enemy_action' }, (payload) => { handlePvpEnemyAction(payload.payload); });
-    channel.on('broadcast', { event: 'chat_message' }, (payload) => {
-        addPvpChatMessage(payload.payload.nick || '???', payload.payload.text || '');
-    });
-    const joinTimer = setTimeout(() => finishStartGame(false), 15000);
-    channel.subscribe(async status => {
-        if (channel !== roomChannel) return;
-        if (status === 'SUBSCRIBED') {
-            if (joinRequestSent) return;
-            joinRequestSent = true;
-            try {
-                const sent = await channel.send({ type: 'broadcast', event: 'join_request', payload: { username: currentUser, charName, hp, atk, charType, crit: gearBonus.crit || 0, defense: gearBonus.defense || 0, build: getPvpBuildSnapshot(charType) } });
-                if (sent !== 'ok') finishStartGame(false);
-            } catch (_) { finishStartGame(false); }
-        } else if (['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'].includes(status)) finishStartGame(false);
-    });
-    initPvpChat(roomId);
-    const startResult = await startGamePromise;
-    clearTimeout(joinTimer);
-    if (!startResult) {
-        if (roomChannel === channel) {
-            roomChannel = null;
-            try { await supabaseClient.removeChannel(channel); } catch (_) {}
-        }
-        if (myRoomId === roomId) myRoomId = null;
-        isPvpHost = false;
-        currentPvpChar = null;
-        pvpBattleStarted = false;
-        document.getElementById('pvp-battle-screen').classList.add('hidden');
-        document.getElementById('rpg-char-select').classList.remove('hidden');
-        document.getElementById('pvp-log').textContent = 'Не удалось подключиться к бою. Попробуйте принять приглашение ещё раз.';
-        return false;
-    }
-    return true;
-}
-
-function startPvpBattle(enemyName, enemyHp, enemyAtk, enemyUsername, enemyCharType, enemyCrit = 0, enemyDefense = 0, enemyBuild = null) {
-    pvpBattleStarted = true;
-    pvpBattleFinished = false;
-    renderPvpEnemyBuild(enemyBuild);
-    const charType = currentPvpChar;
-    let baseHp = charType === 'ashab' ? 150 : (charType === 'apostol' ? 80 : 110);
-    let baseAtk = charType === 'ashab' ? 20 : (charType === 'apostol' ? 30 : 18);
-    const myGear = getGearBonuses(charType);
-    let hp = baseHp + (currentUpgrades[charType].hp * 20) + myGear.hp;
-    let atk = Math.round((baseAtk + (currentUpgrades[charType].atk * 5) + myGear.atk) * (1 + (myGear.atkPercent || 0) / 100));
-    pvpGameState = { myHp: hp, myMaxHp: hp, myAtk: atk, myCrit: myGear.crit || 0, myDefense: myGear.defense || 0, myFlatAtkBonus: myGear.atk || 0, myAtkPercent: myGear.atkPercent || 0, enemyDefense: Number(enemyDefense) || 0, enemyCrit: Number(enemyCrit) || 0, myMp: 0, enemyHp: enemyHp, enemyMaxHp: enemyHp, enemyName: enemyName, enemyMp: 0, isMyTurn: isPvpHost, myBorisHp: 0, enemyBorisHp: 0, myParashnikHp: 0, enemyParashnikHp: 0, myDefending: false, enemyDefending: false, myItemUsed: false, myBonusAttacks: 0, myPotatoBuff: false };
-    
-    let enemyImg = enemyCharType === 'ashab' ? "IMG_3545.jpeg" : (enemyCharType === 'apostol' ? "IMG_3544.jpeg" : "IMG_3546.jpeg");
-    if (!enemyCharType) enemyImg = "https://via.placeholder.com/100?text=ENEMY";
-
-    document.getElementById('pvp-enemy-name').innerText = enemyName;
-    document.getElementById('pvp-enemy-img').src = enemyImg; 
-    updatePvpUI(); logPvp(`Бой начался против ${enemyName}!`);
-    if (isPvpHost) { setPvpTurn(true); enablePvpButtons(); } 
-    else { setPvpTurn(false); disablePvpButtons(); }
-    const bgMusic = document.getElementById('battle-music');
-    if (bgMusic.paused) { bgMusic.currentTime = 0; bgMusic.volume = 0.3; bgMusic.play().catch(e => console.log("Audio blocked")); }
-}
-
-function handlePvpEnemyAction(payload) {
-    if (pvpGameState.myHp <= 0) return; 
-    
-    triggerScreenShake();
-    flashRedScreen();
-
-    if (payload.type === 'attack') {
-        playSoundEffect('attack');
-        let dmg = payload.dmg;
-        if (payload.target === 'ownParashnik') {
-            // Враг бьёт установленного НА НЕГО парашника; наш персонаж урон не получает.
-            pvpGameState.enemyParashnikHp = Math.max(0, pvpGameState.enemyParashnikHp - dmg);
-            logPvp(pvpGameState.enemyParashnikHp ? `Враг ломает своего парашника (${pvpGameState.enemyParashnikHp}/30 HP).` : 'Враг уничтожил своего парашника!');
-        } else {
-            if (pvpGameState.myDefending) { pvpGameState.myDefending = false; logPvp(`Защита сработала против атаки (урон уже уменьшен).`); if (!payload.defenseApplied) dmg = Math.floor(dmg * 0.2); }
-            if (pvpGameState.myBorisHp > 0) {
-                pvpGameState.myBorisHp -= dmg;
-                logPvp(`Враг бьет Бориса на ${dmg}. Осталось ${Math.max(0, pvpGameState.myBorisHp)} HP.`);
-                if(pvpGameState.myBorisHp <= 0) { logPvp("Борис разрушен!"); pvpGameState.myBorisHp = 0; }
-            } else {
-                const rawDamage = dmg; if (!payload.armorApplied) dmg = Math.max(1, Math.round(dmg * (1 - (pvpGameState.myDefense || 0) / 100)));
-                pvpGameState.myHp -= dmg;
-                logPvp(`Враг бьет на ${dmg} урона${dmg < rawDamage ? ` (броня спасла ${rawDamage - dmg} HP)` : ''}!`);
-            }
-        }
-    } else if (payload.type === 'defend') {
-        playSoundEffect('protection');
-        logPvp(`Враг встает в защиту.`);
-        pvpGameState.enemyDefending = true;
-    } else if (payload.type === 'skill') {
-        playSoundEffect('crit');
-        let dmg = payload.dmg;
-        if (payload.target === 'ownParashnik') {
-            pvpGameState.enemyParashnikHp = Math.max(0, pvpGameState.enemyParashnikHp - dmg);
-            logPvp(pvpGameState.enemyParashnikHp ? 'Враг ломает своего парашника способностью.' : 'Враг уничтожил своего парашника!');
-        } else {
-            if (pvpGameState.myDefending) { pvpGameState.myDefending = false; logPvp(`Защита сработала против способности (урон уже уменьшен).`); if (!payload.defenseApplied) dmg = Math.floor(dmg * 0.5); }
-            if (pvpGameState.myBorisHp > 0) {
-                pvpGameState.myBorisHp -= dmg; logPvp(`Враг бьет Бориса способностью на ${dmg}.`);
-                if(pvpGameState.myBorisHp <= 0) { logPvp("Борис разрушен!"); pvpGameState.myBorisHp = 0; }
-            } else {
-                const rawDamage = dmg; if (!payload.armorApplied) dmg = Math.max(1, Math.round(dmg * (1 - (pvpGameState.myDefense || 0) / 100)));
-                pvpGameState.myHp -= dmg; logPvp(`Враг использует способность! Урон: ${dmg}${dmg < rawDamage ? ` (броня спасла ${rawDamage - dmg} HP)` : ''}`);
-            }
-        }
-    } else if (payload.type === 'item') {
-        if (payload.effect === 'heal') { 
-            playSoundEffect('heal');
-            if(payload.val === 999) { pvpGameState.enemyHp = pvpGameState.enemyMaxHp; logPvp(`Враг полностью исцелился!`); }
-            else { pvpGameState.enemyHp = Math.min(pvpGameState.enemyMaxHp, pvpGameState.enemyHp + payload.val); logPvp(`Враг хилится на ${payload.val}!`); }
-        }
-        else if (payload.effect === 'damage') { 
-            playSoundEffect('harmful');
-            let dmg = payload.val;
-            if (pvpGameState.myDefending) { pvpGameState.myDefending = false; logPvp(`Защита сработала против предмета (урон уже уменьшен).`); if (!payload.defenseApplied) dmg = Math.floor(dmg * 0.35); }
-            if (pvpGameState.myBorisHp > 0) { pvpGameState.myBorisHp -= dmg; logPvp(`Враг швыряет предмет в Бориса! Урон: ${dmg}`); if(pvpGameState.myBorisHp <= 0) { logPvp("Борис разрушен!"); pvpGameState.myBorisHp = 0; } }
-            else { const rawDamage = dmg; if (!payload.armorApplied) dmg = Math.max(1, Math.round(dmg * (1 - (pvpGameState.myDefense || 0) / 100))); pvpGameState.myHp -= dmg; logPvp(`Враг швыряет предмет! Урон: ${dmg}${dmg < rawDamage ? ` (броня спасла ${rawDamage - dmg} HP)` : ''}`); }
-        }
-        else if (payload.effect === 'atk' || payload.effect === 'potatoBuff') { logPvp(payload.effect === 'potatoBuff' ? 'Враг съел картофель: его следующий удар усилен на 15%.' : `Враг юзает бафф на атаку!`); }
-        else if (payload.effect === 'boris') { playSoundEffect('thing'); pvpGameState.enemyBorisHp += (payload.val || percentOf(pvpGameState.enemyMaxHp, 40)); logPvp(`Враг поставил Бориса!`); }
-        else if (payload.effect === 'parashnik') { playSoundEffect('thing'); pvpGameState.myParashnikHp += 30; logPvp(`Враг поставил Парашника!`); }
-        else if (payload.effect === 'shaver') { playSoundEffect('shaver'); if (pvpGameState.myBorisHp > 0) { pvpGameState.myBorisHp = Math.ceil(pvpGameState.myBorisHp / 2); logPvp('Враг сбрил половину HP твоего Бориса.'); } if (pvpGameState.enemyParashnikHp > 0) { pvpGameState.enemyParashnikHp = 0; logPvp('Враг сбрил своего Парашника, который отравлял тебя.'); } logPvp('Твой Борис и твой Парашник на враге не затронуты.'); }
-        updatePvpUI();
-        return; 
+    pvpBattleStarted = match.status === 'active';
+    if (['completed', 'cancelled', 'expired'].includes(match.status)) {
+        finishPvpFromServer(match.winner_side === ownSide, match.status);
+        return;
     }
     updatePvpUI();
-    if (pvpGameState.myHp <= 0) { endPvpBattle(false); } 
-    else { 
-        if (pvpGameState.myParashnikHp > 0) {
-            const poisonBase = percentOf(pvpGameState.myMaxHp, 5);
-            const poisonDmg = Math.max(1, Math.round(poisonBase * (1 - (pvpGameState.myDefense || 0) / 100)));
-            const poisonMana = 15; // 15% от стандартной максимальной маны (100)
-            pvpGameState.myHp -= poisonDmg;
-            pvpGameState.myMp = Math.max(0, pvpGameState.myMp - poisonMana);
-            logPvp(`Тебя отравил парашник! -${poisonDmg} HP (5%), -${poisonMana} маны (15%).`);
-            pvpGameState.myParashnikHp = Math.max(0, pvpGameState.myParashnikHp - 10);
-            if (pvpGameState.myParashnikHp === 0) logPvp('Парашник на тебе развалился сам!');
-            updatePvpUI();
-            if(pvpGameState.myHp <= 0) { endPvpBattle(false); return; }
-        }
-        if (payload.extraAttack) { pvpGameState.isMyTurn = false; setPvpTurn(false); disablePvpButtons(); return; }
-        pvpGameState.isMyTurn = true; 
-        pvpGameState.myItemUsed = false; 
-        setPvpTurn(true); 
-        enablePvpButtons(); 
-    }
+    if (pvpGameState.isMyTurn) enablePvpButtons(); else disablePvpButtons();
+    setPvpTurn(pvpGameState.isMyTurn);
 }
 
-function pvpAttack() {
-    if (!pvpGameState.isMyTurn || pvpBattleFinished) return;
-    playSoundEffect('attack');
-    pvpGameState.isMyTurn = false; pvpGameState.myItemUsed = false; disablePvpButtons(); setPvpTurn(false);
-    triggerScreenShake();
-    let dmg = Math.floor(Math.random() * 10) + pvpGameState.myAtk;
-    const isCrit = Math.random() * 100 < (pvpGameState.myCrit || 0);
-    if (isCrit) { dmg = Math.round(dmg * 1.75); playSoundEffect('crit'); logPvp(`КРИТИЧЕСКИЙ УДАР! x1.75 — ${dmg} урона.`); }
-    if (pvpGameState.myPotatoBuff) { dmg = Math.round(dmg * 1.15); pvpGameState.myPotatoBuff = false; logPvp(`Картофель усилил удар на 15%: ${dmg} урона.`); }
-    let attackTarget = 'player';
-    let defenseApplied = false;
-    let armorApplied = false;
-    if (pvpGameState.myParashnikHp > 0) {
-        pvpGameState.myParashnikHp = Math.max(0, pvpGameState.myParashnikHp - dmg);
-        attackTarget = 'ownParashnik';
-        logPvp(pvpGameState.myParashnikHp ? `Ломаешь установленного на тебе Парашника: ${pvpGameState.myParashnikHp}/30 HP.` : 'Ты уничтожил Парашника, которого враг поставил на тебя!');
-    } else if (pvpGameState.enemyDefending) {
-        dmg = Math.floor(dmg * 0.2); pvpGameState.enemyDefending = false; defenseApplied = true;
-        pvpGameState.enemyHp -= dmg;
-        logPvp(`Враг заблокировал атаку и получил ${dmg} урона (80% срезано).`);
-    } else if (pvpGameState.enemyBorisHp > 0) {
-        pvpGameState.enemyBorisHp = Math.max(0, pvpGameState.enemyBorisHp - dmg);
-        logPvp(`Ты бьешь Бориса на ${dmg}. Осталось ${pvpGameState.enemyBorisHp} HP.`);
-        if (!pvpGameState.enemyBorisHp) logPvp('Борис врага разрушен!');
-    } else {
-        const rawDamage = dmg; dmg = Math.max(1, Math.round(dmg * (1 - (pvpGameState.enemyDefense || 0) / 100))); if (dmg < rawDamage) armorApplied = true;
-        pvpGameState.enemyHp -= dmg;
-        logPvp(`Ты бьешь на ${dmg} урона${dmg < rawDamage ? ` (броня врага поглотила ${rawDamage - dmg})` : ''}!`);
-    }
-    const manaGain = currentPvpChar === 'apostol' ? 20 : 15;
-    pvpGameState.myMp = Math.min(100, pvpGameState.myMp + manaGain);
-    if (pvpGameState.myBonusAttacks > 0) pvpGameState.myBonusAttacks--;
-    const keepAttackTurn = pvpGameState.myBonusAttacks > 0;
-    updatePvpUI();
-    if (roomChannel) roomChannel.send({ type: 'broadcast', event: 'enemy_action', payload: { type: 'attack', dmg, target: attackTarget, defenseApplied, armorApplied, extraAttack: keepAttackTurn } });
-    if (keepAttackTurn) { pvpGameState.isMyTurn = true; setPvpTurn(true); enablePvpButtons(); }
-    if (pvpGameState.enemyHp <= 0) { endPvpBattle(true); return; }
-    if (pvpGameState.enemyParashnikHp > 0) {
-        const poisonDmg = percentOf(pvpGameState.enemyMaxHp, 5);
-        pvpGameState.enemyHp -= poisonDmg;
-        pvpGameState.enemyMp = Math.max(0, pvpGameState.enemyMp - 15);
-        logPvp(`Враг отравлен парашником! -${poisonDmg} HP (5%), -15 маны (15%).`);
-        updatePvpUI();
-        if (pvpGameState.enemyHp <= 0) { endPvpBattle(true); return; }
-    }
-}
-
-function pvpDefend() {
-    if (!pvpGameState.isMyTurn) return;
-    if (pvpGameState.myMp < 50) { alert("Мало маны для защиты! Нужно 50."); return; }
-    playSoundEffect('protection');
-    pvpGameState.myMp -= 50;
-    pvpGameState.myItemUsed = false;
-    pvpGameState.isMyTurn = false; disablePvpButtons(); setPvpTurn(false);
-    pvpGameState.myDefending = true;
-    pvpGameState.myBonusAttacks = 2;
-    updatePvpUI(); logPvp(`Ты встаешь в защиту (-50 маны). После удара получишь 2 атаки подряд.`);
-    if(roomChannel) roomChannel.send({ type: 'broadcast', event: 'enemy_action', payload: { type: 'defend' } });
-}
-
-function pvpSkill() {
-    if (!pvpGameState.isMyTurn || pvpGameState.myMp < 100 || pvpBattleFinished) return;
-    playSoundEffect('crit');
-    pvpGameState.myBonusAttacks = 0;
-    pvpGameState.isMyTurn = false; pvpGameState.myMp = 0; pvpGameState.myItemUsed = false; disablePvpButtons(); setPvpTurn(false);
-    triggerScreenShake();
-    let dmg = 0;
-    const charType = currentPvpChar;
-    if (charType === 'ashab') dmg = 60 + (currentUpgrades[charType].atk * 10);
-    else if (charType === 'apostol') dmg = Math.floor(Math.random() * 30) + 70 + (currentUpgrades[charType].atk * 10);
-    else if (charType === 'mee') {
-        const heal = percentOf(pvpGameState.myMaxHp, 25);
-        pvpGameState.myHp = Math.min(pvpGameState.myMaxHp, pvpGameState.myHp + heal);
-        logPvp(`Ты хилишься на ${heal} HP (25% максимального здоровья)!`); playSoundEffect('heal');
-    }
-    let skillTarget = 'player';
-    let defenseApplied = false;
-    let armorApplied = false;
-    if (dmg > 0) {
-        dmg = Math.round((dmg + (pvpGameState.myFlatAtkBonus || 0)) * (1 + (pvpGameState.myAtkPercent || 0) / 100));
-        if (Math.random() * 100 < (pvpGameState.myCrit || 0)) { dmg = Math.round(dmg * 1.75); playSoundEffect('crit'); logPvp(`Крит способности! Урон ${dmg}.`); }
-        if (pvpGameState.myParashnikHp > 0) {
-            pvpGameState.myParashnikHp = Math.max(0, pvpGameState.myParashnikHp - dmg);
-            skillTarget = 'ownParashnik';
-            logPvp(pvpGameState.myParashnikHp ? 'Способность повреждает Парашника, установленного врагом.' : 'Парашник, установленный врагом, уничтожен!');
-        } else if (pvpGameState.enemyDefending) {
-            dmg = Math.floor(dmg * 0.5); pvpGameState.enemyDefending = false; defenseApplied = true;
-            pvpGameState.enemyHp -= dmg;
-            logPvp(`Враг заблокировал способность и получил ${dmg} урона.`);
-        } else if (pvpGameState.enemyBorisHp > 0) {
-            pvpGameState.enemyBorisHp = Math.max(0, pvpGameState.enemyBorisHp - dmg);
-            logPvp(`Ты бьешь Бориса способностью на ${dmg}.`);
-            if (!pvpGameState.enemyBorisHp) logPvp('Борис врага разрушен!');
-        } else {
-            const rawDamage = dmg; dmg = Math.max(1, Math.round(dmg * (1 - (pvpGameState.enemyDefense || 0) / 100))); if (dmg < rawDamage) armorApplied = true;
-            pvpGameState.enemyHp -= dmg;
-            logPvp(`Ты ебашишь способностью на ${dmg} урона${dmg < rawDamage ? ` (броня врага поглотила ${rawDamage - dmg})` : ''}!`);
+async function syncPvpMatch() {
+    if (!myRoomId || pvpSyncBusy) return;
+    pvpSyncBusy = true;
+    const roomTopic = myRoomId;
+    const currentMatchId = pvpMatchId;
+    try {
+        const match = await invokeRpgPvp('get_match', { room_topic: roomTopic });
+        if (myRoomId === roomTopic && (!currentMatchId || pvpMatchId === currentMatchId) && (!pvpMatchId || match.match_id === pvpMatchId)) {
+            applyAuthoritativePvpMatch(match);
         }
     }
-    updatePvpUI();
-    if (roomChannel) roomChannel.send({ type: 'broadcast', event: 'enemy_action', payload: { type: 'skill', dmg, target: skillTarget, defenseApplied, armorApplied } });
-    if (pvpGameState.enemyHp <= 0) endPvpBattle(true);
+    catch (_) { if (pvpBattleStarted && !pvpBattleFinished) logPvp('Нет связи с сервером. Подтверждённое состояние сохранено.'); }
+    finally { pvpSyncBusy = false; }
 }
+
+function startPvpMatchSync() {
+    if (pvpSyncTimer) clearInterval(pvpSyncTimer);
+    pvpSyncTimer = setInterval(syncPvpMatch, 1800);
+    syncPvpMatch();
+}
+
+async function submitPvpIntent(kind, itemId = null) {
+    if (!pvpMatchId || pvpMatchVersion === null || pvpActionBusy || pvpBattleFinished) return;
+    if (pvpPendingAction && (pvpPendingAction.action_kind !== kind || pvpPendingAction.item_id !== itemId)) {
+        alert('Предыдущий запрос не подтверждён. Повторите то же действие.');
+        return;
+    }
+    pvpPendingAction ||= { action_kind: kind, item_id: itemId, action_id: newPvpActionId(), expected_version: pvpMatchVersion };
+    pvpActionBusy = true;
+    disablePvpButtons();
+    try {
+        const result = await invokeRpgPvp('submit_action', {
+            room_topic: myRoomId, action_id: pvpPendingAction.action_id,
+            expected_version: pvpPendingAction.expected_version,
+            action_kind: pvpPendingAction.action_kind, item_id: pvpPendingAction.item_id
+        });
+        pvpPendingAction = null;
+        const labels = { attack: 'Обычная атака', defend: 'Защита', skill: 'Способность', use_item: 'Предмет', leave: 'Сдача' };
+        logPvp((labels[result.action] || 'Действие') + ((Number(result.damage) || 0) > 0 ? ': ' + result.damage + ' урона.' : '.') + (result.critical ? ' Критический удар.' : ''));
+        applyAuthoritativePvpMatch(result);
+        if (kind === 'use_item' && result.inventory) {
+            currentInventory = result.inventory;
+            if (Number.isFinite(Number(result.item_points))) currentItemPoints = Number(result.item_points);
+            updateUI();
+        }
+    } catch (error) {
+        if (/Stale match version|Not your turn|Match is not active|Match timed out|Not enough mana|Item is not owned|Item is not supported in PvP|Item action is unavailable/.test(error.message || '')) pvpPendingAction = null;
+        logPvp('Сервер не подтвердил действие. ' + (error.message || 'Повтор безопасен.'));
+        syncPvpMatch();
+    } finally {
+        pvpActionBusy = false;
+        if (!pvpBattleFinished && pvpGameState.isMyTurn) enablePvpButtons();
+    }
+}
+
+function handlePvpEnemyAction() { /* Client Broadcasts cannot change combat state. */ }
+function pvpAttack() { return submitPvpIntent('attack'); }
+function pvpDefend() { return submitPvpIntent('defend'); }
+function pvpSkill() { return submitPvpIntent('skill'); }
 
 function openPvpItemMenu() {
-    if (!pvpGameState.isMyTurn || pvpGameState.myItemUsed) return;
+    if (!pvpGameState.isMyTurn || pvpGameState.myItemUsed || pvpActionBusy) return;
     const list = document.getElementById('rpg-item-list');
-    list.innerHTML = '';
-    let processedInv = getProcessedInventory();
-    if (processedInv.length === 0) { list.innerHTML = '<p style="grid-column: 1/-1; text-align:center;">У тебя пусто.</p>'; } 
-    else {
-        processedInv.forEach((item) => {
-            let effectText = ""; let btnText = "Юз"; 
-            if (item.rarity === 'Обычное') effectText = "Лечит 15% макс. HP";
-            if (item.rarity === 'Редкое' && item.name !== 'парашник' && item.name !== 'картофель') effectText = "+15 к Атаке";
-            if (item.name === 'картофель') effectText = "+15% урона на следующий удар";
-            if (item.name === 'голова барана') effectText = "20% макс. HP врага";
-            if (item.name === 'коала') effectText = "100 маны";
-            if (item.name === 'apostol') effectText = "55% макс. HP врага";
-            if (item.name === 'парашник') effectText = "Яд: 5% HP и 15% маны/ход";
-            if (item.name === 'boris') effectText = "Щит на 40% макс. HP";
-            if (item.name === 'шприц и лекарство') effectText = "Лечит 45% макс. HP";
-            if (item.name === 'Сбриватель хуйни') effectText = "Борис врага −50% HP; удаляет Парашника врага, который отравляет тебя";
-            const div = document.createElement('div'); div.className = 'inv-card';
-            if (item.qty > 1) div.innerHTML += `<div class="qty-badge">x${item.qty}</div>`;
-            div.innerHTML += `
-                ${getImgTag(item.img)}
-                <div class="inv-card-name"><span class="rarity-${escapeHtml(item.rarity)}">${escapeHtml(item.name)}</span></div>
-                <div style="font-size:10px; margin-bottom:5px;">${effectText}</div>
-                <div class="inv-card-buttons">
-                    <button onclick="pvpUseItem(${safeInlineArg(item.name)})" style="background-color: #90ee90;">${btnText}</button>
-                    <button class="info-btn" onclick="openItemInfo(${safeInlineArg(item.name)})">Подробнее</button>
-                </div>
-            `;
-            list.appendChild(div);
-        });
+    list.replaceChildren();
+    const inventory = getProcessedInventory();
+    if (!inventory.length) {
+        const empty = document.createElement('p'); empty.textContent = 'Инвентарь пуст.'; list.appendChild(empty);
     }
+    inventory.forEach(item => {
+        const card = document.createElement('div'); card.className = 'inv-card';
+        card.innerHTML = `${getImgTag(item.img)}<div class="inv-card-name">${escapeHtml(item.name)} ×${item.qty}</div>`;
+        const use = document.createElement('button'); use.type = 'button'; use.textContent = 'Использовать';
+        use.addEventListener('click', () => pvpUseItem(item.name));
+        card.appendChild(use); list.appendChild(card);
+    });
     document.getElementById('rpg-item-modal').classList.remove('hidden');
 }
 
 async function pvpUseItem(itemName) {
     if (!pvpGameState.isMyTurn || pvpGameState.myItemUsed) return;
-    pvpGameState.myBonusAttacks = 0;
-    const itemIndex = currentInventory.findIndex(i => i.name === itemName);
-    if (itemIndex === -1) return;
-    const item = currentInventory[itemIndex];
-    pvpGameState.myItemUsed = true; 
-    disablePvpButtons(); 
+    const item = currentInventory.find(entry => entry.name === itemName);
+    if (!item?.id) return;
     closeItemMenu();
-    
-    if (item.name === 'Сбриватель хуйни') {
-        playSoundEffect('shaver');
-    } else if (item.name === 'голова барана' || item.name === 'apostol') {
-        playSoundEffect('harmful');
-    } else {
-        playSoundEffect('thing');
-    }
-    
-    let isDamaging = (item.name === 'голова барана' || item.name === 'apostol' || item.name === 'Сбриватель хуйни');
-    animatePvpItemUse(item, isDamaging);
-    try {
-        const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'consume_item', username: currentUser, data: { item_id: item.id } } });
-        if (!error && data.success) { currentInventory = data.newInventory; currentItemPoints = data.newItemPoints; updateUI(); } 
-        else { logPvp("Ошибка использования."); pvpGameState.myItemUsed = false; enablePvpButtons(); return; }
-    } catch(e) { logPvp("Ошибка сервера."); pvpGameState.myItemUsed = false; enablePvpButtons(); return; }
-    const applyEffect = () => {
-        let payload = { type: 'item', effect: '', val: 0, defenseApplied: false };
-        if (item.name === 'хуйня') { const heal = percentOf(pvpGameState.myMaxHp, 15); pvpGameState.myHp = Math.min(pvpGameState.myMaxHp, pvpGameState.myHp + heal); logPvp(`Восстановлено ${heal} HP (15% максимального здоровья).`); payload.effect='heal'; payload.val=heal; playSoundEffect('heal'); }
-        else if (item.name === 'картофель') { pvpGameState.myPotatoBuff = true; logPvp('Сожрал картофель: следующий обычный удар нанесёт на 15% больше урона!'); payload.effect='potatoBuff'; }
-        else if (item.name === 'голова барана') { 
-            let dmg = percentOf(pvpGameState.enemyMaxHp, 20);
-            if (pvpGameState.enemyDefending) { dmg = Math.floor(dmg * 0.35); pvpGameState.enemyDefending = false; payload.defenseApplied = true; logPvp(`Враг заблокировал голову, получив ${dmg} (65% срезано).`); }
-            if (pvpGameState.enemyBorisHp <= 0) { const beforeArmor = dmg; dmg = Math.max(1, Math.round(dmg * (1 - (pvpGameState.enemyDefense || 0) / 100))); if (dmg < beforeArmor) { payload.armorApplied = true; logPvp(`Броня врага поглотила ${beforeArmor - dmg} урона.`); } }
-            if(pvpGameState.enemyBorisHp > 0) { pvpGameState.enemyBorisHp -= dmg; logPvp(`Швырнул голову в Бориса!`); if(pvpGameState.enemyBorisHp <= 0) pvpGameState.enemyBorisHp=0; }
-            else { pvpGameState.enemyHp -= dmg; logPvp(`${dmg} урона!`); }
-            payload.effect='damage'; payload.val=dmg; 
-        }
-        else if (item.name === 'коала') { pvpGameState.myMp = 100; logPvp(`Мана 100!`); payload.effect='mp'; payload.val=100; }
-        else if (item.name === 'apostol') { 
-            let dmg = percentOf(pvpGameState.enemyMaxHp, 55);
-            if (pvpGameState.enemyDefending) { dmg = Math.floor(dmg * 0.35); pvpGameState.enemyDefending = false; payload.defenseApplied = true; logPvp(`Враг заблокировал Apostol, получив ${dmg} (65% срезано).`); }
-            if (pvpGameState.enemyBorisHp <= 0) { const beforeArmor = dmg; dmg = Math.max(1, Math.round(dmg * (1 - (pvpGameState.enemyDefense || 0) / 100))); if (dmg < beforeArmor) { payload.armorApplied = true; logPvp(`Броня врага поглотила ${beforeArmor - dmg} урона.`); } }
-            if(pvpGameState.enemyBorisHp > 0) { pvpGameState.enemyBorisHp -= dmg; logPvp(`Швырнул Apostol в Бориса!`); if(pvpGameState.enemyBorisHp <= 0) pvpGameState.enemyBorisHp=0; }
-            else { pvpGameState.enemyHp -= dmg; logPvp(`${dmg} УРОНА!`); }
-            payload.effect='damage'; payload.val=dmg; 
-        }
-        else if (item.name === 'шприц и лекарство') { const heal = percentOf(pvpGameState.myMaxHp, 45); pvpGameState.myHp = Math.min(pvpGameState.myMaxHp, pvpGameState.myHp + heal); logPvp(`Шприц восстановил ${heal} HP (45% максимального здоровья).`); payload.effect='heal'; payload.val=heal; playSoundEffect('heal'); }
-        else if (item.name === 'boris') { pvpGameState.myBorisHp += percentOf(pvpGameState.myMaxHp, 40); logPvp(`Ты поставил Бориса!`); payload.effect='boris'; payload.val = percentOf(pvpGameState.myMaxHp, 40); }
-        else if (item.name === 'парашник') { pvpGameState.enemyParashnikHp += 30; logPvp(`Ты поставил Парашника врагу!`); payload.effect='parashnik'; }
-        else if (item.name === 'Сбриватель хуйни') { 
-            if (pvpGameState.enemyBorisHp > 0) { pvpGameState.enemyBorisHp = Math.ceil(pvpGameState.enemyBorisHp / 2); logPvp(`Сбриватель срезал половину HP Бориса врага. Осталось ${pvpGameState.enemyBorisHp} HP.`); }
-            if (pvpGameState.myParashnikHp > 0) { pvpGameState.myParashnikHp = 0; logPvp('Сбрил Парашника врага, который отравлял тебя.'); }
-            logPvp('Твой Борис и твой Парашник на враге остались нетронуты!'); payload.effect='shaver'; 
-        }
-        else if (item.name === 'Вам не повезло') { logPvp(`Вы нихуя не сделали.`); payload.effect='nothing'; }
-        updatePvpUI();
-        if(roomChannel) roomChannel.send({ type: 'broadcast', event: 'enemy_action', payload });
-        if (pvpGameState.enemyHp <= 0) { endPvpBattle(true); }
-        else {
-            if (pvpGameState.enemyParashnikHp > 0 && item.name !== 'Сбриватель хуйни') {
-                const poisonDmg = percentOf(pvpGameState.enemyMaxHp, 5); pvpGameState.enemyHp -= poisonDmg; pvpGameState.enemyMp = Math.max(0, pvpGameState.enemyMp - 15);
-                logPvp(`Враг отравлен парашником! -${poisonDmg} HP (5%), -15 маны (15%).`); updatePvpUI();
-                if(pvpGameState.enemyHp <= 0) { endPvpBattle(true); return; }
-            }
-            enablePvpButtons(); 
-        }
-    };
-    setTimeout(applyEffect, 2600); 
+    return submitPvpIntent('use_item', String(item.id));
 }
 
-function handlePvpOpponentLeave() {
-    if (pvpBattleStarted && !pvpBattleFinished && pvpGameState && pvpGameState.myHp > 0) {
-        logPvp('Соперник покинул бой. Техническая победа: +15 PTS.');
-        endPvpBattle(true, true);
-    } else {
-        leavePvpRoom(false);
-    }
-}
-
-async function endPvpBattle(isWin, technical = false) {
+function finishPvpFromServer(won, status) {
     if (pvpBattleFinished) return;
-    pvpBattleFinished = true;
-    disablePvpButtons();
-    const bgMusic = document.getElementById('battle-music');
-    bgMusic.pause();
-    let resultSaved = false;
+    pvpBattleFinished = true; disablePvpButtons();
+    document.getElementById('battle-music')?.pause();
+    logPvp(status === 'completed' ? (won ? 'Сервер подтвердил победу.' : 'Сервер подтвердил поражение.') : 'Матч завершён сервером: ' + status + '.');
+    document.getElementById('pvp-turn-indicator').textContent = won ? 'ПОБЕДА' : 'МАТЧ ЗАВЕРШЁН';
+    if (pvpSyncTimer) clearInterval(pvpSyncTimer);
+    setTimeout(() => leavePvpRoom(false), 2500);
+}
+
+async function endPvpBattle() { if (pvpMatchId && !pvpBattleFinished) return submitPvpIntent('leave'); }
+
+function attachPvpRoomChannel(roomTopic) {
+    if (roomChannel) supabaseClient.removeChannel(roomChannel);
+    roomChannel = supabaseClient.channel(roomTopic, { config: { broadcast: { self: false }, private: true } });
+    roomChannel.on('broadcast', { event: 'chat_message' }, ({ payload }) => addPvpChatMessage(payload?.nick || '???', payload?.text || ''));
+    roomChannel.subscribe(status => { if (status === 'SUBSCRIBED') syncPvpMatch(); });
+    initPvpChat(roomTopic);
+}
+
+async function createPvpRoom() {
+    const roomTopic = 'room_' + Math.random().toString(36).slice(2, 11).padEnd(9, '0');
+    const charType = document.getElementById('pvp-char-select').value;
+    const registered = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'register_room_membership', data: { topic: roomTopic, kind: 'rpg', inviteeUsername: null, isPublic: true } } });
+    if (registered.error || !registered.data?.success) { alert(registered.data?.error || 'Не удалось создать комнату.'); return; }
     try {
-        const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'pvp_result', username: currentUser, data: { win: isWin } } });
-        if (!error && data && data.success) {
-            currentPvpPts = Number(data.newPts ?? currentPvpPts);
-            updateUI();
-            resultSaved = true;
-        }
-    } catch(e) {
-        console.warn('Рейтинг PvP не обновлён:', e);
-    }
-    const resultLabel = isWin
-        ? (technical ? 'ТЕХНИЧЕСКАЯ ПОБЕДА!' : 'ТЫ ПОБЕДИЛ!')
-        : (technical ? 'ТЕХНИЧЕСКОЕ ПОРАЖЕНИЕ!' : 'ТЫ ПРОИГРАЛ!');
-    logPvp(resultSaved ? resultLabel + ' Результат отправлен серверу.' : resultLabel + ' Рейтинг временно не изменяется до серверной проверки матча.');
-    setTimeout(() => {
-        leavePvpRoom(false);
-        alert(isWin ? (technical ? 'Техническая победа! +15 PTS' : 'Победа! +15 PTS') : (technical ? 'Техническое поражение! -15 PTS' : 'Поражение! -15 PTS'));
-    }, 2500);
+        const match = await invokeRpgPvp('create_match', { match_id: newPvpActionId(), room_topic: roomTopic, char_type: charType });
+        myRoomId = roomTopic; pvpMatchId = match.match_id; pvpMatchVersion = Number(match.version);
+        isPvpHost = true; currentPvpChar = charType; pvpOpponentName = null; pvpBattleFinished = false; pvpPendingAction = null;
+        await lobbyChannel?.track({ room: { roomId: roomTopic, roomName: document.getElementById('pvp-room-name').value.trim() || 'Комната ' + currentUser, hostName: currentUser, hostPts: currentPvpPts, charName: charType, hp: 0, atk: 0 } });
+        closePvpLobby(); attachPvpRoomChannel(roomTopic); switchTab('rpg');
+        document.getElementById('rpg-char-select').classList.add('hidden'); document.getElementById('pvp-battle-screen').classList.remove('hidden');
+        startPvpMatchSync();
+    } catch (error) { alert(error.message || 'Не удалось создать матч.'); }
+}
+
+async function joinPvpRoom(roomId, charType) {
+    const joinedRoom = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'join_room_membership', data: { topic: roomId } } });
+    if (joinedRoom.error || !joinedRoom.data?.success) { alert(joinedRoom.data?.error || 'Нет доступа к комнате.'); return false; }
+    try {
+        const match = await invokeRpgPvp('join_match', { room_topic: roomId, char_type: charType });
+        myRoomId = roomId; pvpMatchId = match.match_id; pvpMatchVersion = Number(match.version);
+        isPvpHost = false; currentPvpChar = charType; pvpBattleFinished = false; pvpPendingAction = null;
+        closePvpLobby(); switchTab('rpg');
+        document.getElementById('rpg-char-select').classList.add('hidden'); document.getElementById('pvp-battle-screen').classList.remove('hidden');
+        attachPvpRoomChannel(roomId); startPvpMatchSync();
+        return true;
+    } catch (error) { alert(error.message || 'Не удалось подключиться к матчу.'); return false; }
 }
 
 async function leavePvpRoom(sendSignal = true) {
-    if (sendSignal && pvpBattleStarted && !pvpBattleFinished && pvpGameState && pvpGameState.myHp > 0) {
-        if (roomChannel) roomChannel.send({ type: 'broadcast', event: 'leave' });
-        await endPvpBattle(false, true);
+    if (sendSignal && isPvpHost && pendingOutgoingChallenge) await syncPvpMatch();
+    if (sendSignal && isPvpHost && pendingOutgoingChallenge) {
+        const cancelled = await clearOutgoingRpgChallenge('Вызов отменён.');
+        if (!cancelled && pvpBattleStarted) return submitPvpIntent('leave');
         return;
     }
-    if (roomChannel) { if (sendSignal) roomChannel.send({ type: 'broadcast', event: 'leave' }); supabaseClient.removeChannel(roomChannel); roomChannel = null; }
-    if (isPvpHost && lobbyChannel) { await lobbyChannel.track({ online: true }); }
-    document.getElementById('pvp-battle-screen').classList.add('hidden');
-    document.getElementById('rpg-char-select').classList.remove('hidden');
-    disablePvpButtons();
-    document.getElementById('battle-music').pause();
-    myRoomId = null;
-    pvpBattleStarted = false;
+    if (sendSignal && pvpMatchId && !pvpBattleFinished) {
+        if (pvpBattleStarted) return submitPvpIntent('leave');
+        try { await invokeRpgPvp('cancel_match', { room_topic: myRoomId }); }
+        catch (error) { alert(error.message || 'Не удалось отменить комнату на сервере.'); return; }
+    }
+    if (pvpSyncTimer) clearInterval(pvpSyncTimer);
+    pvpSyncTimer = null;
+    if (roomChannel) { const channel = roomChannel; roomChannel = null; await supabaseClient.removeChannel(channel); }
+    if (isPvpHost && lobbyChannel) { try { await lobbyChannel.track({ online: true }); } catch (_) {} }
+    document.getElementById('pvp-battle-screen')?.classList.add('hidden');
+    document.getElementById('rpg-char-select')?.classList.remove('hidden');
+    document.getElementById('battle-music')?.pause();
+    myRoomId = null; pvpMatchId = null; pvpMatchVersion = null; pvpBattleStarted = false; pvpBattleFinished = false;
+    pvpActionBusy = false; pvpPendingAction = null; currentPvpChar = null; pvpOpponentName = null;
 }
 
 function updatePvpUI() {
