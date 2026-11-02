@@ -1,0 +1,10 @@
+begin;
+select plan(6);
+select has_function('public','apply_rpg_pvp_action',array['uuid','text','uuid','bigint','text','text'],'atomic action RPC exists');
+select ok(not has_function_privilege('anon','public.apply_rpg_pvp_action(uuid,text,uuid,bigint,text,text)','EXECUTE'),'anon cannot execute action RPC');
+select ok(not has_function_privilege('authenticated','public.apply_rpg_pvp_action(uuid,text,uuid,bigint,text,text)','EXECUTE'),'authenticated cannot execute action RPC');
+select ok(has_function_privilege('service_role','public.apply_rpg_pvp_action(uuid,text,uuid,bigint,text,text)','EXECUTE'),'service_role can execute action RPC');
+select ok((select prosecdef from pg_proc where oid='public.apply_rpg_pvp_action(uuid,text,uuid,bigint,text,text)'::regprocedure),'action RPC is SECURITY DEFINER');
+select ok((select 'search_path=""'=any(proconfig) from pg_proc where oid='public.apply_rpg_pvp_action(uuid,text,uuid,bigint,text,text)'::regprocedure),'action RPC pins empty search_path');
+select * from finish();
+rollback;
