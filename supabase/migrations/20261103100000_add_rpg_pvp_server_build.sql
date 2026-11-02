@@ -28,6 +28,8 @@ declare
   v_atk_percent integer := 0;
   v_crit integer := 0;
   v_defense integer := 0;
+  v_expected_slot text;
+  v_slot text;
 begin
   if p_user_id is null or p_char_type not in ('ashab', 'apostol', 'mee') then
     raise exception 'Invalid fighter identity or character';
@@ -50,11 +52,20 @@ begin
   v_base_hp := case p_char_type when 'ashab' then 150 when 'apostol' then 80 else 110 end;
   v_base_atk := case p_char_type when 'ashab' then 20 when 'apostol' then 30 else 18 end;
 
-  for v_item_id in
-    select value
+  for v_slot, v_item_id in
+    select key, value
     from jsonb_each_text(v_equipped)
     where value is not null and value <> ''
   loop
+    v_expected_slot := case
+      when v_item_id in ('wood_blade','iron_edge','berserker_axe','void_blade') then 'weapon'
+      when v_item_id in ('patched_vest','iron_plate','guardian_shell','abyss_armor') then 'armor'
+      when v_item_id in ('lucky_charm','wolf_fang','phoenix_heart','king_relic') then 'charm'
+      else null
+    end;
+    if v_expected_slot is null or v_slot <> v_expected_slot then
+      raise exception 'Equipped gear is invalid for slot';
+    end if;
     v_item := case v_item_id
       when 'wood_blade' then '{"atkPercent":6,"atk":0,"hp":0,"crit":0,"defense":0}'::jsonb
       when 'iron_edge' then '{"atkPercent":10,"atk":0,"hp":0,"crit":0,"defense":0}'::jsonb
@@ -107,8 +118,8 @@ begin
     'char_type', p_char_type,
     'max_hp', v_hp,
     'attack', greatest(1, v_atk),
-    'crit', v_crit,
-    'defense', v_defense,
+    'crit', least(50, v_crit),
+    'defense', least(35, v_defense),
     'build_version', 1
   );
 end;
