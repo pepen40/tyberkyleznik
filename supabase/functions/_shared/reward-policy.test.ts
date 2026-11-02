@@ -1,5 +1,5 @@
-import { assertEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts';
-import { getRewardPauseReason } from './reward-policy.ts';
+import { assertEquals, assertExists } from 'https://deno.land/std@0.224.0/assert/mod.ts';
+import { getPausedRewardResponse, getRewardPauseReason } from './reward-policy.ts';
 
 Deno.test('client-reported game results stay paused regardless of claimed outcome fields', () => {
   for (const action of ['chess_reward', 'score', 'roach_clear', 'rpg_win', 'pvp_result']) {
@@ -20,9 +20,27 @@ Deno.test('unknown actions and malformed claim identifiers do not match a reward
   assertEquals(getRewardPauseReason(null, 'first_win'), null);
 });
 
+Deno.test('paused reward actions return a consistent denial response', async () => {
+  for (const action of ['chess_reward', 'score', 'roach_clear', 'rpg_win', 'pvp_result']) {
+    const response = getPausedRewardResponse(action, { win: true, score: 100000, floor: 500 });
+    assertExists(response);
+    assertEquals(response.status, 200);
+    assertEquals(await response.json(), {
+      success: false,
+      rewardPaused: true,
+      error: 'Награды за эту игру временно приостановлены до серверной проверки результата. Сама игра доступна.',
+    });
+  }
+
+  const winClaim = getPausedRewardResponse('claim_rpg_reward', 'first_win');
+  assertExists(winClaim);
+  assertEquals((await winClaim.json()).rewardPaused, true);
+  assertEquals(getPausedRewardResponse('claim_rpg_reward', 'spend500'), null);
+});
+
 Deno.test('Edge Function checks the reward pause before profile reads, cooldowns, and writes', async () => {
   const source = await Deno.readTextFile(new URL('../award-coins/index.ts', import.meta.url));
-  const guard = source.indexOf('getRewardPauseReason(action, data?.id)');
+  const guard = source.indexOf('getPausedRewardResponse(action, data?.id)');
   assertEquals(guard >= 0, true);
   assertEquals(guard < source.indexOf(".from('players')"), true);
   assertEquals(guard < source.indexOf("rpc('check_action_cooldown'"), true);

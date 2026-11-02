@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { deliverRpgInvitation, respondToRpgInvitation, type RpgInvitationDependencies } from '../_shared/rpg-invitations.ts'
-import { getRewardPauseReason } from '../_shared/reward-policy.ts'
+import { getPausedRewardResponse } from '../_shared/reward-policy.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -174,15 +174,8 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400
       });
     }
-    const rewardPauseReason = getRewardPauseReason(action, data?.id);
-    if (rewardPauseReason) {
-      const error = rewardPauseReason === 'win-based-rpg-claim'
-        ? 'Награда за победы временно приостановлена до серверной проверки игрового результата.'
-        : 'Награды за эту игру временно приостановлены до серверной проверки результата. Сама игра доступна.';
-      return new Response(JSON.stringify({ success: false, rewardPaused: true, error }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200
-      });
-    }
+    const pausedRewardResponse = getPausedRewardResponse(action, data?.id);
+    if (pausedRewardResponse) return pausedRewardResponse;
     const { data: player, error } = await supabaseAdmin
       .from('players').select('*').eq('user_id', authData.user.id).single();
     if (error || !player) {

@@ -27,3 +27,17 @@ export function getRewardPauseReason(action: unknown, id?: unknown): RewardPause
   }
   return null;
 }
+
+export function getPausedRewardResponse(action: unknown, id?: unknown): Response | null {
+  const reason = getRewardPauseReason(action, id);
+  if (!reason) return null;
+
+  const error = reason === 'win-based-rpg-claim'
+    ? 'Награда за победы временно приостановлена до серверной проверки игрового результата.'
+    : 'Награды за эту игру временно приостановлены до серверной проверки результата. Сама игра доступна.';
+
+  return new Response(JSON.stringify({ success: false, rewardPaused: true, error }), {
+    headers: { 'Content-Type': 'application/json' },
+    status: 200,
+  });
+}
