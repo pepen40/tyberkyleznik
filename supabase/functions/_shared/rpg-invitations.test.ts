@@ -148,7 +148,8 @@ Deno.test('browser creates a server-authoritative match only after the inbox and
   assert(execute.indexOf('await initRpgInvitationInbox(currentAuthUserId)') < execute.indexOf("action: 'register_rpg_invitation'"));
   assert(execute.indexOf("action: 'register_rpg_invitation'") < execute.indexOf("invokeRpgPvp('create_match'"));
   assert(execute.indexOf("invokeRpgPvp('create_match'") < execute.indexOf("action: 'deliver_rpg_invitation'"));
-  assert(execute.includes('attachPvpRoomChannel(roomId)'));
+  assert(execute.includes('roomChannel = supabaseClient.channel(roomId'));
+  assert(execute.includes('await waitForRpgRealtimeSubscription(roomChannel)'));
   assert(execute.includes('startPvpMatchSync()'));
   assert(!execute.includes("event: 'join_request'"));
   assert(!execute.includes("event: 'start_game'"));
