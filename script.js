@@ -1789,7 +1789,7 @@ function listenForChallenges(channel = rpgInvitationChannel) {
         const data = message?.payload;
         if (!data || data.targetUserId !== currentAuthUserId || typeof data.roomId !== 'string' || !/^room_[a-z0-9]{9}$/.test(data.roomId)) return;
         if (pendingChallengeRoomId === data.roomId || processingIncomingChallengeRoomId === data.roomId) return;
-        if (pendingChallengeRoomId || myRoomId || pendingOutgoingChallenge) {
+        if (pendingChallengeRoomId || processingIncomingChallengeRoomId || myRoomId || pendingOutgoingChallenge) {
             await sendRpgInvitationResponse(data.roomId, 'busy');
             return;
         }

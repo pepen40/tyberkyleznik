@@ -184,6 +184,7 @@ Deno.test('browser opens the incoming window before sending the received acknowl
 Deno.test('browser deduplicates room invitations and joins the same room id on acceptance', async () => {
   const source = await Deno.readTextFile(new URL('../../../script.js', import.meta.url));
   assert(source.includes('pendingChallengeRoomId === data.roomId || processingIncomingChallengeRoomId === data.roomId'));
+  assert(source.includes('if (pendingChallengeRoomId || processingIncomingChallengeRoomId || myRoomId || pendingOutgoingChallenge)'));
   assert(source.includes('joined = await joinPvpRoom(roomId, charType);'));
   assert(source.includes("sendRpgInvitationResponse(roomId, 'accepted')"));
   assert(source.includes('RPG_INVITATION_TIMEOUT_MS = 30000'));

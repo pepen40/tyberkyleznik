@@ -4,7 +4,7 @@ This runbook is for a separately approved production change. No command below ha
 
 ## Current production blockers
 
-Read-only inspection of project `zfvinbamwavibnhmfwnz` found migration history ending at `20261101160151`. Production does not list the PvP storage, private invitation inbox, or server match migrations. The only active Edge Function found was the older `award-coins`; `rpg-pvp` was not deployed. The deployed `award-coins` source did not contain the RPG invitation actions or the profile action needed by the current client.
+Read-only inspection of project `zfvinbamwavibnhmfwnz` found migration history ending at `20261101160151`. Production does not list the PvP storage, private invitation inbox, or server match migrations. The only active Edge Function found was `award-coins` v50; `rpg-pvp` was not deployed. The deployed `award-coins` source did not contain the RPG invitation actions or profile action needed by the current client. It still accepts `pvp_result` with the caller's `win: true` and has client-result reward actions that the reviewed local source now fails closed. This is an active production payout risk until the safe Edge Function is deployed.
 
 The repository has CI workflows for the invitation migration and PvP schema, but no workflow deploys migrations, Edge Functions, or the site.
 
@@ -14,6 +14,21 @@ The repository has CI workflows for the invitation migration and PvP schema, but
 2. Create/verify a recoverable Supabase backup and a separate maintenance window.
 3. Have an operator with Supabase project access run the commands below only after explicit approval.
 4. Do not use `supabase db reset`, `supabase migration repair`, `--include-all`, or a general deployment workflow for this rollout.
+
+## Close current client-result payout endpoints first
+
+After reviewing the exact PR head and confirming its auth/runtime CI, deploy the reviewed, fail-closed `award-coins` function before applying schema migrations. This is the first production action because the currently deployed version accepts client-declared results. The function change disables client-result payouts while retaining only the locally allowlisted RPG spending claim.
+
+From the reviewed repository checkout, after separate approval:
+
+```sh
+supabase login
+supabase link --project-ref zfvinbamwavibnhmfwnz
+supabase functions deploy award-coins --project-ref zfvinbamwavibnhmfwnz
+supabase functions list --project-ref zfvinbamwavibnhmfwnz
+```
+
+Verify a test account's direct attempts to claim `pvp_result`, `rpg_win`, `chess_reward`, `score`, and `roach_clear` return a paused/denied result and leave coins/rating unchanged. Also verify an unknown RPG claim ID is rejected. Do not restore the currently deployed v50 if later steps fail; keep the fail-closed function active and pause client publication.
 
 ## Migration dry run and apply
 
@@ -45,18 +60,17 @@ supabase db push --linked
 supabase migration list --linked
 ```
 
-Verify all seven target migration versions are recorded. The migration set is additive; rollback means disabling the client/Edge feature and restoring the prior Edge Function source. Do not drop tables or rewrite migration history as a rollback.
+Verify all seven target migration versions are recorded. The migration set is additive; rollback means keeping the fail-closed `award-coins` active, disabling the client/PvP feature, and pausing rollout. Do not restore deployed v50 or any Edge Function source that accepts client results. Do not drop tables or rewrite migration history as a rollback.
 
-## Edge Function rollout
+## Server-function rollout
 
-After the schema check succeeds, deploy the reviewed functions individually:
+After the schema check succeeds, deploy the PvP server function. `award-coins` should already be on the fail-closed version from the first step; redeploy it only if the reviewed commit or function source changed after that deployment:
 
 ```sh
-supabase functions deploy award-coins --project-ref zfvinbamwavibnhmfwnz
 supabase functions deploy rpg-pvp --project-ref zfvinbamwavibnhmfwnz
 ```
 
-Verify the deployed function list and versions. Confirm `award-coins` includes the caller-profile projection and invitation actions, and that `rpg-pvp` verifies the JWT with Auth. Do not deploy service-role credentials to the browser.
+Verify the deployed function list and versions. Confirm `award-coins` still has the fail-closed reward policy plus caller-profile/invitation actions, and that `rpg-pvp` verifies the JWT with Auth. Do not deploy service-role credentials to the browser.
 
 ## Two-user smoke test
 
@@ -76,6 +90,6 @@ Only after the smoke test passes may the client be published. Keep all general g
 
 There is no deployment workflow in this repository. Publish the reviewed frontend through the site's configured hosting process only after the database, Edge Function, and two-user checks pass.
 
-For rollback, republish the previous frontend and redeploy the previously saved `award-coins` version. Leave the additive PvP tables and migration history in place; do not delete match or invitation data.
+For rollback, republish the previous frontend and disable PvP server-function use while keeping the fail-closed `award-coins` active. Leave the additive PvP tables and migration history in place; do not delete match or invitation data. Only redeploy a function version after verifying it retains the client-result reward denylist.
 
 Supabase CLI references: [database migrations](https://supabase.com/docs/reference/cli/supabase-db-push) and [deploy Edge Functions](https://supabase.com/docs/guides/functions/deploy).
