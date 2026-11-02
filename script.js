@@ -583,6 +583,7 @@ async function logout() {
         return;
     }
     currentUser = null;
+    currentAuthUserId = null;
     location.reload();
 }
 
@@ -596,6 +597,7 @@ async function finishAuthLogin(user) {
     if (error || !data) throw new Error("Профиль игрока не найден: " + (error?.message || "нет записи"));
 
     currentUser = data.username;
+    currentAuthUserId = user.id;
     currentHighScore = data.max_score || 0;
     currentCoins = data.coins || 0;
     currentInventory = data.inventory || [];
@@ -612,6 +614,7 @@ async function finishAuthLogin(user) {
     startRoachSchedule(ROACH_FIRST_DELAY);
     preloadSounds();
     initOnlineCounter();
+    initRpgInvitationInbox(user.id);
     initLobby();
     initSiteGlobalChat();
     updateUI();
@@ -734,6 +737,7 @@ const itemDatabase = {
 };
 
 let currentUser = null;
+let currentAuthUserId = null;
 let currentHighScore = 0;
 let currentCoins = 0;
 let currentItemPoints = 0;
@@ -975,6 +979,8 @@ function showGearMessage(message) {
 function percentOf(maxValue, percent) { return Math.max(1, Math.round((Number(maxValue) || 0) * percent / 100)); }
 
 let onlineChannel = null;
+let rpgInvitationChannel = null;
+let rpgInvitationChannelStatus = 'CLOSED';
 let lobbyChannel = null;
 let roomChannel = null;
 let myRoomId = null;
@@ -986,6 +992,79 @@ let pvpBattleFinished = false;
 let pendingChallengeTarget = null;
 let pendingChallengeRoomId = null;
 let pendingChallengeHost = null;
+let processingIncomingChallengeRoomId = null;
+let pendingOutgoingChallenge = null;
+let outgoingChallengeRegistrationInProgress = false;
+const RPG_INVITATION_TIMEOUT_MS = 30000;
+
+function normalizeRpgUsername(value) { return String(value || '').trim().toLocaleLowerCase(); }
+
+function waitForRpgRealtimeSubscription(channel, timeoutMs = 10000) {
+    return new Promise((resolve, reject) => {
+        let settled = false;
+        const timer = setTimeout(() => finish(new Error('Realtime subscription timed out')), timeoutMs);
+        function finish(error) {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            error ? reject(error) : resolve();
+        }
+        channel.subscribe(status => {
+            if (status === 'SUBSCRIBED') finish();
+            else if (['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'].includes(status)) finish(new Error(`Realtime channel ${status.toLowerCase()}`));
+        });
+    });
+}
+
+async function sendRpgInvitationResponse(roomId, status) {
+    try {
+        const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
+            body: { action: 'respond_rpg_invitation', data: { roomId, status } }
+        });
+        return !error && data?.success === true;
+    } catch (_) { return false; }
+}
+
+function initRpgInvitationInbox(userId) {
+    if (!userId) return;
+    if (rpgInvitationChannel) supabaseClient.removeChannel(rpgInvitationChannel);
+    const channel = supabaseClient.channel(`rpg-invitations:${userId}`, {
+        config: { private: true, broadcast: { self: false } }
+    });
+    rpgInvitationChannel = channel;
+    listenForChallenges(channel);
+    channel.subscribe(status => {
+        if (rpgInvitationChannel !== channel) return;
+        rpgInvitationChannelStatus = status;
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+            if (pendingOutgoingChallenge) clearOutgoingRpgChallenge('Канал приглашений недоступен. Повторите вызов позже.');
+        }
+    });
+}
+
+async function clearOutgoingRpgChallenge(message) {
+    const pending = pendingOutgoingChallenge;
+    if (!pending) return;
+    clearTimeout(pending.timer);
+    pendingOutgoingChallenge = null;
+    outgoingChallengeRegistrationInProgress = false;
+    void supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
+        body: { action: 'close_rpg_invitation', data: { roomId: pending.roomId } }
+    }).catch(() => {});
+    if (roomChannel) {
+        const oldChannel = roomChannel;
+        roomChannel = null;
+        try { await supabaseClient.removeChannel(oldChannel); } catch (_) {}
+    }
+    if (lobbyChannel) { try { await lobbyChannel.track({ online: true }); } catch (_) {} }
+    myRoomId = null;
+    isPvpHost = false;
+    currentPvpChar = null;
+    document.getElementById('pvp-battle-screen')?.classList.add('hidden');
+    document.getElementById('rpg-char-select')?.classList.remove('hidden');
+    const log = document.getElementById('pvp-log');
+    if (log) log.textContent = message;
+}
 
 const soundCache = {};
 function preloadSounds() {
@@ -1035,7 +1114,6 @@ function initOnlineCounter() {
     }).subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
             await onlineChannel.track({ online_at: new Date().toISOString() });
-            listenForChallenges();
         }
     });
 }
@@ -1426,142 +1504,201 @@ function closeChallengeModal() {
 async function executeChallenge() {
     const targetUser = pendingChallengeTarget;
     if (!targetUser) return;
-    closeChallengeModal();
-
-    const charType = document.getElementById('pvp-challenge-char-select').value;
-    let baseHp = charType === 'ashab' ? 150 : (charType === 'apostol' ? 80 : 110);
-    let baseAtk = charType === 'ashab' ? 20 : (charType === 'apostol' ? 30 : 18);
-    const gearBonus = getGearBonuses(charType);
-    let hp = baseHp + (currentUpgrades[charType].hp * 20) + gearBonus.hp;
-    let atk = Math.round((baseAtk + (currentUpgrades[charType].atk * 5) + gearBonus.atk) * (1 + (gearBonus.atkPercent || 0) / 100));
-    let charName = charType === 'ashab' ? "Ашаб" : (charType === 'apostol' ? "Апостол" : "Мээ");
-    let img = charType === 'ashab' ? "IMG_3545.jpeg" : (charType === 'apostol' ? "IMG_3544.jpeg" : "IMG_3546.jpeg");
-
-    myRoomId = 'room_' + Math.random().toString(36).substr(2, 9);
-    const { data: roomRegistration, error: roomRegistrationError } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
-        body: { action: 'register_room_membership', data: {
-            topic: myRoomId, kind: 'rpg', inviteeUsername: targetUser, isPublic: false
-        } }
-    });
-    if (roomRegistrationError || !roomRegistration?.success) {
-        myRoomId = null;
-        alert(roomRegistration?.error || 'Не удалось создать защищённую комнату дуэли.');
+    if (pendingOutgoingChallenge || outgoingChallengeRegistrationInProgress || rpgInvitationChannelStatus !== 'SUBSCRIBED') {
+        closeChallengeModal();
+        alert('Канал приглашений пока не подключён. Повторите вызов через несколько секунд.');
         return;
     }
+    if (!onlinePlayers.some(name => normalizeRpgUsername(name) === normalizeRpgUsername(targetUser))) {
+        closeChallengeModal();
+        alert('Игрок отключён или больше не найден.');
+        return;
+    }
+    closeChallengeModal();
+    outgoingChallengeRegistrationInProgress = true;
+
+    const charType = document.getElementById('pvp-challenge-char-select').value;
+    const baseHp = charType === 'ashab' ? 150 : (charType === 'apostol' ? 80 : 110);
+    const baseAtk = charType === 'ashab' ? 20 : (charType === 'apostol' ? 30 : 18);
+    const gearBonus = getGearBonuses(charType);
+    const hp = baseHp + (currentUpgrades[charType].hp * 20) + gearBonus.hp;
+    const atk = Math.round((baseAtk + (currentUpgrades[charType].atk * 5) + gearBonus.atk) * (1 + (gearBonus.atkPercent || 0) / 100));
+    const charName = charType === 'ashab' ? "РђС€Р°Р±" : (charType === 'apostol' ? "РђРїРѕСЃС‚РѕР»" : "РњСЌСЌ");
+    const img = charType === 'ashab' ? 'IMG_3545.jpeg' : (charType === 'apostol' ? 'IMG_3544.jpeg' : 'IMG_3546.jpeg');
+
+    myRoomId = 'room_' + crypto.randomUUID().replace(/-/g, '').slice(0, 9);
+    const roomId = myRoomId;
+    let registration;
+    let registrationError;
+    try {
+        ({ data: registration, error: registrationError } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
+            body: { action: 'register_rpg_invitation', data: { topic: roomId, inviteeUsername: targetUser } }
+        }));
+    } catch (_) {
+        outgoingChallengeRegistrationInProgress = false;
+        void supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
+            body: { action: 'close_rpg_invitation', data: { roomId } }
+        }).catch(() => {});
+        myRoomId = null;
+        alert('Ошибка сети при регистрации приглашения. Повторите вызов.');
+        return;
+    }
+    if (registrationError || !registration?.success) {
+        outgoingChallengeRegistrationInProgress = false;
+        myRoomId = null;
+        alert(registration?.error || registrationError?.message || 'Не удалось зарегистрировать приглашение.');
+        return;
+    }
+
     isPvpHost = true;
     currentPvpChar = charType;
-    if(lobbyChannel) await lobbyChannel.track({ room: { roomId: myRoomId, roomName: "Вызов от " + currentUser, hostName: currentUser, hostPts: currentPvpPts, charName, hp, atk } });
-    if(onlineChannel) {
-        onlineChannel.send({ type: 'broadcast', event: 'challenge', payload: { target: targetUser, host: currentUser, roomId: myRoomId } });
+    pendingOutgoingChallenge = { roomId, target: normalizeRpgUsername(targetUser), timer: null };
+    outgoingChallengeRegistrationInProgress = false;
+    if (lobbyChannel) {
+        try { await lobbyChannel.track({ room: { roomId, roomName: 'Вызов от ' + currentUser, hostName: currentUser, hostPts: currentPvpPts, charName, hp, atk } }); }
+        catch (_) { await clearOutgoingRpgChallenge('Не удалось обновить PvP-лобби. Вызов отменён.'); return; }
     }
     closePvpLobby();
-    
-    if(roomChannel) supabaseClient.removeChannel(roomChannel);
-    roomChannel = supabaseClient.channel(myRoomId, { config: { broadcast: { self: false }, private: true } });
+    if (roomChannel) await supabaseClient.removeChannel(roomChannel);
+    roomChannel = supabaseClient.channel(roomId, { config: { broadcast: { self: false }, private: true } });
+    let hostJoinHandled = false;
     roomChannel.on('broadcast', { event: 'join_request' }, (payload) => {
-        const guest = payload.payload;
+        const guest = payload?.payload;
+        if (!guest || myRoomId !== roomId || hostJoinHandled) return;
+        hostJoinHandled = true;
         startPvpBattle(guest.charName, guest.hp, guest.atk, guest.username, guest.charType, guest.crit || 0, guest.defense || 0, guest.build);
-        roomChannel.send({ type: 'broadcast', event: 'start_game', payload: { charName: charName, hp, atk, username: currentUser, charType: charType, crit: gearBonus.crit || 0, defense: gearBonus.defense || 0, build: getPvpBuildSnapshot(charType) } });
+        roomChannel.send({ type: 'broadcast', event: 'start_game', payload: { charName, hp, atk, username: currentUser, charType, crit: gearBonus.crit || 0, defense: gearBonus.defense || 0, build: getPvpBuildSnapshot(charType) } });
     });
-    roomChannel.on('broadcast', { event: 'enemy_action' }, (payload) => { handlePvpEnemyAction(payload.payload); });
+    roomChannel.on('broadcast', { event: 'enemy_action' }, payload => handlePvpEnemyAction(payload?.payload));
     roomChannel.on('broadcast', { event: 'leave' }, () => handlePvpOpponentLeave());
-    roomChannel.on('broadcast', { event: 'chat_message' }, (payload) => {
-        addPvpChatMessage(payload.payload.nick || '???', payload.payload.text || '');
-    });
-    roomChannel.subscribe();
-    initPvpChat(myRoomId);
-    
+    roomChannel.on('broadcast', { event: 'chat_message' }, payload => addPvpChatMessage(payload?.payload?.nick || '???', payload?.payload?.text || ''));
+
+    try {
+        await waitForRpgRealtimeSubscription(roomChannel);
+    } catch (_) {
+        await clearOutgoingRpgChallenge('Не удалось подключиться к комнате боя. Вызов отменён.');
+        return;
+    }
+
+    initPvpChat(roomId);
     switchTab('rpg');
     document.getElementById('rpg-char-select').classList.add('hidden');
     document.getElementById('pvp-battle-screen').classList.remove('hidden');
     document.getElementById('pvp-player-img').src = img;
-    document.getElementById('pvp-player-name').innerText = "Ты (" + charName + ")";
-    document.getElementById('pvp-log').innerHTML = "Ожидаем соперника...";
-    document.getElementById('pvp-turn-indicator').innerText = "ОЖИДАНИЕ";
-    document.getElementById('pvp-turn-indicator').className = "turn-indicator";
+    document.getElementById('pvp-player-name').innerText = 'Ты (' + charName + ')';
+    document.getElementById('pvp-log').textContent = 'Отправка приглашения…';
+    document.getElementById('pvp-turn-indicator').innerText = 'ОЖИДАНИЕ';
+    document.getElementById('pvp-turn-indicator').className = 'turn-indicator';
     disablePvpButtons();
+
+    pendingOutgoingChallenge.timer = setTimeout(() => clearOutgoingRpgChallenge('Игрок не ответил: он отключён или приглашение не было подтверждено. Можно повторить вызов.'), RPG_INVITATION_TIMEOUT_MS);
+    try {
+        const { data: delivery, error: deliveryError } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
+            body: { action: 'deliver_rpg_invitation', data: { roomId } }
+        });
+        if (deliveryError || !delivery?.success) await clearOutgoingRpgChallenge(delivery?.error || 'Не удалось отправить приглашение из-за ошибки сети.');
+    } catch (_) {
+        await clearOutgoingRpgChallenge('Не удалось отправить приглашение из-за ошибки сети.');
+    }
 }
 
-function listenForChallenges() {
-    if(!onlineChannel) return;
-    onlineChannel.on('broadcast', { event: 'challenge' }, async (payload) => {
-        const data = payload?.payload;
-        if (!data || data.target !== currentUser || typeof data.roomId !== 'string') return;
-        if (!/^room_[a-z0-9]{9}$/.test(data.roomId)) return;
-
-        const { data: invitation, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
-            body: { action: 'validate_room_invitation', data: { topic: data.roomId, kind: 'rpg' } }
-        });
-        if (error || !invitation?.success || invitation.kind !== 'rpg' || !invitation.hostUsername) return;
-
-        const trustedHost = String(invitation.hostUsername);
-        if (localStorage.getItem('rpgInvitesEnabled') === 'false') {
-            onlineChannel.send({
-                type: 'broadcast',
-                event: 'challenge_response',
-                payload: {
-                    roomId: data.roomId,
-                    from: currentUser,
-                    target: trustedHost,
-                    accepted: false,
-                    reason: 'disabled'
-                }
-            });
+function listenForChallenges(channel = rpgInvitationChannel) {
+    if (!channel) return;
+    channel.on('broadcast', { event: 'challenge' }, async message => {
+        if (channel !== rpgInvitationChannel) return;
+        const data = message?.payload;
+        if (!data || data.targetUserId !== currentAuthUserId || typeof data.roomId !== 'string' || !/^room_[a-z0-9]{9}$/.test(data.roomId)) return;
+        if (pendingChallengeRoomId === data.roomId || processingIncomingChallengeRoomId === data.roomId) return;
+        if (pendingChallengeRoomId || myRoomId || pendingOutgoingChallenge) {
+            await sendRpgInvitationResponse(data.roomId, 'busy');
             return;
         }
-
+        processingIncomingChallengeRoomId = data.roomId;
+        let invitation;
+        let error;
+        try {
+            ({ data: invitation, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
+                body: { action: 'validate_room_invitation', data: { topic: data.roomId, kind: 'rpg' } }
+            }));
+        } catch (_) {
+            processingIncomingChallengeRoomId = null;
+            return;
+        }
+        if (error || !invitation?.success || invitation.kind !== 'rpg') {
+            processingIncomingChallengeRoomId = null;
+            return;
+        }
+        if (localStorage.getItem('rpgInvitesEnabled') === 'false') {
+            await sendRpgInvitationResponse(data.roomId, 'disabled');
+            processingIncomingChallengeRoomId = null;
+            return;
+        }
         pendingChallengeRoomId = data.roomId;
-        pendingChallengeHost = trustedHost;
-        document.getElementById('pvp-receive-host-name').textContent = "Игрок: " + trustedHost;
+        processingIncomingChallengeRoomId = null;
+        pendingChallengeHost = String(invitation.hostUsername || data.host || 'Игрок');
+        document.getElementById('pvp-receive-host-name').textContent = 'Игрок: ' + pendingChallengeHost;
+        const receiveStatus = document.getElementById('pvp-receive-status');
+        if (receiveStatus) receiveStatus.textContent = 'Приглашение проверено. Отправляем подтверждение…';
         document.getElementById('pvp-receive-modal').classList.remove('hidden');
+        const acknowledged = await sendRpgInvitationResponse(data.roomId, 'received');
+        if (receiveStatus) receiveStatus.textContent = acknowledged
+            ? 'Получение подтверждено. Выберите действие.'
+            : 'Не удалось подтвердить получение. Проверьте соединение и повторите действие.';
     });
 
-    onlineChannel.on('broadcast', { event: 'challenge_response' }, async (payload) => {
-        const data = payload.payload;
-        if (!data || data.target !== currentUser || data.reason !== 'disabled') return;
-        if (data.roomId !== myRoomId || !isPvpHost) return;
-
-        const blockedPlayer = data.from || 'Игрок';
-        const log = document.getElementById('pvp-log');
-        const indicator = document.getElementById('pvp-turn-indicator');
-        if (log) log.textContent = blockedPlayer + ' отключил входящие RPG-приглашения. Дуэль не состоится.';
-        if (indicator) indicator.textContent = 'ВЫЗОВ НЕ ДОСТАВЛЕН';
-
-        const battleScreen = document.getElementById('pvp-battle-screen');
-        const characterSelect = document.getElementById('rpg-char-select');
-        if (battleScreen) battleScreen.classList.add('hidden');
-        if (characterSelect) characterSelect.classList.remove('hidden');
-
-        if (roomChannel) {
-            const oldRoomChannel = roomChannel;
-            roomChannel = null;
-            await supabaseClient.removeChannel(oldRoomChannel);
+    channel.on('broadcast', { event: 'challenge_response' }, async message => {
+        if (channel !== rpgInvitationChannel) return;
+        const data = message?.payload;
+        const pending = pendingOutgoingChallenge;
+        if (!data || !pending || data.roomId !== pending.roomId || normalizeRpgUsername(data.from) !== pending.target || myRoomId !== pending.roomId || !isPvpHost) return;
+        if (data.status === 'received') {
+            const log = document.getElementById('pvp-log');
+            if (log) log.textContent = 'Приглашение доставлено. Ожидаем ответа игрока…';
+            return;
         }
-        if (lobbyChannel) {
-            try { await lobbyChannel.track({ online: true }); } catch (_) {}
+        if (data.status === 'accepted') {
+            clearTimeout(pending.timer);
+            pendingOutgoingChallenge = null;
+            return;
         }
-
-        myRoomId = null;
-        isPvpHost = false;
-        currentPvpChar = null;
-        alert(blockedPlayer + ' отключил входящие приглашения на RPG-дуэли. Вызов не доставлен.');
+        const statuses = {
+            declined: 'Игрок отклонил приглашение.',
+            disabled: 'Игрок запретил RPG-приглашения.',
+            busy: 'Игрок сейчас занят другим матчем или приглашением.'
+        };
+        await clearOutgoingRpgChallenge(statuses[data.status] || 'Игрок не подтвердил приглашение.');
     });
 }
 
-function closeReceiveModal() {
+async function closeReceiveModal() {
+    const roomId = pendingChallengeRoomId;
     document.getElementById('pvp-receive-modal').classList.add('hidden');
+    const receiveStatus = document.getElementById('pvp-receive-status');
+    if (receiveStatus) receiveStatus.textContent = '';
     pendingChallengeRoomId = null;
     pendingChallengeHost = null;
+    if (roomId) await sendRpgInvitationResponse(roomId, 'declined');
 }
 
-function executeAcceptChallenge() {
+async function executeAcceptChallenge() {
     if (!pendingChallengeRoomId) return;
     const roomId = pendingChallengeRoomId;
-    closeReceiveModal();
+    document.getElementById('pvp-receive-modal').classList.add('hidden');
+    const receiveStatus = document.getElementById('pvp-receive-status');
+    if (receiveStatus) receiveStatus.textContent = 'Подключаемся к комнате…';
     const charType = document.getElementById('pvp-receive-char-select').value;
-    joinPvpRoom(roomId, charType);
+    let joined = false;
+    try { joined = await joinPvpRoom(roomId, charType); } catch (_) {}
+    if (joined && myRoomId === roomId) {
+        pendingChallengeRoomId = null;
+        pendingChallengeHost = null;
+        await sendRpgInvitationResponse(roomId, 'accepted');
+    } else {
+        const receiveStatus = document.getElementById('pvp-receive-status');
+        if (receiveStatus) receiveStatus.textContent = 'Не удалось подключиться к бою. Проверьте соединение и попробуйте принять приглашение ещё раз.';
+        document.getElementById('pvp-receive-modal').classList.remove('hidden');
+    }
 }
-
 async function getPvpBuildSnapshot(charType) {
     const upgrades = currentUpgrades?.[charType] || { hp: 0, atk: 0 };
     const gear = ensureRpgGear();
@@ -1665,21 +1802,59 @@ async function joinPvpRoom(roomId, charType) {
     document.getElementById('pvp-turn-indicator').className = "turn-indicator";
     disablePvpButtons();
     
-    if(roomChannel) supabaseClient.removeChannel(roomChannel);
-    roomChannel = supabaseClient.channel(roomId, { config: { broadcast: { self: false }, private: true } });
-    roomChannel.on('broadcast', { event: 'start_game' }, (payload) => {
+    if(roomChannel) await supabaseClient.removeChannel(roomChannel);
+    const channel = supabaseClient.channel(roomId, { config: { broadcast: { self: false }, private: true } });
+    roomChannel = channel;
+    let resolveStartGame;
+    let joinRequestSent = false;
+    const startGamePromise = new Promise(resolve => { resolveStartGame = resolve; });
+    const finishStartGame = started => {
+        if (!resolveStartGame) return;
+        const resolve = resolveStartGame;
+        resolveStartGame = null;
+        resolve(started);
+    };
+    channel.on('broadcast', { event: 'start_game' }, (payload) => {
+        if (!resolveStartGame) return;
         const host = payload.payload;
         startPvpBattle(host.charName, host.hp, host.atk, host.username, host.charType, host.crit || 0, host.defense || 0, host.build);
         setPvpTurn(false);
+        finishStartGame(true);
     });
-    roomChannel.on('broadcast', { event: 'enemy_action' }, (payload) => { handlePvpEnemyAction(payload.payload); });
-    roomChannel.on('broadcast', { event: 'chat_message' }, (payload) => {
+    channel.on('broadcast', { event: 'enemy_action' }, (payload) => { handlePvpEnemyAction(payload.payload); });
+    channel.on('broadcast', { event: 'chat_message' }, (payload) => {
         addPvpChatMessage(payload.payload.nick || '???', payload.payload.text || '');
     });
-    roomChannel.subscribe((status) => {
-        if (status === 'SUBSCRIBED') { roomChannel.send({ type: 'broadcast', event: 'join_request', payload: { username: currentUser, charName, hp, atk, charType, crit: getGearBonuses(charType).crit || 0, defense: getGearBonuses(charType).defense || 0, build: getPvpBuildSnapshot(charType) } }); }
+    const joinTimer = setTimeout(() => finishStartGame(false), 15000);
+    channel.subscribe(async status => {
+        if (channel !== roomChannel) return;
+        if (status === 'SUBSCRIBED') {
+            if (joinRequestSent) return;
+            joinRequestSent = true;
+            try {
+                const sent = await channel.send({ type: 'broadcast', event: 'join_request', payload: { username: currentUser, charName, hp, atk, charType, crit: gearBonus.crit || 0, defense: gearBonus.defense || 0, build: getPvpBuildSnapshot(charType) } });
+                if (sent !== 'ok') finishStartGame(false);
+            } catch (_) { finishStartGame(false); }
+        } else if (['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'].includes(status)) finishStartGame(false);
     });
     initPvpChat(roomId);
+    const startResult = await startGamePromise;
+    clearTimeout(joinTimer);
+    if (!startResult) {
+        if (roomChannel === channel) {
+            roomChannel = null;
+            try { await supabaseClient.removeChannel(channel); } catch (_) {}
+        }
+        if (myRoomId === roomId) myRoomId = null;
+        isPvpHost = false;
+        currentPvpChar = null;
+        pvpBattleStarted = false;
+        document.getElementById('pvp-battle-screen').classList.add('hidden');
+        document.getElementById('rpg-char-select').classList.remove('hidden');
+        document.getElementById('pvp-log').textContent = 'Не удалось подключиться к бою. Попробуйте принять приглашение ещё раз.';
+        return false;
+    }
+    return true;
 }
 
 function startPvpBattle(enemyName, enemyHp, enemyAtk, enemyUsername, enemyCharType, enemyCrit = 0, enemyDefense = 0, enemyBuild = null) {

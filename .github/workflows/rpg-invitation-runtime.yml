@@ -1,0 +1,82 @@
+name: RPG invitation runtime tests
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - supabase/migrations/20261102130000_add_private_rpg_invitation_inbox.sql
+      - supabase/tests/database/rpg_invitation_inbox_test.sql
+      - .github/rpg-invitation-test/preflight.sql
+      - .github/workflows/rpg-invitation-runtime.yml
+  push:
+    paths:
+      - supabase/migrations/20261102130000_add_private_rpg_invitation_inbox.sql
+      - supabase/tests/database/rpg_invitation_inbox_test.sql
+      - .github/rpg-invitation-test/preflight.sql
+      - .github/workflows/rpg-invitation-runtime.yml
+  workflow_dispatch:
+
+jobs:
+  rpg-invitation:
+    name: PostgreSQL 17 + Supabase Realtime + pgTAP
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v3
+        with:
+          version: 2.84.2
+
+      - name: Create isolated Supabase test project
+        shell: bash
+        run: |
+          set -euo pipefail
+          harness_dir="$RUNNER_TEMP/rpg-invitation-supabase"
+          mkdir -p "$harness_dir"
+          cd "$harness_dir"
+          supabase init
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          config = Path("supabase/config.toml")
+          contents = config.read_text(encoding="utf-8")
+          contents, version_count = re.subn(r"(?m)^(\s*major_version\s*=\s*)\d+(\s*)$", r"\g<1>17\g<2>", contents)
+          if version_count != 1:
+              raise SystemExit(f"Expected one db.major_version setting, found {version_count}")
+          contents, project_count = re.subn(r'(?m)^\s*project_id\s*=\s*"[^"]*"\s*$', 'project_id = "rpg_invitation_ci"', contents)
+          if project_count != 1:
+              raise SystemExit(f"Expected one project_id setting, found {project_count}")
+          config.write_text(contents, encoding="utf-8")
+          PY
+          mkdir -p supabase/migrations supabase/tests/database
+          cp "$GITHUB_WORKSPACE/.github/rpg-invitation-test/preflight.sql" supabase/migrations/20261102125900_rpg_invitation_preflight.sql
+          cp "$GITHUB_WORKSPACE/supabase/migrations/20261102130000_add_private_rpg_invitation_inbox.sql" supabase/migrations/
+          cp "$GITHUB_WORKSPACE/supabase/tests/database/rpg_invitation_inbox_test.sql" supabase/tests/database/
+
+      - name: Start disposable PostgreSQL, Auth and Realtime
+        working-directory: ${{ runner.temp }}/rpg-invitation-supabase
+        run: >-
+          supabase start
+          --exclude imgproxy,storage-api,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+
+      - name: Apply only the invitation preflight and migration
+        working-directory: ${{ runner.temp }}/rpg-invitation-supabase
+        run: supabase db reset --local --yes
+
+      - name: Run pgTAP authorization assertions
+        working-directory: ${{ runner.temp }}/rpg-invitation-supabase
+        run: supabase test db --local
+
+      - name: Stop disposable Supabase stack
+        if: always()
+        shell: bash
+        run: |
+          harness_dir="$RUNNER_TEMP/rpg-invitation-supabase"
+          if [[ -f "$harness_dir/supabase/config.toml" ]]; then
+            supabase --workdir "$harness_dir" stop --no-backup || true
+          fi
