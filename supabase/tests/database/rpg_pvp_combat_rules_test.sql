@@ -12,6 +12,11 @@ values
   ('00000000-0000-4000-8000-000000000202','{"ashab":{"hp":0,"atk":0},"apostol":{"hp":0,"atk":0},"mee":{"hp":0,"atk":0}}','[]',0)
 on conflict (user_id) do nothing;
 
+insert into public.realtime_room_access (topic, room_kind, host_user_id, guest_user_id, is_public, expires_at)
+values
+  ('room_rules0001','rpg','00000000-0000-4000-8000-000000000201','00000000-0000-4000-8000-000000000202',true,now()+interval '1 day'),
+  ('room_rules0002','rpg','00000000-0000-4000-8000-000000000201','00000000-0000-4000-8000-000000000202',true,now()+interval '1 day');
+
 select lives_ok($$select public.create_rpg_pvp_match('00000000-0000-4000-8000-000000000201','10000000-0000-4000-8000-000000000201','room_rules0001','ashab')$$,'create combat rules fixture');
 select lives_ok($$select public.join_rpg_pvp_match('00000000-0000-4000-8000-000000000202','room_rules0001','apostol')$$,'join combat rules fixture');
 update public.pvp_matches

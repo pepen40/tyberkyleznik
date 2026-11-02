@@ -14,6 +14,9 @@ values
   ('00000000-0000-4000-8000-000000000102','{"ashab":{"hp":10000,"atk":0},"apostol":{"hp":10000,"atk":0},"mee":{"hp":10000,"atk":0}}','[{"id":"guest-boris","name":"boris"}]',60)
 on conflict (user_id) do update set inventory=excluded.inventory, item_points=excluded.item_points, rpg_upgrades=excluded.rpg_upgrades;
 
+insert into public.realtime_room_access (topic, room_kind, host_user_id, guest_user_id, is_public, expires_at)
+values ('room_items0001','rpg','00000000-0000-4000-8000-000000000101','00000000-0000-4000-8000-000000000102',true,now()+interval '1 day');
+
 create temporary table pvp_item_observations (item_name text primary key, state jsonb, result jsonb);
 
 select lives_ok($$select public.create_rpg_pvp_match('00000000-0000-4000-8000-000000000101','10000000-0000-4000-8000-000000000101','room_items0001','mee')$$,'item test host match creation');
