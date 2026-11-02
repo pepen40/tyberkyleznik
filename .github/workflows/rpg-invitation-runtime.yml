@@ -120,6 +120,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          umask 077
           edge_env="$RUNNER_TEMP/rpg-invitation-edge.env"
           printf 'SUPABASE_URL=%s\nSUPABASE_SERVICE_ROLE_KEY=%s\n' \
             "$RPG_TEST_API_URL" "$RPG_TEST_SERVICE_ROLE_KEY" > "$edge_env"
