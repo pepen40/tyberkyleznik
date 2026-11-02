@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { deliverRpgInvitation, respondToRpgInvitation, type RpgInvitationDependencies } from '../_shared/rpg-invitations.ts'
 
 const corsHeaders = {
@@ -28,7 +28,7 @@ const case2Loot = [
 
 const VALID_CHARS = ['ashab', 'apostol', 'mee'];
 
-async function broadcastPrivateRealtime(supabaseAdmin: ReturnType<typeof createClient>, topic: string, event: string, payload: Record<string, unknown>) {
+async function broadcastPrivateRealtime(supabaseAdmin: SupabaseClient, topic: string, event: string, payload: Record<string, any>) {
   const channel = supabaseAdmin.channel(topic, { config: { private: true, broadcast: { self: false } } });
   try {
     const status = await new Promise<string>((resolve) => {

@@ -9,7 +9,7 @@ export type RpgInvitationDependencies = {
   getPeer: (userId: string, roomId: string, role: 'host' | 'invitee') => Promise<RpgInvitationPeer>;
   joinRoom: (userId: string, roomId: string) => Promise<boolean>;
   closeInvitation: (userId: string, roomId: string, role: 'host' | 'invitee') => Promise<boolean>;
-  broadcast: (topic: string, event: string, payload: Record<string, unknown>) => Promise<void>;
+  broadcast: (topic: string, event: string, payload: Record<string, any>) => Promise<void>;
 };
 
 export function rpgInvitationTopic(userId: string): string {
