@@ -1678,7 +1678,7 @@ async function executeChallenge() {
     const gearBonus = getGearBonuses(charType);
     const hp = baseHp + (currentUpgrades[charType].hp * 20) + gearBonus.hp;
     const atk = Math.round((baseAtk + (currentUpgrades[charType].atk * 5) + gearBonus.atk) * (1 + (gearBonus.atkPercent || 0) / 100));
-    const charName = charType === 'ashab' ? "РђС€Р°Р±" : (charType === 'apostol' ? "РђРїРѕСЃС‚РѕР»" : "РњСЌСЌ");
+    const charName = charType === 'ashab' ? 'Ашаб' : (charType === 'apostol' ? 'Апостол' : 'Мээ');
     const img = charType === 'ashab' ? 'IMG_3545.jpeg' : (charType === 'apostol' ? 'IMG_3544.jpeg' : 'IMG_3546.jpeg');
 
     myRoomId = 'room_' + crypto.randomUUID().replace(/-/g, '').slice(0, 9);

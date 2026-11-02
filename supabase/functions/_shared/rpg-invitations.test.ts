@@ -255,6 +255,9 @@ Deno.test('delivery timeout clears host state and exposes retry instead of leavi
 
 Deno.test('server-authoritative PvP ignores client combat broadcasts', async () => {
   const source = await Deno.readTextFile(new URL('../../../script.js', import.meta.url));
+  assert(source.includes("charType === 'ashab' ? 'Ашаб'"));
+  assert(source.includes("charType === 'apostol' ? 'Апостол'"));
+  assert(source.includes(": 'Мээ'"));
   assert(source.includes('function handlePvpEnemyAction() { /* Client Broadcasts cannot change combat state. */ }'));
   assert(!source.includes("event: 'enemy_action'"));
   assert(!source.includes("event: 'join_request'"));
