@@ -24,6 +24,7 @@ on:
       - supabase/functions/award-coins/index.ts
       - script.js
       - .github/pvp-schema-test/preflight.sql
+      - .github/pvp-schema-test/concurrency.sh
       - .github/workflows/pvp-schema-runtime.yml
   push:
     paths:
@@ -38,6 +39,7 @@ on:
       - supabase/functions/award-coins/index.ts
       - script.js
       - .github/pvp-schema-test/preflight.sql
+      - .github/pvp-schema-test/concurrency.sh
       - .github/workflows/pvp-schema-runtime.yml
   workflow_dispatch:
 
@@ -133,6 +135,11 @@ jobs:
       - name: Apply only the PvP migration and test harness preflight
         working-directory: ${{ runner.temp }}/pvp-schema-supabase
         run: supabase db reset --local --yes
+
+      - name: Verify concurrent actions serialize and reject stale state
+        working-directory: ${{ runner.temp }}/pvp-schema-supabase
+        shell: bash
+        run: bash "$GITHUB_WORKSPACE/.github/pvp-schema-test/concurrency.sh"
 
       - name: Run the PvP pgTAP suite
         working-directory: ${{ runner.temp }}/pvp-schema-supabase
