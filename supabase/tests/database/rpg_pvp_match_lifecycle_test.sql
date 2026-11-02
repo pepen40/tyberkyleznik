@@ -1,5 +1,5 @@
 begin;
-select plan(13);
+select plan(20);
 select has_function('public','create_rpg_pvp_match',array['uuid','uuid','text','text'],'match creation RPC exists');
 select has_function('public','join_rpg_pvp_match',array['uuid','text','text'],'match join RPC exists');
 select has_function('public','get_rpg_pvp_match',array['uuid','text'],'participant snapshot RPC exists');
@@ -13,5 +13,12 @@ select ok(not has_function_privilege('anon','public.get_rpg_pvp_match(uuid,text)
 select ok(not has_function_privilege('authenticated','public.get_rpg_pvp_match(uuid,text)','EXECUTE'),'authenticated cannot read match snapshots directly');
 select ok(has_function_privilege('service_role','public.get_rpg_pvp_match(uuid,text)','EXECUTE'),'service role can read match snapshots');
 select ok((select count(*)=3 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('create_rpg_pvp_match','join_rpg_pvp_match','get_rpg_pvp_match') and 'search_path=""'=any(p.proconfig)),'all RPCs pin an empty search_path');
+select has_function('public','cancel_rpg_pvp_match',array['uuid','text'],'waiting room cancellation RPC exists');
+select ok(not has_function_privilege('anon','public.cancel_rpg_pvp_match(uuid,text)','EXECUTE'),'anon cannot cancel matches');
+select ok(not has_function_privilege('authenticated','public.cancel_rpg_pvp_match(uuid,text)','EXECUTE'),'authenticated cannot cancel matches directly');
+select ok(has_function_privilege('service_role','public.cancel_rpg_pvp_match(uuid,text)','EXECUTE'),'service role can cancel waiting rooms');
+select has_function('public','expire_rpg_pvp_turn',array['uuid','text'],'server-side turn timeout RPC exists');
+select ok(not has_function_privilege('authenticated','public.expire_rpg_pvp_turn(uuid,text)','EXECUTE'),'client cannot trigger timeout RPC directly');
+select ok(has_function_privilege('service_role','public.expire_rpg_pvp_turn(uuid,text)','EXECUTE'),'Edge Function service role can trigger timeout RPC');
 select * from finish();
 rollback;

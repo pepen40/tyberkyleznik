@@ -1,5 +1,5 @@
 begin;
-select plan(7);
+select plan(9);
 select has_function('public', 'build_rpg_pvp_fighter', array['uuid','text'], 'server fighter build function exists');
 select ok(not has_function_privilege('anon', 'public.build_rpg_pvp_fighter(uuid,text)', 'EXECUTE'), 'anon cannot execute build function');
 select ok(not has_function_privilege('authenticated', 'public.build_rpg_pvp_fighter(uuid,text)', 'EXECUTE'), 'authenticated cannot execute build function');
@@ -7,5 +7,7 @@ select ok(has_function_privilege('service_role', 'public.build_rpg_pvp_fighter(u
 select ok((select prosecdef from pg_proc where oid = 'public.build_rpg_pvp_fighter(uuid,text)'::regprocedure), 'function is SECURITY DEFINER');
 select is((select proconfig from pg_proc where oid = 'public.build_rpg_pvp_fighter(uuid,text)'::regprocedure), array['search_path=""'], 'function pins empty search_path');
 select ok((select provolatile = 'v' from pg_proc where oid = 'public.build_rpg_pvp_fighter(uuid,text)'::regprocedure), 'function is volatile to allow row locking');
+select ok(position('equipped_gear' in pg_get_functiondef('public.build_rpg_pvp_fighter(uuid,text)'::regprocedure)) > 0, 'server snapshot retains equipped gear for the existing opponent-build UI');
+select ok(position('upgrade_hp' in pg_get_functiondef('public.build_rpg_pvp_fighter(uuid,text)'::regprocedure)) > 0, 'server snapshot returns the validated HP upgrade level');
 select * from finish();
 rollback;

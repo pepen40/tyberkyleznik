@@ -114,11 +114,12 @@ begin
     ) * (1 + v_atk_percent::numeric / 100));
 
   return jsonb_build_object(
-    'user_id', p_user_id,
     'char_type', p_char_type,
     'max_hp', v_hp,
     'attack', greatest(1, v_atk),
+    'upgrade_hp', greatest(0, least(10000, coalesce((v_char_upgrades ->> 'hp')::integer, 0))),
     'upgrade_atk', greatest(0, least(10000, coalesce((v_char_upgrades ->> 'atk')::integer, 0))),
+    'equipped_gear', v_equipped,
     'flat_atk', v_gear_atk,
     'atk_percent', least(50, v_atk_percent),
     'crit', least(50, v_crit),

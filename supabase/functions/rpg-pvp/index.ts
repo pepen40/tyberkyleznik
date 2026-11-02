@@ -47,6 +47,12 @@ serve(async (req) => {
           !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(matchId)) {
         return json({ success: false, error: 'Некорректные параметры создания матча.' }, 400)
       }
+      const { data: room, error: roomError } = await admin.from('realtime_room_access')
+        .select('topic,room_kind,host_user_id,expires_at')
+        .eq('topic', roomTopic).maybeSingle()
+      if (roomError || !room || room.room_kind !== 'rpg' || room.host_user_id !== userId || Date.parse(room.expires_at) <= Date.now()) {
+        return json({ success: false, error: 'PvP room is not owned by this authenticated user' }, 403)
+      }
       const { data: rpcData, error } = await admin.rpc('create_rpg_pvp_match', {
         p_user_id: userId, p_match_id: matchId, p_room_topic: roomTopic, p_char_type: charType,
       })
@@ -57,6 +63,12 @@ serve(async (req) => {
       const roomTopic = String(data.room_topic || '')
       if (!['ashab', 'apostol', 'mee'].includes(charType) || !/^room_[a-z0-9]{9}$/.test(roomTopic)) {
         return json({ success: false, error: 'Некорректные параметры подключения.' }, 400)
+      }
+      const { data: room, error: roomError } = await admin.from('realtime_room_access')
+        .select('topic,room_kind,guest_user_id,expires_at')
+        .eq('topic', roomTopic).maybeSingle()
+      if (roomError || !room || room.room_kind !== 'rpg' || room.guest_user_id !== userId || Date.parse(room.expires_at) <= Date.now()) {
+        return json({ success: false, error: 'PvP room membership is not valid for this user' }, 403)
       }
       const { data: rpcData, error } = await admin.rpc('join_rpg_pvp_match', {
         p_user_id: userId, p_room_topic: roomTopic, p_char_type: charType,
@@ -72,23 +84,47 @@ serve(async (req) => {
       if (!/^room_[a-z0-9]{9}$/.test(roomTopic) ||
           !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(actionId) ||
           !Number.isSafeInteger(expectedVersion) || expectedVersion < 0 ||
-          !['attack', 'defend', 'skill', 'leave'].includes(actionKind)) {
+          !['attack', 'defend', 'skill', 'use_item', 'leave'].includes(actionKind) ||
+          (actionKind === 'use_item' && (typeof itemId !== 'string' || itemId.length < 1 || itemId.length > 128)) ||
+          (actionKind !== 'use_item' && itemId !== null)) {
         return json({ success: false, error: 'Некорректное боевое действие.' }, 400)
       }
-      const { data: rpcData, error } = await admin.rpc('apply_rpg_pvp_action', {
-        p_user_id: userId,
-        p_room_topic: roomTopic,
-        p_action_id: actionId,
-        p_expected_version: expectedVersion,
-        p_action_kind: actionKind,
-        p_item_id: itemId,
+      const { data: timeout, error: timeoutError } = await admin.rpc('expire_rpg_pvp_turn', {
+        p_user_id: userId, p_room_topic: roomTopic,
       })
-      if (error) throw error
-      result = rpcData
+      if (timeoutError) throw timeoutError
+      if (timeout?.timed_out) return json({ success: false, error: 'Match timed out' }, 409)
+      else {
+        const { data: rpcData, error } = await admin.rpc('apply_rpg_pvp_action', {
+          p_user_id: userId,
+          p_room_topic: roomTopic,
+          p_action_id: actionId,
+          p_expected_version: expectedVersion,
+          p_action_kind: actionKind,
+          p_item_id: itemId,
+        })
+        if (error) throw error
+        result = rpcData
+      }
     } else if (action === 'get_match') {
       const roomTopic = String(data.room_topic || '')
       if (!/^room_[a-z0-9]{9}$/.test(roomTopic)) return json({ success: false, error: 'Некорректная комната.' }, 400)
-      const { data: rpcData, error } = await admin.rpc('get_rpg_pvp_match', {
+      const { data: timeout, error: timeoutError } = await admin.rpc('expire_rpg_pvp_turn', {
+        p_user_id: userId, p_room_topic: roomTopic,
+      })
+      if (timeoutError) throw timeoutError
+      if (timeout?.timed_out) result = timeout
+      else {
+        const { data: rpcData, error } = await admin.rpc('get_rpg_pvp_match', {
+          p_user_id: userId, p_room_topic: roomTopic,
+        })
+        if (error) throw error
+        result = rpcData
+      }
+    } else if (action === 'cancel_match') {
+      const roomTopic = String(data.room_topic || '')
+      if (!/^room_[a-z0-9]{9}$/.test(roomTopic)) return json({ success: false, error: 'Некорректная комната.' }, 400)
+      const { data: rpcData, error } = await admin.rpc('cancel_rpg_pvp_match', {
         p_user_id: userId, p_room_topic: roomTopic,
       })
       if (error) throw error
@@ -98,7 +134,11 @@ serve(async (req) => {
     }
     return json(result)
   } catch (error) {
-    console.error('rpg-pvp error:', error)
+    const message = error instanceof Error ? error.message : ''
+    if (/^(Stale match version|Not your turn|Match is not active|Match timed out|User is not a participant|Not enough mana|Item is not owned|Item is not supported in PvP|Item action is unavailable|Idempotency key reused with different command|Match is unavailable|Only the match host can cancel this room|Only a waiting PvP room can be cancelled)$/.test(message)) {
+      return json({ success: false, error: message }, 409)
+    }
+    console.error('rpg-pvp request failed')
     return json({ success: false, error: 'Внутренняя ошибка сервера.' }, 500)
   }
 })

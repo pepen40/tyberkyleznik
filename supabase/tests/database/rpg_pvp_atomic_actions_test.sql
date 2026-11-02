@@ -1,10 +1,16 @@
 begin;
-select plan(6);
+select plan(12);
 select has_function('public','apply_rpg_pvp_action',array['uuid','text','uuid','bigint','text','text'],'atomic action RPC exists');
 select ok(not has_function_privilege('anon','public.apply_rpg_pvp_action(uuid,text,uuid,bigint,text,text)','EXECUTE'),'anon cannot execute action RPC');
 select ok(not has_function_privilege('authenticated','public.apply_rpg_pvp_action(uuid,text,uuid,bigint,text,text)','EXECUTE'),'authenticated cannot execute action RPC');
 select ok(has_function_privilege('service_role','public.apply_rpg_pvp_action(uuid,text,uuid,bigint,text,text)','EXECUTE'),'service_role can execute action RPC');
 select ok((select prosecdef from pg_proc where oid='public.apply_rpg_pvp_action(uuid,text,uuid,bigint,text,text)'::regprocedure),'action RPC is SECURITY DEFINER');
 select ok((select 'search_path=""'=any(proconfig) from pg_proc where oid='public.apply_rpg_pvp_action(uuid,text,uuid,bigint,text,text)'::regprocedure),'action RPC pins empty search_path');
+select ok(position('for update' in lower(pg_get_functiondef('public.apply_rpg_pvp_action(uuid,text,uuid,bigint,text,text)'::regprocedure))) > 0,'action RPC serializes match mutations with a row lock');
+select ok(position('expected_version' in lower(pg_get_functiondef('public.apply_rpg_pvp_action(uuid,text,uuid,bigint,text,text)'::regprocedure))) > 0,'idempotency command binds expected state version');
+select ok(position('jsonb_array_elements' in lower(pg_get_functiondef('public.apply_rpg_pvp_action(uuid,text,uuid,bigint,text,text)'::regprocedure))) > 0,'item ownership is checked against locked server inventory');
+select ok(position('шприц и лекарство' in pg_get_functiondef('public.apply_rpg_pvp_action(uuid,text,uuid,bigint,text,text)'::regprocedure)) > 0,'current healing item is server-resolved');
+select ok(position('Сбриватель хуйни' in pg_get_functiondef('public.apply_rpg_pvp_action(uuid,text,uuid,bigint,text,text)'::regprocedure)) > 0,'current counter item is server-resolved');
+select ok(to_regprocedure('public.apply_pvp_result(uuid,boolean)') is null or not has_function_privilege('service_role',to_regprocedure('public.apply_pvp_result(uuid,boolean)'),'EXECUTE'),'legacy client-declared PvP result RPC is disabled');
 select * from finish();
 rollback;

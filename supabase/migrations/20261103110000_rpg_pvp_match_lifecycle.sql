@@ -22,12 +22,24 @@ as $function$
 declare
   v_build jsonb;
   v_state jsonb;
+  v_old_match record;
 begin
   if p_user_id is null or p_match_id is null
      or p_room_topic !~ '^room_[a-z0-9]{9}$'
      or p_char_type not in ('ashab','apostol','mee') then
     raise exception 'Invalid match creation request';
   end if;
+
+  -- Reconcile this user's abandoned turns before enforcing the one-live-match rule.
+  for v_old_match in
+    select room_topic
+    from public.pvp_matches
+    where (host_user_id = p_user_id or guest_user_id = p_user_id)
+      and ((status = 'waiting' and last_action_at <= transaction_timestamp() - interval '10 minutes')
+        or (status = 'active' and last_action_at <= transaction_timestamp() - interval '3 minutes'))
+  loop
+    perform public.expire_rpg_pvp_turn(p_user_id, v_old_match.room_topic);
+  end loop;
 
   if exists (
     select 1 from public.pvp_matches
@@ -78,6 +90,7 @@ declare
   v_build jsonb;
   v_guest jsonb;
   v_host jsonb;
+  v_expiry jsonb;
 begin
   if p_user_id is null or p_room_topic !~ '^room_[a-z0-9]{9}$'
      or p_char_type not in ('ashab','apostol','mee') then
@@ -91,6 +104,16 @@ begin
 
   if not found or v_match.status <> 'waiting' or v_match.host_user_id = p_user_id then
     raise exception 'Match is unavailable';
+  end if;
+  if v_match.host_user_id is null then
+    update public.pvp_matches
+    set status='cancelled', completed_at=transaction_timestamp(), last_action_at=transaction_timestamp(), version=version+1
+    where match_id=v_match.match_id;
+    return jsonb_build_object('success',false,'error','Match host account was deleted');
+  end if;
+  if v_match.last_action_at <= transaction_timestamp() - interval '10 minutes' then
+    v_expiry := public.expire_rpg_pvp_turn(v_match.host_user_id, p_room_topic);
+    return jsonb_build_object('success',false,'error','Match is unavailable','expired',true);
   end if;
   if exists (
     select 1 from public.pvp_matches

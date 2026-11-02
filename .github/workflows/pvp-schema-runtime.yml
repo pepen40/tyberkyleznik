@@ -11,16 +11,32 @@ on:
       - supabase/migrations/20261103100000_add_rpg_pvp_server_build.sql
       - supabase/migrations/20261103110000_rpg_pvp_match_lifecycle.sql
       - supabase/migrations/20261103120000_rpg_pvp_atomic_actions.sql
+      - supabase/migrations/20261103130000_rpg_pvp_waiting_cancel.sql
+      - supabase/migrations/20261103140000_rpg_pvp_turn_timeout.sql
       - supabase/tests/database/pvp_match_storage_test.sql
       - supabase/tests/database/rpg_pvp_server_build_test.sql
       - supabase/tests/database/rpg_pvp_match_lifecycle_test.sql
       - supabase/tests/database/rpg_pvp_atomic_actions_test.sql
+      - supabase/tests/database/rpg_pvp_gameplay_test.sql
+      - supabase/tests/database/rpg_pvp_items_test.sql
+      - supabase/tests/database/rpg_pvp_combat_rules_test.sql
+      - supabase/functions/rpg-pvp/index.ts
+      - supabase/functions/award-coins/index.ts
+      - script.js
       - .github/pvp-schema-test/preflight.sql
       - .github/workflows/pvp-schema-runtime.yml
   push:
     paths:
       - supabase/migrations/20261102120000_create_pvp_match_storage.sql
-      - supabase/tests/database/pvp_match_storage_test.sql
+      - supabase/migrations/20261103100000_add_rpg_pvp_server_build.sql
+      - supabase/migrations/20261103110000_rpg_pvp_match_lifecycle.sql
+      - supabase/migrations/20261103120000_rpg_pvp_atomic_actions.sql
+      - supabase/migrations/20261103130000_rpg_pvp_waiting_cancel.sql
+      - supabase/migrations/20261103140000_rpg_pvp_turn_timeout.sql
+      - supabase/tests/database/**
+      - supabase/functions/rpg-pvp/index.ts
+      - supabase/functions/award-coins/index.ts
+      - script.js
       - .github/pvp-schema-test/preflight.sql
       - .github/workflows/pvp-schema-runtime.yml
   workflow_dispatch:
@@ -37,6 +53,16 @@ jobs:
       - uses: supabase/setup-cli@v3
         with:
           version: 2.84.2
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Check PvP client and Edge Function syntax
+        run: |
+          node --check script.js
+          deno check supabase/functions/rpg-pvp/index.ts
+          deno check supabase/functions/award-coins/index.ts
 
       - name: Create isolated Supabase test project
         shell: bash
@@ -82,14 +108,19 @@ jobs:
             20261102120000_create_pvp_match_storage.sql \
             20261103100000_add_rpg_pvp_server_build.sql \
             20261103110000_rpg_pvp_match_lifecycle.sql \
-            20261103120000_rpg_pvp_atomic_actions.sql; do
+            20261103120000_rpg_pvp_atomic_actions.sql \
+            20261103130000_rpg_pvp_waiting_cancel.sql \
+            20261103140000_rpg_pvp_turn_timeout.sql; do
             cp "$GITHUB_WORKSPACE/supabase/migrations/$migration" supabase/migrations/
           done
           for test in \
             pvp_match_storage_test.sql \
             rpg_pvp_server_build_test.sql \
             rpg_pvp_match_lifecycle_test.sql \
-            rpg_pvp_atomic_actions_test.sql; do
+            rpg_pvp_atomic_actions_test.sql \
+            rpg_pvp_gameplay_test.sql \
+            rpg_pvp_items_test.sql \
+            rpg_pvp_combat_rules_test.sql; do
             cp "$GITHUB_WORKSPACE/supabase/tests/database/$test" supabase/tests/database/
           done
 
@@ -103,7 +134,7 @@ jobs:
         working-directory: ${{ runner.temp }}/pvp-schema-supabase
         run: supabase db reset --local --yes
 
-      - name: Run the 22 pgTAP assertions
+      - name: Run the PvP pgTAP suite
         working-directory: ${{ runner.temp }}/pvp-schema-supabase
         run: supabase test db --local
 
