@@ -5,7 +5,7 @@
 <meta charset="utf-8"/>
 <title>RPG скотобойня 1998</title>
 <link href="style.css?v=win98-case" rel="stylesheet"/>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
 <style>
         /* Большие входящие окна дуэлей: всегда поверх интерфейса */
         #pvp-receive-modal,
@@ -875,6 +875,7 @@
 <div class="modal-content" style="max-width: 400px; text-align: center;">
 <h3>Тебе бросили вызов!</h3>
 <p id="pvp-receive-host-name">Игрок: ...</p>
+<p id="pvp-receive-status" aria-live="polite"></p>
 <p>Выбери бойца для защиты:</p>
 <select class="pvp-char-select" id="pvp-receive-char-select">
 <option value="ashab">Ashab Tamaev (Берсерк)</option>
@@ -1023,7 +1024,7 @@
 </div>
 </aside>
 <!-- КОНЕЦ ОКНА АФОРИЗМА -->
-<script src="script.js?v=supabase-publishable-key-20261102"></script>
+<script src="script.js?v=rpg-inbox-auth-20261102"></script>
 <style>
   #antique-clock {
     position: fixed;

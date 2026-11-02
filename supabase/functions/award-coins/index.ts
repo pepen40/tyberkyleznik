@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { deliverRpgInvitation, respondToRpgInvitation, type RpgInvitationDependencies } from '../_shared/rpg-invitations.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -26,6 +27,29 @@ const case2Loot = [
 ];
 
 const VALID_CHARS = ['ashab', 'apostol', 'mee'];
+
+async function broadcastPrivateRealtime(supabaseAdmin: SupabaseClient, topic: string, event: string, payload: Record<string, any>) {
+  const channel = supabaseAdmin.channel(topic, { config: { private: true, broadcast: { self: false } } });
+  try {
+    const status = await new Promise<string>((resolve) => {
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (!settled) { settled = true; resolve('TIMED_OUT'); }
+      }, 8000);
+      channel.subscribe((value) => {
+        if (settled || !['SUBSCRIBED', 'CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'].includes(value)) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(value);
+      });
+    });
+    if (status !== 'SUBSCRIBED') throw new Error('RPG invitation channel unavailable.');
+    const result = await channel.send({ type: 'broadcast', event, payload });
+    if (result !== 'ok') throw new Error('RPG invitation broadcast rejected.');
+  } finally {
+    await supabaseAdmin.removeChannel(channel);
+  }
+}
 
 
 const RPG_GEAR = [{"id": "wood_blade", "name": "дрын", "slot": "weapon", "price": 100, "atkPercent": 6, "atk": 0, "hp": 0, "crit": 0, "defense": 0}, {"id": "iron_edge", "name": "ну нихуевенький такой ножик", "slot": "weapon", "price": 450, "atkPercent": 10, "atk": 0, "hp": 0, "crit": 0, "defense": 0}, {"id": "berserker_axe", "name": "кувалда пидора", "slot": "weapon", "price": 1200, "atkPercent": 13, "atk": 0, "hp": 0, "crit": 3, "defense": 0}, {"id": "void_blade", "name": "хуйня ( мощная)", "slot": "weapon", "price": 3500, "atkPercent": 15, "atk": 0, "hp": 0, "crit": 9, "defense": 0}, {"id": "patched_vest", "name": "накидка пидора", "slot": "armor", "price": 120, "atkPercent": 0, "atk": 0, "hp": 25, "crit": 0, "defense": 3}, {"id": "iron_plate", "name": "костюм для игры в бодминтон", "slot": "armor", "price": 500, "atkPercent": 0, "atk": 0, "hp": 65, "crit": 0, "defense": 8}, {"id": "guardian_shell", "name": "наряд хуйни", "slot": "armor", "price": 1500, "atkPercent": 0, "atk": 0, "hp": 130, "crit": 0, "defense": 12}, {"id": "abyss_armor", "name": "фембойский костюмчик", "slot": "armor", "price": 3500, "atkPercent": 0, "atk": 0, "hp": 220, "crit": 0, "defense": 18}, {"id": "lucky_charm", "name": "мочевой пузырь дельфина", "slot": "charm", "price": 300, "atkPercent": 0, "atk": 0, "hp": 0, "crit": 3, "defense": 0}, {"id": "wolf_fang", "name": "окоченелости амжана жолтого", "slot": "charm", "price": 950, "atkPercent": 0, "atk": 5, "hp": 15, "crit": 5, "defense": 0}, {"id": "phoenix_heart", "name": "щенячий цобот", "slot": "charm", "price": 2200, "atkPercent": 0, "atk": 0, "hp": 50, "crit": 0, "defense": 0}, {"id": "king_relic", "name": "мясо пидора с изюмом", "slot": "charm", "price": 5000, "atkPercent": 0, "atk": 12, "hp": 80, "crit": 8, "defense": 5}];
@@ -141,7 +165,8 @@ serve(async (req) => {
       'chess_reward', 'daily_status', 'claim_rpg_reward', 'score', 'roach_clear',
       'rpg_win', 'open_case', 'sell_item', 'remove_listing', 'buy_item',
       'consume_item', 'buy_upgrade', 'buy_gear', 'equip_gear',
-      'register_room_membership', 'join_room_membership', 'validate_room_invitation', 'send_chat_message'
+      'register_room_membership', 'join_room_membership', 'validate_room_invitation', 'send_chat_message',
+      'register_rpg_invitation', 'deliver_rpg_invitation', 'respond_rpg_invitation', 'close_rpg_invitation'
     ]);
     if (!allowedActions.has(action)) {
       return new Response(JSON.stringify({ success: false, error: 'Неизвестное действие.' }), {
@@ -173,6 +198,10 @@ serve(async (req) => {
       buy_gear: 1,
       equip_gear: 1,
       validate_room_invitation: 1,
+      register_rpg_invitation: 1,
+      deliver_rpg_invitation: 1,
+      respond_rpg_invitation: 0,
+      close_rpg_invitation: 1,
       send_chat_message: 2
     };
     const cooldownSeconds = cooldowns[action];
@@ -218,6 +247,75 @@ serve(async (req) => {
           rewardPaused: true,
           error: 'Награда за победы временно приостановлена до серверной проверки игрового результата.'
         }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+      }
+    }
+
+    if (action === 'register_rpg_invitation') {
+      const { data: result, error: registerError } = await supabaseAdmin.rpc('register_realtime_room', {
+        p_user_id: authData.user.id,
+        p_topic: String(data?.topic || ''),
+        p_kind: 'rpg',
+        p_invitee_username: String(data?.inviteeUsername || ''),
+        p_is_public: false
+      });
+      if (registerError) throw new Error('RPG invitation registration failed.');
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: result?.success ? 200 : 400
+      });
+    }
+
+    if (action === 'deliver_rpg_invitation' || action === 'respond_rpg_invitation' || action === 'close_rpg_invitation') {
+      const roomId = String(data?.roomId || '');
+      const dependencies: RpgInvitationDependencies = {
+        getPeer: async (userId, topic, role) => {
+          const { data: result, error: peerError } = await supabaseAdmin.rpc('get_rpg_invitation_peer', {
+            p_user_id: userId,
+            p_topic: topic,
+            p_role: role
+          });
+          if (peerError) throw new Error('Could not verify RPG invitation.');
+          return result;
+        },
+        joinRoom: async (userId, topic) => {
+          const { data: result, error: joinError } = await supabaseAdmin.rpc('join_realtime_room', {
+            p_user_id: userId,
+            p_topic: topic
+          });
+          return !joinError && result?.success === true;
+        },
+        closeInvitation: async (userId, topic, role) => {
+          const { data: closed, error: closeError } = await supabaseAdmin.rpc('close_rpg_invitation', {
+            p_user_id: userId,
+            p_topic: topic,
+            p_role: role
+          });
+          return !closeError && closed === true;
+        },
+        broadcast: (topic, event, payload) => broadcastPrivateRealtime(supabaseAdmin, topic, event, payload)
+      };
+
+      try {
+        if (action === 'deliver_rpg_invitation') {
+          await deliverRpgInvitation(authData.user.id, roomId, player.username, dependencies);
+        } else if (action === 'respond_rpg_invitation') {
+          await respondToRpgInvitation(authData.user.id, player.username, roomId, String(data?.status || ''), dependencies);
+        } else {
+          const { data: closed, error: closeError } = await supabaseAdmin.rpc('close_rpg_invitation', {
+            p_user_id: authData.user.id,
+            p_topic: roomId,
+            p_role: 'host'
+          });
+          if (closeError || closed !== true) throw new Error('RPG invitation could not be closed.');
+        }
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200
+        });
+      } catch (invitationError) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: invitationError instanceof Error ? invitationError.message : 'RPG invitation failed.'
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 });
       }
     }
 
