@@ -8,7 +8,13 @@ on:
     branches: [main]
     paths:
       - supabase/migrations/20261102120000_create_pvp_match_storage.sql
+      - supabase/migrations/20261103100000_add_rpg_pvp_server_build.sql
+      - supabase/migrations/20261103110000_rpg_pvp_match_lifecycle.sql
+      - supabase/migrations/20261103120000_rpg_pvp_atomic_actions.sql
       - supabase/tests/database/pvp_match_storage_test.sql
+      - supabase/tests/database/rpg_pvp_server_build_test.sql
+      - supabase/tests/database/rpg_pvp_match_lifecycle_test.sql
+      - supabase/tests/database/rpg_pvp_atomic_actions_test.sql
       - .github/pvp-schema-test/preflight.sql
       - .github/workflows/pvp-schema-runtime.yml
   push:
@@ -72,10 +78,20 @@ jobs:
           mkdir -p supabase/migrations supabase/tests/database
           cp "$GITHUB_WORKSPACE/.github/pvp-schema-test/preflight.sql" \
             supabase/migrations/20261102115900_pvp_test_preflight.sql
-          cp "$GITHUB_WORKSPACE/supabase/migrations/20261102120000_create_pvp_match_storage.sql" \
-            supabase/migrations/
-          cp "$GITHUB_WORKSPACE/supabase/tests/database/pvp_match_storage_test.sql" \
-            supabase/tests/database/
+          for migration in \
+            20261102120000_create_pvp_match_storage.sql \
+            20261103100000_add_rpg_pvp_server_build.sql \
+            20261103110000_rpg_pvp_match_lifecycle.sql \
+            20261103120000_rpg_pvp_atomic_actions.sql; do
+            cp "$GITHUB_WORKSPACE/supabase/migrations/$migration" supabase/migrations/
+          done
+          for test in \
+            pvp_match_storage_test.sql \
+            rpg_pvp_server_build_test.sql \
+            rpg_pvp_match_lifecycle_test.sql \
+            rpg_pvp_atomic_actions_test.sql; do
+            cp "$GITHUB_WORKSPACE/supabase/tests/database/$test" supabase/tests/database/
+          done
 
       - name: Start disposable Supabase Auth and Realtime with PostgreSQL
         working-directory: ${{ runner.temp }}/pvp-schema-supabase
