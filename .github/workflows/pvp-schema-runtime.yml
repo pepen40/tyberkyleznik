@@ -27,6 +27,7 @@ on:
       - .github/pvp-schema-test/concurrency.sh
       - .github/workflows/pvp-schema-runtime.yml
   push:
+    branches: [main]
     paths:
       - supabase/migrations/20261102120000_create_pvp_match_storage.sql
       - supabase/migrations/20261103100000_add_rpg_pvp_server_build.sql
