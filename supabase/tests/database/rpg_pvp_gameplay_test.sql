@@ -1,5 +1,5 @@
 begin;
-select plan(37);
+select plan(42);
 
 insert into auth.users (id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
 values
@@ -18,18 +18,27 @@ on conflict (user_id) do update set inventory = excluded.inventory, rpg_upgrades
 insert into public.realtime_room_access (topic, room_kind, host_user_id, guest_user_id, is_public, expires_at)
 values
   ('room_stale0001','rpg','00000000-0000-4000-8000-000000000001',null,true,now()+interval '1 day'),
+  ('room_guestold1','rpg','00000000-0000-4000-8000-000000000002',null,true,now()+interval '1 day'),
+  ('room_orphans01','rpg','00000000-0000-4000-8000-000000000003',null,true,now()+interval '1 day'),
   ('room_test00001','rpg','00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000002',true,now()+interval '1 day'),
   ('room_delete001','rpg','00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000002',true,now()+interval '1 day');
 
 select throws_ok($$select public.create_rpg_pvp_match('00000000-0000-4000-8000-000000000003','10000000-0000-4000-8000-000000000003','room_badchar01','wizard')$$,'P0001',null,'invalid fighter identity is rejected by the server build');
 select throws_ok($$select public.create_rpg_pvp_match('00000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000010','room_unreg0001','ashab')$$,'P0001','User is not an authorized RPG room participant','host cannot create a PvP match for an unregistered room');
 select throws_ok($$select public.create_rpg_pvp_match('00000000-0000-4000-8000-000000000003','10000000-0000-4000-8000-000000000011','room_test00001','ashab')$$,'P0001','User is not an authorized RPG room participant','another user cannot create a PvP match for the room host');
+select throws_ok($$select public.join_rpg_pvp_match('00000000-0000-4000-8000-000000000003','room_test00001','mee')$$,'P0001','User is not an authorized RPG room participant','a non-room-member cannot join an RPG PvP match');
 select lives_ok($$select public.create_rpg_pvp_match('00000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000004','room_stale0001','ashab')$$,'create abandoned waiting-room fixture');
 update public.pvp_matches set last_action_at=transaction_timestamp()-interval '11 minutes' where room_topic='room_stale0001';
+select lives_ok($$select public.create_rpg_pvp_match('00000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000005','room_guestold1','ashab')$$,'create guest abandoned waiting-room fixture');
+update public.pvp_matches set last_action_at=transaction_timestamp()-interval '11 minutes' where room_topic='room_guestold1';
+select lives_ok($$select public.create_rpg_pvp_match('00000000-0000-4000-8000-000000000003','10000000-0000-4000-8000-000000000006','room_orphans01','mee')$$,'create a waiting match for the account-deletion cleanup fixture');
+delete from auth.users where id='00000000-0000-4000-8000-000000000003';
+update public.pvp_matches set last_action_at=transaction_timestamp()-interval '11 minutes' where room_topic='room_orphans01';
 select lives_ok($$select public.create_rpg_pvp_match('00000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','room_test00001','ashab')$$,'host creates a server-built waiting match');
 select is((select status from public.pvp_matches where room_topic='room_stale0001'),'expired','server expires the host’s abandoned waiting room before a new match');
-select throws_ok($$select public.join_rpg_pvp_match('00000000-0000-4000-8000-000000000003','room_test00001','mee')$$,'P0001','User is not an authorized RPG room participant','a non-room-member cannot join an RPG PvP match');
+select is((select status from public.pvp_matches where room_topic='room_orphans01'),'cancelled','server cancels an aged waiting match after its host account was deleted');
 select lives_ok($$select public.join_rpg_pvp_match('00000000-0000-4000-8000-000000000002','room_test00001','apostol')$$,'second participant joins and server starts the match');
+select is((select status from public.pvp_matches where room_topic='room_guestold1'),'expired','server expires the guest’s abandoned waiting match before joining a new match');
 select lives_ok($$select public.apply_rpg_pvp_action('00000000-0000-4000-8000-000000000001','room_test00001','20000000-0000-4000-8000-000000000001',1,'attack',null)$$,'current participant can submit an attack intent');
 select is(public.apply_rpg_pvp_action('00000000-0000-4000-8000-000000000001','room_test00001','20000000-0000-4000-8000-000000000001',1,'attack',null)->>'duplicate','true','same participant and exact action retry returns its original result');
 select throws_ok($$select public.apply_rpg_pvp_action('00000000-0000-4000-8000-000000000001','room_test00001','20000000-0000-4000-8000-000000000001',1,'defend',null)$$,'P0001',null,'reusing an action id with a different command is rejected');

@@ -39,6 +39,16 @@ begin
   for update;
   if not found then raise exception 'User is not an authorized RPG room participant'; end if;
 
+  -- Keep deleted-account matches in history but close unreachable orphaned rows.
+  update public.pvp_matches
+  set status='cancelled', current_turn_side=null,
+      completed_at=transaction_timestamp(), last_action_at=transaction_timestamp(),
+      version=version+1
+  where (status='waiting' and host_user_id is null
+         and last_action_at <= transaction_timestamp() - interval '10 minutes')
+     or (status='active' and host_user_id is null and guest_user_id is null
+         and last_action_at <= transaction_timestamp() - interval '3 minutes');
+
   -- Reconcile this user's abandoned turns before enforcing the one-live-match rule.
   for v_old_match in
     select room_topic
@@ -100,6 +110,7 @@ declare
   v_guest jsonb;
   v_host jsonb;
   v_expiry jsonb;
+  v_old_match record;
 begin
   if p_user_id is null or p_room_topic !~ '^room_[a-z0-9]{9}$'
      or p_char_type not in ('ashab','apostol','mee') then
@@ -115,6 +126,26 @@ begin
     and expires_at > transaction_timestamp()
   for update;
   if not found then raise exception 'User is not an authorized RPG room participant'; end if;
+
+  -- Reconcile deleted-account orphans and this guest's expired matches before the live-match check.
+  update public.pvp_matches
+  set status='cancelled', current_turn_side=null,
+      completed_at=transaction_timestamp(), last_action_at=transaction_timestamp(),
+      version=version+1
+  where (status='waiting' and host_user_id is null
+         and last_action_at <= transaction_timestamp() - interval '10 minutes')
+     or (status='active' and host_user_id is null and guest_user_id is null
+         and last_action_at <= transaction_timestamp() - interval '3 minutes');
+
+  for v_old_match in
+    select room_topic
+    from public.pvp_matches
+    where (host_user_id = p_user_id or guest_user_id = p_user_id)
+      and ((status = 'waiting' and last_action_at <= transaction_timestamp() - interval '10 minutes')
+        or (status = 'active' and last_action_at <= transaction_timestamp() - interval '3 minutes'))
+  loop
+    v_expiry := public.expire_rpg_pvp_turn(p_user_id, v_old_match.room_topic);
+  end loop;
 
   select * into v_match
   from public.pvp_matches
