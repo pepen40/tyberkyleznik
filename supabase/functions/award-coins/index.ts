@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { deliverRpgInvitation, respondToRpgInvitation, type RpgInvitationDependencies } from '../_shared/rpg-invitations.ts'
 import { isServerVerifiedRpgRewardClaim } from '../_shared/reward-policy.ts'
+import { validateMarketplaceSale } from '../_shared/marketplace-policy.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -544,10 +545,14 @@ serve(async (req) => {
     }
 
     if (action === 'sell_item') {
-      const itemId = String(data?.item?.id || '');
-      const price = Math.floor(Number(data?.price));
+      const sale = validateMarketplaceSale(data?.item?.id, data?.price);
+      if (!sale.success) {
+        return new Response(JSON.stringify({ success: false, error: sale.error }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400
+        });
+      }
       const { data: result, error: txError } = await supabaseAdmin.rpc('marketplace_sell_item', {
-        p_user_id: authData.user.id, p_item_id: itemId, p_price: price
+        p_user_id: authData.user.id, p_item_id: sale.itemId, p_price: sale.price
       });
       if (txError) throw new Error('Ошибка выставления лота: ' + txError.message);
       return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: result?.success ? 200 : 400 });
