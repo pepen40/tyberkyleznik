@@ -1,0 +1,17 @@
+begin;
+select plan(13);
+select has_function('public','create_rpg_pvp_match',array['uuid','uuid','text','text'],'match creation RPC exists');
+select has_function('public','join_rpg_pvp_match',array['uuid','text','text'],'match join RPC exists');
+select has_function('public','get_rpg_pvp_match',array['uuid','text'],'participant snapshot RPC exists');
+select ok(not has_function_privilege('anon','public.create_rpg_pvp_match(uuid,uuid,text,text)','EXECUTE'),'anon cannot create matches');
+select ok(not has_function_privilege('authenticated','public.create_rpg_pvp_match(uuid,uuid,text,text)','EXECUTE'),'authenticated cannot create matches directly');
+select ok(has_function_privilege('service_role','public.create_rpg_pvp_match(uuid,uuid,text,text)','EXECUTE'),'service role can create matches');
+select ok(not has_function_privilege('anon','public.join_rpg_pvp_match(uuid,text,text)','EXECUTE'),'anon cannot join matches');
+select ok(not has_function_privilege('authenticated','public.join_rpg_pvp_match(uuid,text,text)','EXECUTE'),'authenticated cannot join matches directly');
+select ok(has_function_privilege('service_role','public.join_rpg_pvp_match(uuid,text,text)','EXECUTE'),'service role can join matches');
+select ok(not has_function_privilege('anon','public.get_rpg_pvp_match(uuid,text)','EXECUTE'),'anon cannot read match snapshots');
+select ok(not has_function_privilege('authenticated','public.get_rpg_pvp_match(uuid,text)','EXECUTE'),'authenticated cannot read match snapshots directly');
+select ok(has_function_privilege('service_role','public.get_rpg_pvp_match(uuid,text)','EXECUTE'),'service role can read match snapshots');
+select ok((select count(*)=3 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('create_rpg_pvp_match','join_rpg_pvp_match','get_rpg_pvp_match') and 'search_path=""'=any(p.proconfig)),'all RPCs pin an empty search_path');
+select * from finish();
+rollback;
