@@ -118,6 +118,9 @@ begin
     'char_type', p_char_type,
     'max_hp', v_hp,
     'attack', greatest(1, v_atk),
+    'upgrade_atk', greatest(0, least(10000, coalesce((v_char_upgrades ->> 'atk')::integer, 0))),
+    'flat_atk', v_gear_atk,
+    'atk_percent', least(50, v_atk_percent),
     'crit', least(50, v_crit),
     'defense', least(35, v_defense),
     'build_version', 1
