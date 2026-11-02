@@ -84,7 +84,88 @@ Deno.test('browser binds the recipient inbox to auth.uid and subscribes before h
   assert(source.includes('if (rpgInvitationChannel !== channel) return;'));
   assert(source.includes('data.targetUserId !== currentAuthUserId'));
   assert(source.includes('listenForChallenges(channel);'));
-  assert(source.includes('channel.subscribe(status => {'));
+  assert(source.includes('channel.subscribe((status, error) => {'));
+});
+
+Deno.test('browser synchronizes the authenticated JWT before creating private inbox and reports Realtime failure details', async () => {
+  const source = await Deno.readTextFile(new URL('../../../script.js', import.meta.url));
+  const inboxStart = source.indexOf('async function initializeRpgInvitationInbox(userId)');
+  const inboxEnd = source.indexOf('\nasync function clearOutgoingRpgChallenge(', inboxStart);
+  const inbox = source.slice(inboxStart, inboxEnd);
+  assert(inbox.indexOf('auth.getSession()') < inbox.indexOf('realtime.setAuth(session.access_token)'));
+  assert(inbox.includes('realtime.setAuth(session.access_token)'));
+  assert(inbox.indexOf('realtime.setAuth(session.access_token)') < inbox.indexOf('supabaseClient.channel(`rpg-invitations:${userId}`'));
+  assert(inbox.indexOf('supabaseClient.channel(`rpg-invitations:${userId}`') < inbox.indexOf('channel.subscribe((status, error)'));
+  assert(inbox.includes("if (status === 'SUBSCRIBED')"));
+  assert(inbox.includes("console.warn('[RPG inbox] Realtime subscription status.'"));
+  assert(inbox.includes("console.error('[RPG inbox] Realtime subscription failed.'"));
+  assert(inbox.includes("status === 'CHANNEL_ERROR'"));
+  assert(inbox.includes("failChannel('TIMED_OUT')"));
+  assert(inbox.includes("status === 'CLOSED'"));
+  assert(inbox.includes('removeChannel(channel)'));
+  assert(inbox.includes('let readinessSettled = false'));
+  assert(inbox.includes('let channelEnded = false'));
+  assert(inbox.includes('if (rpgInvitationChannel !== channel || channelEnded) return;'));
+  assert(inbox.includes('if (channelEnded || rpgInvitationChannel !== channel) return;'));
+  assert(inbox.includes('rpgInvitationChannelStatus = status;'));
+  assert(inbox.includes('rpgInvitationRemovalPromise = supabaseClient.removeChannel(channel)'));
+  assert(inbox.indexOf('await rpgInvitationRemovalPromise;') < inbox.indexOf('supabaseClient.channel(`rpg-invitations:${userId}`'));
+  assert(inbox.includes('getSafeRealtimeErrorMessage(error.details)'));
+
+  const wrapperStart = source.indexOf('function initRpgInvitationInbox(userId)');
+  const wrapperEnd = source.indexOf('\nfunction getSafeRealtimeErrorMessage(', wrapperStart);
+  const wrapper = source.slice(wrapperStart, wrapperEnd);
+  assert(wrapper.includes('if (rpgInvitationInitPromise) return rpgInvitationInitPromise'));
+  assert(wrapper.includes('rpgInvitationInitPromise = null'));
+  assert(wrapper.includes('initializeRpgInvitationInbox(userId)'));
+
+  const loggerCalls = inbox.match(/console\.(?:info|warn|error)\([^;]+/gs) || [];
+  assert(!loggerCalls.some(call => /access_token|session\.access_token|Bearer\s+\$\{|\btoken\s*[,}]/i.test(call)));
+  assert(source.includes('.replace(/Bearer\\s+\\S+/gi, \'Bearer [redacted]\')'));
+  const safeErrorStart = source.indexOf('function getSafeRealtimeErrorMessage(error)');
+  const safeErrorEnd = source.indexOf('\nasync function initializeRpgInvitationInbox(', safeErrorStart);
+  const safeError = source.slice(safeErrorStart, safeErrorEnd);
+  assert(safeError.indexOf(".replace(/\\beyJ") < safeError.indexOf('.slice(0, 300)'));
+
+  const finishAuthStart = source.indexOf('async function finishAuthLogin(user)');
+  const finishAuthEnd = source.indexOf('\nasync function restoreAuthSession()', finishAuthStart);
+  const finishAuth = source.slice(finishAuthStart, finishAuthEnd);
+  assert(finishAuth.indexOf('await initRpgInvitationInbox(user.id)') < finishAuth.indexOf('initOnlineCounter()'));
+  assert(finishAuth.includes('if (rpgInvitationInboxReady) initLobby()'));
+
+  const lobbyStart = source.indexOf('async function openPvpLobby()');
+  const lobbyEnd = source.indexOf('\nfunction closePvpLobby()', lobbyStart);
+  const lobby = source.slice(lobbyStart, lobbyEnd);
+  assert(lobby.indexOf('await initRpgInvitationInbox(currentAuthUserId)') < lobby.indexOf("classList.remove('hidden')"));
+  assert(lobby.indexOf("rpgInvitationChannelStatus !== 'SUBSCRIBED'") < lobby.indexOf("classList.remove('hidden')"));
+});
+
+Deno.test('browser retries inbox before creating PvP room or registering an invite', async () => {
+  const source = await Deno.readTextFile(new URL('../../../script.js', import.meta.url));
+  const executeStart = source.indexOf('async function executeChallenge()');
+  const executeEnd = source.indexOf('\nfunction listenForChallenges(', executeStart);
+  const execute = source.slice(executeStart, executeEnd);
+  assert(execute.includes('await initRpgInvitationInbox(currentAuthUserId)'));
+  assert(execute.indexOf('await initRpgInvitationInbox(currentAuthUserId)') < execute.indexOf("action: 'register_rpg_invitation'"));
+  assert(execute.indexOf('rpgInvitationChannelStatus !== \'SUBSCRIBED\'') < execute.indexOf("action: 'register_rpg_invitation'"));
+  assert(execute.indexOf("action: 'register_rpg_invitation'") < execute.indexOf('supabaseClient.channel(roomId'));
+});
+
+Deno.test('browser invalidates a previously subscribed inbox and serializes same-topic retry cleanup', async () => {
+  const source = await Deno.readTextFile(new URL('../../../script.js', import.meta.url));
+  const inboxStart = source.indexOf('async function initializeRpgInvitationInbox(userId)');
+  const inboxEnd = source.indexOf('\nasync function clearOutgoingRpgChallenge(', inboxStart);
+  const inbox = source.slice(inboxStart, inboxEnd);
+  const callbackStart = inbox.indexOf('channel.subscribe((status, error) => {');
+  const callbackEnd = inbox.indexOf('\n        });', callbackStart);
+  const callback = inbox.slice(callbackStart, callbackEnd);
+  assert(callback.indexOf("if (status === 'SUBSCRIBED')") < callback.indexOf("status === 'CHANNEL_ERROR'"));
+  assert(callback.includes('rpgInvitationChannelStatus = status;'));
+  assert(!callback.includes('readinessSettled) return'));
+  assert(inbox.includes('if (channelEnded || rpgInvitationChannel !== channel) return;'));
+  assert(inbox.includes('rpgInvitationRemovalPromise = supabaseClient.removeChannel(channel)'));
+  assert(inbox.indexOf('await rpgInvitationRemovalPromise;') < inbox.indexOf('const channel = supabaseClient.channel(`rpg-invitations:${userId}`'));
+  assert(source.includes('if (rpgInvitationInitPromise) return rpgInvitationInitPromise'));
 });
 
 Deno.test('browser opens the incoming window before sending the received acknowledgement', async () => {

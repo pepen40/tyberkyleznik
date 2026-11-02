@@ -607,6 +607,7 @@ async function finishAuthLogin(user) {
     ensureRpgGear();
     currentMaxFloors = data.rpg_max_floors || {"ashab":0,"apostol":0,"mee":0};
     await supabaseClient.from('players').update({ last_online: new Date().toISOString() }).eq('user_id', user.id);
+    const rpgInvitationInboxReady = await initRpgInvitationInbox(user.id);
 
     document.getElementById('auth-screen').classList.add('hidden');
     document.getElementById('main-screen').classList.remove('hidden');
@@ -614,8 +615,7 @@ async function finishAuthLogin(user) {
     startRoachSchedule(ROACH_FIRST_DELAY);
     preloadSounds();
     initOnlineCounter();
-    initRpgInvitationInbox(user.id);
-    initLobby();
+    if (rpgInvitationInboxReady) initLobby();
     initSiteGlobalChat();
     updateUI();
     resetGame();
@@ -981,6 +981,8 @@ function percentOf(maxValue, percent) { return Math.max(1, Math.round((Number(ma
 let onlineChannel = null;
 let rpgInvitationChannel = null;
 let rpgInvitationChannelStatus = 'CLOSED';
+let rpgInvitationInitPromise = null;
+let rpgInvitationRemovalPromise = Promise.resolve();
 let lobbyChannel = null;
 let roomChannel = null;
 let myRoomId = null;
@@ -1026,19 +1028,108 @@ async function sendRpgInvitationResponse(roomId, status) {
 }
 
 function initRpgInvitationInbox(userId) {
-    if (!userId) return;
-    if (rpgInvitationChannel) supabaseClient.removeChannel(rpgInvitationChannel);
+    if (rpgInvitationInitPromise) return rpgInvitationInitPromise;
+    let attempt;
+    attempt = initializeRpgInvitationInbox(userId).catch(error => {
+        rpgInvitationChannelStatus = 'CHANNEL_ERROR';
+        console.error('[RPG inbox] Initialization failed.', {
+            status: rpgInvitationChannelStatus,
+            message: getSafeRealtimeErrorMessage(error)
+        });
+        return false;
+    }).finally(() => {
+        if (rpgInvitationInitPromise === attempt) rpgInvitationInitPromise = null;
+    });
+    rpgInvitationInitPromise = attempt;
+    return attempt;
+}
+
+function getSafeRealtimeErrorMessage(error) {
+    return String(error?.message || error || 'Unknown Realtime error')
+        .replace(/Bearer\s+\S+/gi, 'Bearer [redacted]')
+        .replace(/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g, '[redacted JWT]')
+        .replace(/\bsb_(?:publishable|secret)_[A-Za-z0-9_-]+\b/gi, '[redacted Supabase key]')
+        .slice(0, 300);
+}
+
+async function initializeRpgInvitationInbox(userId) {
+    if (!userId) return false;
+    if (rpgInvitationChannel) {
+        const previousChannel = rpgInvitationChannel;
+        rpgInvitationChannel = null;
+        rpgInvitationRemovalPromise = supabaseClient.removeChannel(previousChannel).catch(() => {});
+    }
+    await rpgInvitationRemovalPromise;
+    rpgInvitationChannelStatus = 'CONNECTING';
+    try {
+        const { data, error } = await supabaseClient.auth.getSession();
+        const session = data?.session;
+        if (error || !session?.access_token || session.user?.id !== userId) {
+            rpgInvitationChannelStatus = 'AUTH_ERROR';
+            console.error('[RPG inbox] Auth session unavailable for Realtime subscription.', {
+                message: getSafeRealtimeErrorMessage(error || 'No matching authenticated session.')
+            });
+            return false;
+        }
+        await supabaseClient.realtime.setAuth(session.access_token);
+        console.info('[RPG inbox] Realtime JWT synchronized for authenticated user.');
+    } catch (error) {
+        rpgInvitationChannelStatus = 'AUTH_ERROR';
+        console.error('[RPG inbox] Could not set the Realtime user JWT.', {
+            message: getSafeRealtimeErrorMessage(error)
+        });
+        return false;
+    }
+    await rpgInvitationRemovalPromise;
     const channel = supabaseClient.channel(`rpg-invitations:${userId}`, {
         config: { private: true, broadcast: { self: false } }
     });
     rpgInvitationChannel = channel;
     listenForChallenges(channel);
-    channel.subscribe(status => {
-        if (rpgInvitationChannel !== channel) return;
-        rpgInvitationChannelStatus = status;
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-            if (pendingOutgoingChallenge) clearOutgoingRpgChallenge('Канал приглашений недоступен. Повторите вызов позже.');
-        }
+    return new Promise(resolve => {
+        let readinessSettled = false;
+        let channelEnded = false;
+        let subscriptionTimer;
+        const finish = result => {
+            if (readinessSettled) return;
+            readinessSettled = true;
+            clearTimeout(subscriptionTimer);
+            resolve(result);
+        };
+        const failChannel = status => {
+            if (channelEnded || rpgInvitationChannel !== channel) return;
+            channelEnded = true;
+            rpgInvitationChannelStatus = status;
+            console.error('[RPG inbox] Realtime subscription failed.', { status });
+            rpgInvitationChannel = null;
+            finish(false);
+            rpgInvitationRemovalPromise = supabaseClient.removeChannel(channel).catch(() => {});
+            if (pendingOutgoingChallenge) {
+                void clearOutgoingRpgChallenge('Канал приглашений недоступен. Повторите вызов позже.');
+            }
+        };
+        subscriptionTimer = setTimeout(() => {
+            if (rpgInvitationChannel !== channel) return finish(false);
+            failChannel('TIMED_OUT');
+        }, 10000);
+        channel.subscribe((status, error) => {
+            if (rpgInvitationChannel !== channel || channelEnded) return;
+            rpgInvitationChannelStatus = status;
+            if (status === 'SUBSCRIBED') {
+                console.info('[RPG inbox] Realtime subscription established.', { status });
+                finish(true);
+                return;
+            }
+            const details = error ? {
+                message: getSafeRealtimeErrorMessage(error),
+                code: getSafeRealtimeErrorMessage(error.code),
+                details: getSafeRealtimeErrorMessage(error.details)
+            } : null;
+            console.warn('[RPG inbox] Realtime subscription status.', { status, error: details });
+            if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+                failChannel(status);
+            }
+        });
     });
 }
 
@@ -1424,7 +1515,16 @@ let currentPvpChar = null;
 let isPvpHost = false;
 let pvpGameState = { myHp: 0, enemyHp: 0, myMaxHp: 0, enemyMaxHp: 0, myMp: 0, enemyMp: 0, isMyTurn: false, myBorisHp: 0, enemyBorisHp: 0, myParashnikHp: 0, enemyParashnikHp: 0, myDefending: false, enemyDefending: false, myItemUsed: false, myBonusAttacks: 0, myPotatoBuff: false };
 
-function openPvpLobby() {
+async function openPvpLobby() {
+    if (rpgInvitationChannelStatus !== 'SUBSCRIBED') {
+        let ready = false;
+        try { ready = await initRpgInvitationInbox(currentAuthUserId); } catch (_) {}
+        if (!ready || rpgInvitationChannelStatus !== 'SUBSCRIBED') {
+            alert('Канал приглашений пока не подключён. Проверьте соединение и повторите попытку.');
+            return;
+        }
+    }
+    if (!lobbyChannel) initLobby();
     document.getElementById('pvp-lobby-modal').classList.remove('hidden');
     renderPvpRooms();
 }
@@ -1504,10 +1604,26 @@ function closeChallengeModal() {
 async function executeChallenge() {
     const targetUser = pendingChallengeTarget;
     if (!targetUser) return;
-    if (pendingOutgoingChallenge || outgoingChallengeRegistrationInProgress || rpgInvitationChannelStatus !== 'SUBSCRIBED') {
+    if (pendingOutgoingChallenge || outgoingChallengeRegistrationInProgress) {
+        console.error('[RPG invite] Challenge blocked because another invitation is active.', {
+            status: rpgInvitationChannelStatus
+        });
         closeChallengeModal();
-        alert('Канал приглашений пока не подключён. Повторите вызов через несколько секунд.');
+        alert('У вас уже есть активное PvP-приглашение.');
         return;
+    }
+    if (rpgInvitationChannelStatus !== 'SUBSCRIBED') {
+        const retryButton = document.querySelector('#pvp-challenge-modal button[onclick="executeChallenge()"]');
+        if (retryButton) retryButton.disabled = true;
+        let ready = false;
+        try { ready = await initRpgInvitationInbox(currentAuthUserId); } catch (_) {}
+        if (retryButton) retryButton.disabled = false;
+        if (!ready || rpgInvitationChannelStatus !== 'SUBSCRIBED') {
+            console.error('[RPG invite] Private inbox reconnect failed.', { status: rpgInvitationChannelStatus });
+            alert('Канал приглашений пока не подключён. Проверьте соединение и повторите вызов.');
+            return;
+        }
+        if (!lobbyChannel) initLobby();
     }
     if (!onlinePlayers.some(name => normalizeRpgUsername(name) === normalizeRpgUsername(targetUser))) {
         closeChallengeModal();
