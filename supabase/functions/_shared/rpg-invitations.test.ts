@@ -81,7 +81,7 @@ Deno.test('failed acceptance and failed realtime send are reported, not acknowle
 Deno.test('browser binds the recipient inbox to auth.uid and subscribes before handling invites', async () => {
   const source = await Deno.readTextFile(new URL('../../../script.js', import.meta.url));
   assert(source.includes('supabaseClient.channel(`rpg-invitations:${userId}`'));
-  assert(source.includes('if (rpgInvitationChannel !== channel) return;'));
+  assert(source.includes('if (channel !== rpgInvitationChannel) return;'));
   assert(source.includes('data.targetUserId !== currentAuthUserId'));
   assert(source.includes('listenForChallenges(channel);'));
   assert(source.includes('channel.subscribe((status, error) => {'));
