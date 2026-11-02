@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { deliverRpgInvitation, respondToRpgInvitation, type RpgInvitationDependencies } from '../_shared/rpg-invitations.ts'
+import { isServerVerifiedRpgRewardClaim } from '../_shared/reward-policy.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -252,13 +253,12 @@ serve(async (req) => {
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
     }
 
-    // These contracts rely on win/boss progress previously reported by the browser.
-    // Keep the server-verified spending contract available, but pause win-derived claims.
+    // Only spending accumulated by atomic server-side purchases is currently
+    // server-verified. Keep unknown/future claim IDs closed by default.
     if (action === 'claim_rpg_reward') {
       const kind = String(data?.kind || '');
       const id = String(data?.id || '');
-      const winBasedClaims = new Set(['wins3', 'boss1', 'first_win', 'ten_wins', 'fifty_wins', 'first_boss', 'ten_bosses']);
-      if (winBasedClaims.has(id)) {
+      if (!isServerVerifiedRpgRewardClaim(kind, id)) {
         return new Response(JSON.stringify({
           success: false,
           rewardPaused: true,
