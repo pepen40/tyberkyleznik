@@ -589,12 +589,13 @@ async function logout() {
 
 async function finishAuthLogin(user) {
     if (!user?.id) throw new Error("Не удалось определить пользователя.");
-    const { data, error } = await supabaseClient
-        .from('players')
-        .select('id,user_id,username,max_score,coins,inventory,item_points,rpg_upgrades,rpg_max_floors,created_at,last_online,pvp_pts')
-        .eq('user_id', user.id)
-        .single();
-    if (error || !data) throw new Error("Профиль игрока не найден: " + (error?.message || "нет записи"));
+    const { data: profileResponse, error: profileError } = await supabaseClient.functions.invoke('award-coins', {
+        body: { action: 'get_player_profile', data: {} }
+    });
+    const data = profileResponse?.profile;
+    if (profileError || !profileResponse?.success || !data) {
+        throw new Error("Профиль игрока не найден: " + (profileError?.message || profileResponse?.error || "нет записи"));
+    }
 
     currentUser = data.username;
     currentAuthUserId = user.id;
@@ -606,7 +607,6 @@ async function finishAuthLogin(user) {
     currentUpgrades = data.rpg_upgrades || {"ashab":{"hp":0,"atk":0},"apostol":{"hp":0,"atk":0},"mee":{"hp":0,"atk":0}};
     ensureRpgGear();
     currentMaxFloors = data.rpg_max_floors || {"ashab":0,"apostol":0,"mee":0};
-    await supabaseClient.from('players').update({ last_online: new Date().toISOString() }).eq('user_id', user.id);
     const rpgInvitationInboxReady = await initRpgInvitationInbox(user.id);
 
     document.getElementById('auth-screen').classList.add('hidden');

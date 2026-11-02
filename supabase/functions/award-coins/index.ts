@@ -166,7 +166,8 @@ serve(async (req) => {
       'rpg_win', 'open_case', 'sell_item', 'remove_listing', 'buy_item',
       'consume_item', 'buy_upgrade', 'buy_gear', 'equip_gear',
       'register_room_membership', 'join_room_membership', 'validate_room_invitation', 'send_chat_message',
-      'register_rpg_invitation', 'deliver_rpg_invitation', 'respond_rpg_invitation', 'close_rpg_invitation'
+      'register_rpg_invitation', 'deliver_rpg_invitation', 'respond_rpg_invitation', 'close_rpg_invitation',
+      'get_player_profile'
     ]);
     if (!allowedActions.has(action)) {
       return new Response(JSON.stringify({ success: false, error: 'Неизвестное действие.' }), {
@@ -179,6 +180,22 @@ serve(async (req) => {
       return new Response(JSON.stringify({ success: false, error: 'Профиль игрока не найден.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403
       });
+    }
+    if (action === 'get_player_profile') {
+      return new Response(JSON.stringify({
+        success: true,
+        profile: {
+          id: player.id,
+          username: player.username,
+          max_score: player.max_score,
+          coins: player.coins,
+          inventory: player.inventory,
+          item_points: player.item_points,
+          rpg_upgrades: player.rpg_upgrades,
+          rpg_max_floors: player.rpg_max_floors,
+          pvp_pts: player.pvp_pts
+        }
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
     }
     const cooldowns: Record<string, number> = {
       chess_reward: 60,
