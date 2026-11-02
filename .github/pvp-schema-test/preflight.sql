@@ -36,3 +36,16 @@ create table if not exists public.players (
   inventory jsonb not null default '[]'::jsonb,
   item_points integer not null default 0
 );
+
+create table if not exists public.realtime_room_access (
+  topic text primary key,
+  room_kind text not null,
+  host_user_id uuid references auth.users(id) on delete set null,
+  guest_user_id uuid references auth.users(id) on delete set null,
+  invitee_user_id uuid references auth.users(id) on delete set null,
+  is_public boolean not null default false,
+  expires_at timestamptz not null
+);
+
+alter table public.realtime_room_access enable row level security;
+revoke all privileges on table public.realtime_room_access from public, anon, authenticated, service_role;

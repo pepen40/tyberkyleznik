@@ -1,5 +1,5 @@
 begin;
-select plan(20);
+select plan(21);
 select has_function('public','create_rpg_pvp_match',array['uuid','uuid','text','text'],'match creation RPC exists');
 select has_function('public','join_rpg_pvp_match',array['uuid','text','text'],'match join RPC exists');
 select has_function('public','get_rpg_pvp_match',array['uuid','text'],'participant snapshot RPC exists');
@@ -20,5 +20,6 @@ select ok(has_function_privilege('service_role','public.cancel_rpg_pvp_match(uui
 select has_function('public','expire_rpg_pvp_turn',array['uuid','text'],'server-side turn timeout RPC exists');
 select ok(not has_function_privilege('authenticated','public.expire_rpg_pvp_turn(uuid,text)','EXECUTE'),'client cannot trigger timeout RPC directly');
 select ok(has_function_privilege('service_role','public.expire_rpg_pvp_turn(uuid,text)','EXECUTE'),'Edge Function service role can trigger timeout RPC');
+select ok(not has_table_privilege('service_role','public.realtime_room_access','SELECT'),'service role cannot directly read room membership; match RPC verifies it under definer privileges');
 select * from finish();
 rollback;

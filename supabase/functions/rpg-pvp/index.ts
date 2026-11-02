@@ -47,12 +47,6 @@ serve(async (req) => {
           !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(matchId)) {
         return json({ success: false, error: 'Некорректные параметры создания матча.' }, 400)
       }
-      const { data: room, error: roomError } = await admin.from('realtime_room_access')
-        .select('topic,room_kind,host_user_id,expires_at')
-        .eq('topic', roomTopic).maybeSingle()
-      if (roomError || !room || room.room_kind !== 'rpg' || room.host_user_id !== userId || Date.parse(room.expires_at) <= Date.now()) {
-        return json({ success: false, error: 'PvP room is not owned by this authenticated user' }, 403)
-      }
       const { data: rpcData, error } = await admin.rpc('create_rpg_pvp_match', {
         p_user_id: userId, p_match_id: matchId, p_room_topic: roomTopic, p_char_type: charType,
       })
@@ -63,12 +57,6 @@ serve(async (req) => {
       const roomTopic = String(data.room_topic || '')
       if (!['ashab', 'apostol', 'mee'].includes(charType) || !/^room_[a-z0-9]{9}$/.test(roomTopic)) {
         return json({ success: false, error: 'Некорректные параметры подключения.' }, 400)
-      }
-      const { data: room, error: roomError } = await admin.from('realtime_room_access')
-        .select('topic,room_kind,guest_user_id,expires_at')
-        .eq('topic', roomTopic).maybeSingle()
-      if (roomError || !room || room.room_kind !== 'rpg' || room.guest_user_id !== userId || Date.parse(room.expires_at) <= Date.now()) {
-        return json({ success: false, error: 'PvP room membership is not valid for this user' }, 403)
       }
       const { data: rpcData, error } = await admin.rpc('join_rpg_pvp_match', {
         p_user_id: userId, p_room_topic: roomTopic, p_char_type: charType,
@@ -135,6 +123,9 @@ serve(async (req) => {
     return json(result)
   } catch (error) {
     const message = error instanceof Error ? error.message : ''
+    if (message === 'User is not an authorized RPG room participant') {
+      return json({ success: false, error: 'Ты не состоишь в этой PvP-комнате.' }, 403)
+    }
     if (/^(Stale match version|Not your turn|Match is not active|Match timed out|User is not a participant|Not enough mana|Item is not owned|Item is not supported in PvP|Item action is unavailable|Idempotency key reused with different command|Match is unavailable|Only the match host can cancel this room|Only a waiting PvP room can be cancelled)$/.test(message)) {
       return json({ success: false, error: message }, 409)
     }

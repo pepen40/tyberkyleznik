@@ -30,6 +30,15 @@ begin
     raise exception 'Invalid match creation request';
   end if;
 
+  perform 1
+  from public.realtime_room_access
+  where topic = p_room_topic
+    and room_kind = 'rpg'
+    and host_user_id = p_user_id
+    and expires_at > transaction_timestamp()
+  for update;
+  if not found then raise exception 'User is not an authorized RPG room participant'; end if;
+
   -- Reconcile this user's abandoned turns before enforcing the one-live-match rule.
   for v_old_match in
     select room_topic
@@ -96,6 +105,16 @@ begin
      or p_char_type not in ('ashab','apostol','mee') then
     raise exception 'Invalid match join request';
   end if;
+
+  perform 1
+  from public.realtime_room_access
+  where topic = p_room_topic
+    and room_kind = 'rpg'
+    and guest_user_id = p_user_id
+    and host_user_id is not null
+    and expires_at > transaction_timestamp()
+  for update;
+  if not found then raise exception 'User is not an authorized RPG room participant'; end if;
 
   select * into v_match
   from public.pvp_matches
