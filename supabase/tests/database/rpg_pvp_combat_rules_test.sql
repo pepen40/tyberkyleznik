@@ -28,7 +28,7 @@ select ok((select (result->>'defense_applied')::boolean and (result->>'damage'):
 update public.pvp_matches set state=jsonb_set(state,'{guest,mp}','100'::jsonb,true) where room_topic='room_rules0001';
 select lives_ok($$select public.apply_rpg_pvp_action('00000000-0000-4000-8000-000000000202','room_rules0001','20000000-0000-4000-8000-000000000204',4,'skill',null)$$,'Apostol skill spends mana and resolves its server roll');
 select ok((select (result->>'raw_damage')::integer between 70 and 99 and (result #>> '{state,guest,mp}')::integer=0 from public.pvp_match_actions where action_id='20000000-0000-4000-8000-000000000204'),'Apostol skill range and mana cost match the client rules');
-update public.pvp_matches set state=jsonb_set(jsonb_set(state,'{host,mp}','100'::jsonb,true),'{host,fighter,crit}','0'::jsonb,true) where room_topic='room_rules0001';
+update public.pvp_matches set state=jsonb_set(jsonb_set(jsonb_set(state,'{host,mp}','100'::jsonb,true),'{host,fighter,crit}','0'::jsonb,true),'{guest,hp}','500'::jsonb,true) where room_topic='room_rules0001';
 select lives_ok($$select public.apply_rpg_pvp_action('00000000-0000-4000-8000-000000000201','room_rules0001','20000000-0000-4000-8000-000000000205',5,'skill',null)$$,'Ashab skill is server-resolved');
 select is((select (result->>'raw_damage')::integer from public.pvp_match_actions where action_id='20000000-0000-4000-8000-000000000205'),60,'Ashab skill uses its fixed 60 plus validated upgrade scaling');
 select lives_ok($$select public.apply_rpg_pvp_action('00000000-0000-4000-8000-000000000202','room_rules0001','20000000-0000-4000-8000-000000000206',6,'leave',null)$$,'surrender is allowed out of turn and server-selects the winner');
