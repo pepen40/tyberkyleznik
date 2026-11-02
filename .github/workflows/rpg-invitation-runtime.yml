@@ -215,4 +215,3 @@ jobs:
           if [[ -f "$harness_dir/supabase/config.toml" ]]; then
             supabase --workdir "$harness_dir" stop --no-backup || true
           fi
-

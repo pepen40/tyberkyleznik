@@ -54,4 +54,3 @@ The Edge Function now also validates marketplace item ID shape and price integer
 - Use an authenticated server identity, match/session binding, unique result/reward ledger keys, and a single atomic result-plus-payout transaction.
 - Keep a game disabled for payout if its outcome cannot be reproduced/validated by the server.
 - Complete the approved PvP database/function rollout and real two-user invite/acceptance/action smoke test; keep PvP payout disabled until a separate approved reward design passes equivalent tests.
-
