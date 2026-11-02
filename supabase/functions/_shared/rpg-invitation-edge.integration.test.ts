@@ -14,7 +14,6 @@ type InviteEvent = { event: 'challenge' | 'challenge_response'; payload: Record<
 
 class Inbox {
   readonly channel: RealtimeChannel;
-  readonly userId: string;
   private readonly buffered: InviteEvent[] = [];
   private readonly waiters: Array<{
     event: InviteEvent['event'];
@@ -24,7 +23,6 @@ class Inbox {
   }> = [];
 
   constructor(client: SupabaseClient, userId: string) {
-    this.userId = userId;
     this.channel = client.channel(`rpg-invitations:${userId}`, { config: { private: true } });
     for (const event of ['challenge', 'challenge_response'] as const) {
       this.channel.on('broadcast', { event }, ({ payload }) => this.publish(event, payload as Record<string, unknown>));
@@ -165,7 +163,7 @@ Deno.test('RPG invitations use Auth-verified Edge actions for delivery, receipt,
       roomId: acceptedRoom,
       status: 'accepted',
     });
-    assert(foreignResponseError, 'a nonparticipant responded to another user’s invitation.');
+    assert(foreignResponseError, 'a nonparticipant responded to another userвЂ™s invitation.');
     await success(host, 'deliver_rpg_invitation', { roomId: acceptedRoom });
     const challenge = await guestInbox.next('challenge');
     assertEquals(challenge.roomId, acceptedRoom);
@@ -236,3 +234,4 @@ Deno.test('RPG invitations use Auth-verified Edge actions for delivery, receipt,
     );
   }
 });
+
