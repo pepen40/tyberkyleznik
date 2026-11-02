@@ -140,15 +140,20 @@ Deno.test('browser synchronizes the authenticated JWT before creating private in
   assert(lobby.indexOf("rpgInvitationChannelStatus !== 'SUBSCRIBED'") < lobby.indexOf("classList.remove('hidden')"));
 });
 
-Deno.test('browser retries inbox before creating PvP room or registering an invite', async () => {
+Deno.test('browser creates a server-authoritative match only after the inbox and invitation are ready', async () => {
   const source = await Deno.readTextFile(new URL('../../../script.js', import.meta.url));
   const executeStart = source.indexOf('async function executeChallenge()');
-  const executeEnd = source.indexOf('\nfunction listenForChallenges(', executeStart);
+  const executeEnd = source.indexOf('\nasync function expireOutgoingRpgChallenge(', executeStart);
   const execute = source.slice(executeStart, executeEnd);
-  assert(execute.includes('await initRpgInvitationInbox(currentAuthUserId)'));
   assert(execute.indexOf('await initRpgInvitationInbox(currentAuthUserId)') < execute.indexOf("action: 'register_rpg_invitation'"));
-  assert(execute.indexOf('rpgInvitationChannelStatus !== \'SUBSCRIBED\'') < execute.indexOf("action: 'register_rpg_invitation'"));
-  assert(execute.indexOf("action: 'register_rpg_invitation'") < execute.indexOf('supabaseClient.channel(roomId'));
+  assert(execute.indexOf("action: 'register_rpg_invitation'") < execute.indexOf("invokeRpgPvp('create_match'"));
+  assert(execute.indexOf("invokeRpgPvp('create_match'") < execute.indexOf("action: 'deliver_rpg_invitation'"));
+  assert(execute.includes('roomChannel = supabaseClient.channel(roomId'));
+  assert(execute.includes('await waitForRpgRealtimeSubscription(roomChannel)'));
+  assert(execute.includes('startPvpMatchSync()'));
+  assert(!execute.includes("event: 'join_request'"));
+  assert(!execute.includes("event: 'start_game'"));
+  assert(!execute.includes('onlineChannel?.send'));
 });
 
 Deno.test('browser invalidates a previously subscribed inbox and serializes same-topic retry cleanup', async () => {
@@ -179,44 +184,58 @@ Deno.test('browser opens the incoming window before sending the received acknowl
 Deno.test('browser deduplicates room invitations and joins the same room id on acceptance', async () => {
   const source = await Deno.readTextFile(new URL('../../../script.js', import.meta.url));
   assert(source.includes('pendingChallengeRoomId === data.roomId || processingIncomingChallengeRoomId === data.roomId'));
-  assert(source.includes('await joinPvpRoom(roomId, charType);'));
+  assert(source.includes('if (pendingChallengeRoomId || processingIncomingChallengeRoomId || myRoomId || pendingOutgoingChallenge)'));
+  assert(source.includes('joined = await joinPvpRoom(roomId, charType);'));
   assert(source.includes("sendRpgInvitationResponse(roomId, 'accepted')"));
   assert(source.includes('RPG_INVITATION_TIMEOUT_MS = 30000'));
   assert(source.includes("action: 'close_rpg_invitation'"));
 });
 
-Deno.test('acceptance waits for the subscribed room to deliver start_game before acknowledging the host', async () => {
+Deno.test('acceptance joins the same server match before acknowledging the host', async () => {
   const source = await Deno.readTextFile(new URL('../../../script.js', import.meta.url));
   const joinStart = source.indexOf('async function joinPvpRoom(roomId, charType)');
-  const joinEnd = source.indexOf('\nfunction startPvpBattle(', joinStart);
+  const joinEnd = source.indexOf('\nasync function leavePvpRoom(', joinStart);
   const joinRoom = source.slice(joinStart, joinEnd);
   const acceptStart = source.indexOf('async function executeAcceptChallenge()');
   const acceptEnd = source.indexOf('\nasync function getPvpBuildSnapshot(', acceptStart);
   const accept = source.slice(acceptStart, acceptEnd);
-  assert(joinRoom.includes("channel.on('broadcast', { event: 'start_game' }"));
-  assert(joinRoom.includes('await startGamePromise'));
-  assert(joinRoom.includes('setTimeout(() => finishStartGame(false), 15000)'));
-  assert(joinRoom.includes("if (sent !== 'ok') finishStartGame(false)"));
-  assert(joinRoom.includes('if (!startResult)'));
-  assert(joinRoom.includes('if (myRoomId === roomId) myRoomId = null'));
-  assert(accept.indexOf('await joinPvpRoom(roomId, charType)') < accept.indexOf("sendRpgInvitationResponse(roomId, 'accepted')"));
-  assert(accept.includes("classList.remove('hidden')"));
+  assert(joinRoom.includes("invokeRpgPvp('join_match', { room_topic: roomId, char_type: charType })"));
+  assert(joinRoom.includes('myRoomId = roomId'));
+  assert(joinRoom.includes('return true;'));
+  assert(accept.includes('joined = await joinPvpRoom(roomId, charType)'));
+  assert(accept.indexOf('if (joined && myRoomId === roomId)') < accept.indexOf("sendRpgInvitationResponse(roomId, 'accepted')"));
+  assert(!joinRoom.includes("event: 'start_game'"));
+  assert(!joinRoom.includes("event: 'join_request'"));
 });
 
-Deno.test('host invitation timeout stays active until the invitee confirms start_game', async () => {
+Deno.test('host timeout checks server match state before cancelling a possibly accepted invite', async () => {
   const source = await Deno.readTextFile(new URL('../../../script.js', import.meta.url));
-  const challengeStart = source.indexOf('async function executeChallenge()');
-  const challengeEnd = source.indexOf('\nfunction listenForChallenges(', challengeStart);
-  const challenge = source.slice(challengeStart, challengeEnd);
-  const joinHandlerStart = challenge.indexOf("roomChannel.on('broadcast', { event: 'join_request' }");
-  const joinHandlerEnd = challenge.indexOf("roomChannel.on('broadcast', { event: 'enemy_action' }", joinHandlerStart);
-  const joinHandler = challenge.slice(joinHandlerStart, joinHandlerEnd);
-  assert(joinHandler.includes("event: 'start_game'"));
-  assert(joinHandler.includes('hostJoinHandled'));
-  assert(!joinHandler.includes('clearTimeout(pendingOutgoingChallenge.timer)'));
-  const responseStart = source.indexOf("if (data.status === 'accepted')");
-  const responseEnd = source.indexOf('const statuses = {', responseStart);
-  assert(source.slice(responseStart, responseEnd).includes('clearTimeout(pending.timer)'));
+  const expireStart = source.indexOf('async function expireOutgoingRpgChallenge(roomId)');
+  const expireEnd = source.indexOf('\nfunction listenForChallenges(', expireStart);
+  const expire = source.slice(expireStart, expireEnd);
+  const clearStart = source.indexOf('async function clearOutgoingRpgChallenge(message)');
+  const clearEnd = source.indexOf('\nconst soundCache', clearStart);
+  const clear = source.slice(clearStart, clearEnd);
+  assert(expire.includes("invokeRpgPvp('get_match', { room_topic: roomId })"));
+  assert(expire.includes("match.status === 'active' || match.status === 'completed'"));
+  assert(expire.includes('applyAuthoritativePvpMatch(match);'));
+  assert(source.includes('setTimeout(() => expireOutgoingRpgChallenge(roomId), RPG_INVITATION_TIMEOUT_MS)'));
+  assert(clear.indexOf("invokeRpgPvp('cancel_match'") < clear.indexOf("action: 'close_rpg_invitation'"));
+  assert(!clear.includes("event: 'leave'"));
+});
+
+Deno.test('host preserves the server match when cancellation races with guest acceptance', async () => {
+  const source = await Deno.readTextFile(new URL('../../../script.js', import.meta.url));
+  const clearStart = source.indexOf('async function clearOutgoingRpgChallenge(message)');
+  const clearEnd = source.indexOf('\nconst soundCache', clearStart);
+  const clear = source.slice(clearStart, clearEnd);
+  const cancel = clear.indexOf("invokeRpgPvp('cancel_match'");
+  const reconcile = clear.indexOf("invokeRpgPvp('get_match'");
+  assert(cancel >= 0 && reconcile > cancel);
+  assert(clear.includes("match?.status === 'active' || match?.status === 'completed'"));
+  assert(clear.includes('applyAuthoritativePvpMatch(match);'));
+  assert(clear.includes('pending.timer = setTimeout(() => clearOutgoingRpgChallenge(message), 5000)'));
+  assert(clear.indexOf('pendingOutgoingChallenge = null') > reconcile);
 });
 
 Deno.test('delivery timeout clears host state and exposes retry instead of leaving an endless wait', async () => {
@@ -235,6 +254,18 @@ Deno.test('delivery timeout clears host state and exposes retry instead of leavi
   assert(execute.includes('Можно повторить вызов'));
 });
 
+Deno.test('server-authoritative PvP ignores client combat broadcasts', async () => {
+  const source = await Deno.readTextFile(new URL('../../../script.js', import.meta.url));
+  assert(source.includes("charType === 'ashab' ? 'Ашаб'"));
+  assert(source.includes("charType === 'apostol' ? 'Апостол'"));
+  assert(source.includes(": 'Мээ'"));
+  assert(source.includes('function handlePvpEnemyAction() { /* Client Broadcasts cannot change combat state. */ }'));
+  assert(!source.includes("event: 'enemy_action'"));
+  assert(!source.includes("event: 'join_request'"));
+  assert(!source.includes("event: 'start_game'"));
+  assert(!source.includes("action: 'pvp_result'"));
+  assert(source.includes("invokeRpgPvp('submit_action'"));
+});
 Deno.test('RPG changes keep shared chat and chess invitation channels intact', async () => {
   const source = await Deno.readTextFile(new URL('../../../script.js', import.meta.url));
   assert(source.includes("supabaseClient.channel('chess-invitations'"));

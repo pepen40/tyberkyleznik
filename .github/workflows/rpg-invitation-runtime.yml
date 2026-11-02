@@ -8,20 +8,36 @@ on:
     branches: [main]
     paths:
       - supabase/migrations/20261102130000_add_private_rpg_invitation_inbox.sql
+      - supabase/migrations/20261101145407_secure_realtime_room_membership.sql
+      - supabase/migrations/20261101145936_move_room_membership_management_to_edge.sql
+      - supabase/migrations/20261101152713_validate_realtime_room_invitations.sql
       - supabase/tests/database/rpg_invitation_inbox_test.sql
+      - supabase/functions/_shared/rpg-invitation-realtime.integration.test.ts
+      - supabase/functions/_shared/rpg-invitation-edge.integration.test.ts
+      - supabase/functions/_shared/rpg-invitations.ts
+      - supabase/functions/award-coins/index.ts
+      - script.js
       - .github/rpg-invitation-test/preflight.sql
       - .github/workflows/rpg-invitation-runtime.yml
   push:
     paths:
       - supabase/migrations/20261102130000_add_private_rpg_invitation_inbox.sql
+      - supabase/migrations/20261101145407_secure_realtime_room_membership.sql
+      - supabase/migrations/20261101145936_move_room_membership_management_to_edge.sql
+      - supabase/migrations/20261101152713_validate_realtime_room_invitations.sql
       - supabase/tests/database/rpg_invitation_inbox_test.sql
+      - supabase/functions/_shared/rpg-invitation-realtime.integration.test.ts
+      - supabase/functions/_shared/rpg-invitation-edge.integration.test.ts
+      - supabase/functions/_shared/rpg-invitations.ts
+      - supabase/functions/award-coins/index.ts
+      - script.js
       - .github/rpg-invitation-test/preflight.sql
       - .github/workflows/rpg-invitation-runtime.yml
   workflow_dispatch:
 
 jobs:
   rpg-invitation:
-    name: PostgreSQL 17 + Supabase Realtime + pgTAP
+    name: PostgreSQL 17 + Auth/Realtime/Edge + pgTAP
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -30,6 +46,10 @@ jobs:
       - uses: supabase/setup-cli@v3
         with:
           version: 2.84.2
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
 
       - name: Create isolated Supabase test project
         shell: bash
@@ -53,16 +73,39 @@ jobs:
               raise SystemExit(f"Expected one project_id setting, found {project_count}")
           config.write_text(contents, encoding="utf-8")
           PY
-          mkdir -p supabase/migrations supabase/tests/database
+          mkdir -p supabase/migrations supabase/tests/database supabase/functions
           cp "$GITHUB_WORKSPACE/.github/rpg-invitation-test/preflight.sql" supabase/migrations/20261102125900_rpg_invitation_preflight.sql
+          cp "$GITHUB_WORKSPACE/supabase/migrations/20261101145407_secure_realtime_room_membership.sql" supabase/migrations/
+          cp "$GITHUB_WORKSPACE/supabase/migrations/20261101145936_move_room_membership_management_to_edge.sql" supabase/migrations/
+          cp "$GITHUB_WORKSPACE/supabase/migrations/20261101152713_validate_realtime_room_invitations.sql" supabase/migrations/
           cp "$GITHUB_WORKSPACE/supabase/migrations/20261102130000_add_private_rpg_invitation_inbox.sql" supabase/migrations/
           cp "$GITHUB_WORKSPACE/supabase/tests/database/rpg_invitation_inbox_test.sql" supabase/tests/database/
+          cp -R "$GITHUB_WORKSPACE/supabase/functions/award-coins" supabase/functions/
+          cp -R "$GITHUB_WORKSPACE/supabase/functions/_shared" supabase/functions/
 
       - name: Start disposable PostgreSQL, Auth and Realtime
         working-directory: ${{ runner.temp }}/rpg-invitation-supabase
         run: >-
           supabase start
-          --exclude imgproxy,storage-api,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+          --exclude imgproxy,storage-api,mailpit,postgres-meta,studio,logflare,vector,supavisor
+
+      - name: Export local Supabase test connection settings
+        working-directory: ${{ runner.temp }}/rpg-invitation-supabase
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase status -o env | awk -F= '
+            $1 == "API_URL" || $1 == "ANON_KEY" || $1 == "SERVICE_ROLE_KEY" {
+              value = substr($0, index($0, "=") + 1)
+              sub(/^"/, "", value)
+              sub(/"$/, "", value)
+              printf "RPG_TEST_%s=%s\n", $1, value
+              found[$1] = 1
+            }
+            END {
+              if (!found["API_URL"] || !found["ANON_KEY"] || !found["SERVICE_ROLE_KEY"]) exit 1
+            }
+          ' >> "$GITHUB_ENV"
 
       - name: Apply only the invitation preflight and migration
         working-directory: ${{ runner.temp }}/rpg-invitation-supabase
@@ -72,10 +115,102 @@ jobs:
         working-directory: ${{ runner.temp }}/rpg-invitation-supabase
         run: supabase test db --local
 
+      - name: Serve award-coins locally with disposable Supabase credentials
+        working-directory: ${{ runner.temp }}/rpg-invitation-supabase
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          edge_env="$RUNNER_TEMP/rpg-invitation-edge.env"
+          printf 'SUPABASE_URL=%s\nSUPABASE_SERVICE_ROLE_KEY=%s\n' \
+            "$RPG_TEST_API_URL" "$RPG_TEST_SERVICE_ROLE_KEY" > "$edge_env"
+          chmod 600 "$edge_env"
+          nohup supabase functions serve award-coins --env-file "$edge_env" \
+            > "$RUNNER_TEMP/rpg-invitation-edge.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/rpg-invitation-edge.pid"
+
+          probe_email="rpg-edge-probe-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}@example.test"
+          probe_password="$(openssl rand -hex 24)"
+          probe_user_response="$RUNNER_TEMP/rpg-invitation-probe-user.json"
+          curl --silent --show-error --fail-with-body \
+            --request POST "$RPG_TEST_API_URL/auth/v1/admin/users" \
+            --header "apikey: $RPG_TEST_SERVICE_ROLE_KEY" \
+            --header "Authorization: Bearer $RPG_TEST_SERVICE_ROLE_KEY" \
+            --header 'Content-Type: application/json' \
+            --data "$(jq -nc --arg email "$probe_email" --arg password "$probe_password" \
+              '{email:$email,password:$password,email_confirm:true}')" \
+            > "$probe_user_response"
+          probe_user_id="$(jq -r '.id // empty' "$probe_user_response")"
+          if [[ -z "$probe_user_id" ]]; then
+            echo "Could not create a disposable Auth user for Edge readiness." >&2
+            exit 1
+          fi
+          printf '%s' "$probe_user_id" > "$RUNNER_TEMP/rpg-invitation-probe-user-id"
+
+          probe_session_response="$RUNNER_TEMP/rpg-invitation-probe-session.json"
+          curl --silent --show-error --fail-with-body \
+            --request POST "$RPG_TEST_API_URL/auth/v1/token?grant_type=password" \
+            --header "apikey: $RPG_TEST_ANON_KEY" \
+            --header 'Content-Type: application/json' \
+            --data "$(jq -nc --arg email "$probe_email" --arg password "$probe_password" \
+              '{email:$email,password:$password}')" \
+            > "$probe_session_response"
+          probe_access_token="$(jq -r '.access_token // empty' "$probe_session_response")"
+          if [[ -z "$probe_access_token" ]]; then
+            echo "Could not authenticate the disposable Edge readiness user." >&2
+            exit 1
+          fi
+
+          for attempt in $(seq 1 60); do
+            status="$(curl --silent --output "$RUNNER_TEMP/rpg-invitation-edge-probe.json" \
+              --write-out '%{http_code}' \
+              --request POST "$RPG_TEST_API_URL/functions/v1/award-coins" \
+              --header "apikey: $RPG_TEST_ANON_KEY" \
+              --header "Authorization: Bearer $probe_access_token" \
+              --header 'Content-Type: application/json' \
+              --data '{"action":"ci_readiness_probe"}' || true)"
+            if [[ "$status" == 400 ]] && jq -e \
+              '.success == false and (.error | type == "string" and length > 0)' \
+              "$RUNNER_TEMP/rpg-invitation-edge-probe.json" >/dev/null 2>&1; then
+              echo "Local award-coins Edge Function is ready (HTTP $status)."
+              exit 0
+            fi
+            sleep 1
+          done
+
+          tail -n 100 "$RUNNER_TEMP/rpg-invitation-edge.log" >&2
+          echo "Local award-coins Edge Function did not become ready." >&2
+          exit 1
+
+      - name: Verify direct private inbox authorization and broadcast
+        run: >-
+          deno test --allow-env=RPG_TEST_API_URL,RPG_TEST_ANON_KEY,RPG_TEST_SERVICE_ROLE_KEY
+          --allow-net=127.0.0.1,localhost,esm.sh,deno.land
+          supabase/functions/_shared/rpg-invitation-realtime.integration.test.ts
+
+      - name: Exercise invitation lifecycle through the locally served Edge Function
+        run: >-
+          deno test --allow-env=RPG_TEST_API_URL,RPG_TEST_ANON_KEY,RPG_TEST_SERVICE_ROLE_KEY
+          --allow-net=127.0.0.1,localhost,esm.sh,deno.land
+          supabase/functions/_shared/rpg-invitation-edge.integration.test.ts
+
       - name: Stop disposable Supabase stack
         if: always()
         shell: bash
         run: |
+          if [[ -f "$RUNNER_TEMP/rpg-invitation-edge.pid" ]]; then
+            kill "$(cat "$RUNNER_TEMP/rpg-invitation-edge.pid")" 2>/dev/null || true
+          fi
+          if [[ -f "$RUNNER_TEMP/rpg-invitation-probe-user-id" ]]; then
+            probe_user_id="$(cat "$RUNNER_TEMP/rpg-invitation-probe-user-id")"
+            curl --silent --output /dev/null --request DELETE \
+              "$RPG_TEST_API_URL/auth/v1/admin/users/$probe_user_id" \
+              --header "apikey: $RPG_TEST_SERVICE_ROLE_KEY" \
+              --header "Authorization: Bearer $RPG_TEST_SERVICE_ROLE_KEY" || true
+          fi
+          rm -f "$RUNNER_TEMP/rpg-invitation-edge.pid" "$RUNNER_TEMP/rpg-invitation-edge.env" \
+            "$RUNNER_TEMP/rpg-invitation-probe-user-id" "$RUNNER_TEMP/rpg-invitation-probe-user.json" \
+            "$RUNNER_TEMP/rpg-invitation-probe-session.json" "$RUNNER_TEMP/rpg-invitation-edge-probe.json"
           harness_dir="$RUNNER_TEMP/rpg-invitation-supabase"
           if [[ -f "$harness_dir/supabase/config.toml" ]]; then
             supabase --workdir "$harness_dir" stop --no-backup || true

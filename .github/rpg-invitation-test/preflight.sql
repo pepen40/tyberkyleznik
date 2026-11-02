@@ -15,17 +15,53 @@ create table public.players (
   username text not null unique
 );
 
-create table public.realtime_room_access (
-  topic text primary key,
-  room_kind text not null check (room_kind in ('rpg', 'chess')),
-  host_user_id uuid not null,
-  invitee_user_id uuid,
-  guest_user_id uuid,
-  is_public boolean not null default false,
-  created_at timestamptz not null default now(),
-  expires_at timestamptz not null default (now() + interval '2 hours')
-);
+revoke all on public.players from public, anon, authenticated, service_role;
+grant all on public.players to service_role;
+grant usage, select on sequence public.players_id_seq to service_role;
 
-revoke all on public.players, public.realtime_room_access from public, anon, authenticated, service_role;
+-- The cooldown object is defined only in the archived historical migration, while
+-- the current Edge Function still calls it. Reproduce its deployed contract in
+-- this disposable harness; this fixture is not evidence that production matches it.
+create table public.action_cooldowns (
+  user_id uuid not null,
+  action text not null,
+  last_used_at timestamptz not null default now(),
+  primary key (user_id, action)
+);
+alter table public.action_cooldowns enable row level security;
+create policy action_cooldowns_service_role
+  on public.action_cooldowns for all to service_role using (true) with check (true);
+revoke all on public.action_cooldowns from public, anon, authenticated, service_role;
+grant all on public.action_cooldowns to service_role;
+
+create or replace function public.check_action_cooldown(
+  p_user_id uuid,
+  p_action text,
+  p_cooldown_seconds integer
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  allowed boolean;
+begin
+  if p_user_id is null or p_action is null or p_cooldown_seconds < 0 or p_cooldown_seconds > 86400 then
+    return false;
+  end if;
+
+  insert into public.action_cooldowns (user_id, action, last_used_at)
+  values (p_user_id, p_action, now())
+  on conflict (user_id, action) do update
+    set last_used_at = now()
+    where public.action_cooldowns.last_used_at <= now() - make_interval(secs => p_cooldown_seconds)
+  returning true into allowed;
+
+  return coalesce(allowed, false);
+end;
+$function$;
+revoke all on function public.check_action_cooldown(uuid, text, integer) from public, anon, authenticated;
+grant execute on function public.check_action_cooldown(uuid, text, integer) to service_role;
 
 create extension if not exists pgtap with schema extensions;
