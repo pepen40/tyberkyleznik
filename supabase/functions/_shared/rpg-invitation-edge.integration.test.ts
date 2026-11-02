@@ -19,7 +19,7 @@ class Inbox {
     event: InviteEvent['event'];
     resolve: (value: Record<string, unknown>) => void;
     reject: (error: Error) => void;
-    timer: number;
+    timer: ReturnType<typeof setTimeout>;
   }> = [];
 
   constructor(client: SupabaseClient, userId: string) {
