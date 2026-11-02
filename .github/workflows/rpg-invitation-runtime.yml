@@ -74,7 +74,7 @@ jobs:
         working-directory: ${{ runner.temp }}/rpg-invitation-supabase
         run: >-
           supabase start
-          --exclude imgproxy,storage-api,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+          --exclude imgproxy,storage-api,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
 
       - name: Export local Supabase test connection settings
         working-directory: ${{ runner.temp }}/rpg-invitation-supabase
