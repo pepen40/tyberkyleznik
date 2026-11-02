@@ -1,19 +1,15 @@
-# Server-authoritative RPG PvP — PR2A
+# RPG PvP server authority
 
-This branch starts the authoritative engine work for RPG “Скотобойня”.
+## Implemented in this branch
+- Server-only fighter build calculation from the caller's persisted profile.
+- Match creation and joining derive both fighter builds from database state, not client-supplied stats.
+- Participant-only snapshot RPC; match tables remain inaccessible to browser roles.
+- Live-match uniqueness guards and serialized guest join.
+- RPCs are service-role-only, SECURITY DEFINER, and pin an empty search_path.
 
-## Scope of this slice
-- Add a database-side fighter-build calculator that reads the authenticated player's stored upgrades and equipped/owned gear.
-- The client must never provide HP, ATK, crit, defense, or gear bonuses as trusted values.
-- The helper is executable only by service_role and pins an empty search_path.
-- Add pgTAP checks for existence, execution grants, SECURITY DEFINER, and search_path.
-
-## Deliberately not included
-- No production Supabase migration was applied.
-- No Edge Function was deployed or replaced.
-- No client combat or Realtime flow was switched.
-- No PvP points, coins, or rewards were enabled.
-- No technical-win or disconnect result is trusted yet.
-
-## Next slice
-Implement match creation/join and one transactional action endpoint against the existing pvp_matches/action ledger. Reimplement all RPG combat rules server-side (three fighters, attack, defend, class skill, all item effects, poison, Boris, Parashnik, bonus attacks, mana, crit, armor, item consumption and disconnect outcomes) before wiring the client.
+## Not yet safe to enable
+- Action transition engine is not yet implemented.
+- Client combat is still locally calculated and Realtime still broadcasts untrusted action payloads.
+- Item consumption is not yet atomic with combat action resolution.
+- Disconnect adjudication and verified PvP rating rewards are not implemented.
+- Do not deploy these migrations to production until complete integration and full runtime tests pass.
