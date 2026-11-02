@@ -1,5 +1,5 @@
 begin;
-select plan(33);
+select plan(34);
 
 insert into auth.users (id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
 values
@@ -33,9 +33,10 @@ select is((select item_points from public.players where user_id='00000000-0000-4
 select is((select (state #>> '{host,potato_buff}')::boolean from public.pvp_matches where room_topic='room_test00001'),true,'potato buff is persisted in server match state');
 select throws_ok($$select public.apply_rpg_pvp_action('00000000-0000-4000-8000-000000000002','room_test00001','20000000-0000-4000-8000-000000000007',4,'use_item','pvp-potato-1')$$,'P0001',null,'a player cannot consume an opponent inventory item');
 select throws_ok($$select public.apply_rpg_pvp_action('00000000-0000-4000-8000-000000000002','room_test00001','20000000-0000-4000-8000-000000000005',3,'use_item','pvp-potato-1')$$,'P0001',null,'another participant cannot retrieve the original action result');
-select throws_ok($$select public.apply_rpg_pvp_action('00000000-0000-4000-8000-000000000001','room_test00001','20000000-0000-4000-8000-000000000006',4,'attack',null)$$,'P0001',null,'action outside the participant turn is rejected');
+select throws_ok($$select public.apply_rpg_pvp_action('00000000-0000-4000-8000-000000000002','room_test00001','20000000-0000-4000-8000-000000000006',4,'attack',null)$$,'P0001',null,'action outside the participant turn is rejected');
+select lives_ok($$select public.apply_rpg_pvp_action('00000000-0000-4000-8000-000000000001','room_test00001','20000000-0000-4000-8000-000000000009',4,'attack',null)$$,'item use preserves the actor turn so the player can attack afterward');
 select is((select status from public.pvp_matches where room_topic='room_test00001'),'active','client action did not complete the match');
-select is((select version from public.pvp_matches where room_topic='room_test00001'),4::bigint,'each accepted action advances exactly one server version');
+select is((select version from public.pvp_matches where room_topic='room_test00001'),5::bigint,'each accepted action advances exactly one server version');
 select ok(not (select proargnames && array['damage','winner','hp','mana','result']::text[] from pg_proc where oid='public.apply_rpg_pvp_action(uuid,text,uuid,bigint,text,text)'::regprocedure),'RPC accepts no client-supplied combat results');
 update public.pvp_matches set last_action_at = transaction_timestamp() - interval '4 minutes' where room_topic='room_test00001';
 select lives_ok($$select public.expire_rpg_pvp_turn('00000000-0000-4000-8000-000000000001','room_test00001')$$,'server expires an inactive turn using server time');
