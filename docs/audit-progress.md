@@ -198,13 +198,63 @@ credentials were not substituted. Node/Deno/PostgreSQL/pgTAP/concurrent SQL/live
 Auth/Realtime/Edge/two-browser E2E checks are **not run**, not passing. Commands
 and prerequisites are recorded in `integration-verification.md`.
 
+## Historical baseline and environment recovery attempt
+
+Starting HEAD `e03ecd4` and all earlier requested commits were preserved. Local
+SQL Git history, excluded aliases, archive and unreachable commit/blob candidates
+were inspected. No missing original foundation SQL was recovered. There are 19
+local runner files: nine names match the old 34-version applied inventory, ten
+are absent from that snapshot and 25 applied-name SQL sources remain missing.
+Three timestamp aliases have identical Git blobs and must stay excluded. See
+`database-baseline-recovery.md` and `migration-inventory.json` for provenance,
+dependencies, exact missing names and safe recovery options. No fictitious
+baseline or placeholder migration was created.
+
+Source inventory/provenance, prepared policy-gate tests and rollout corrections
+were saved in commit `5a22b4b`. No SQL migration content changed.
+
+Fresh MCP list_migrations/list_tables failed with OAuth token-refresh parsing
+errors. No production SQL was issued as a fallback. The current production schema
+is therefore not reverified. Earlier applied-version observations remain dated.
+
+Safe portable-tool download probes for Node checksums, Deno releases and Supabase
+CLI releases all failed to connect. No installer/binary was downloaded or run.
+Docker CLI was absent and its daemon pipe was unavailable; WSL did not list a usable distribution.
+No system virtualization, PATH or execution-policy setting was changed.
+
+A hidden headless Chrome probe used a new workspace-only profile and local
+non-network HTML. It emitted no DOM and failed with `GPU process isn't usable`;
+browser execution/E2E is not verified. No sandbox protection was disabled.
+
+Native metadata checks observed 44 inventory entries, zero duplicate versions,
+25 missing SQL files, 19 matching local Git blobs and bootstrap_ready=false. Both new PowerShell files parse
+without syntax errors. Their actual execution was blocked by this host's script
+execution policy; their three test cases are **not run**, not passing. They are
+added to the existing Ubuntu CI workflow. Earlier unchanged V8 tests were not rerun.
+
+The isolated backend was not created. Full migrations, pgTAP, SQL concurrency,
+Deno, live Auth/Realtime/Edge and two-browser E2E remain not run for the recorded
+environment/baseline reasons. See the updated integration verification document.
+
+## Prepared local browser scenario
+
+Added an optional two-context Playwright runner and exact local commands in
+`browser-e2e-local.md`. Its test server rewrites the backend URL/public key only
+in memory, restricts endpoints to loopback and rejects a service-role JWT.
+The prepared scenario covers chess invitation authorization, missed-move recovery,
+chat, resignation, invitation blocking, tabs/FPS and RPG PvP action replay;
+real timeout observation is an explicit opt-in. V8 syntax compilation is not
+Node or browser execution. None of these E2E assertions has been observed passing.
+
 ## Remaining production gates
 
 - SQL source corrections and regression harness are present; run PostgreSQL
   race/deadline tests and review runtime results before rollout.
-- Production was missing seven PvP migrations at the read-only snapshot; two
-  additional corrective versions are now pending. There are also 25 historical versions
-  absent from tracked files. Economy baseline and full local runtime proof remain missing.
+- Ten local migrations are absent from the earlier read-only applied-name snapshot.
+  This includes the seven initial PvP migrations, two corrective versions and the
+  authoritative invitation ledger. Current production status is unverified.
+  There are also 25 historical versions absent from tracked files. Economy
+  baseline and full local runtime proof remain missing.
 - Gameplay: review remaining RPG combat/arcade timers and PvP callbacks; verify
   chess delivery with real peers, durable recovery and server-mediated invitations.
 - Browser checks: real Web Audio, mobile rendering, pointer capture, CDN/library

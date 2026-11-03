@@ -24,7 +24,9 @@ jobs:
         with:
           deno-version: v2.x
       - name: Check browser JavaScript syntax
-        run: node --check script.js
+        run: |
+          node --check script.js
+          node --check tests/e2e/local-online.cjs
       - name: Test frontend widgets
         run: node tests/run-frontend-widgets.cjs
       - name: Test RPG async lifecycle
