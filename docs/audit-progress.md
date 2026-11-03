@@ -30,13 +30,31 @@ security_stage_review and stage_qa. The first frontend/gameplay turns and the
 last QA turn hit usage limits; their incomplete reviews are not sign-off.
 The security and Supabase reviewers returned completed read-only reports.
 
+## Completed source changes: offline RPG asynchronous lifecycle
+
+Commit preceding this stage: `1d66c4f` (widgets, Edge errors and rollout notes).
+Win responses and next-floor timers are bound to the original fighter, enemy and
+authenticated account. Item responses reconcile successful consumption for the
+same account, but do not apply effects or unlock turns in a different battle.
+Late responses from another account cannot overwrite its profile/inventory.
+
+`tests/rpg-lifecycle.js` executes the actual extracted game functions with deferred
+RPC and timer fixtures. Eight cases passed in functions.exec V8. The old win
+function reproduced the escaped-battle floor mutation when run with the new
+capture helper supplied solely to keep the fixture compatible; the old game
+function itself was unchanged. Tests cover successful current-battle progression
+and healing as well as stale success, failure, timer and account-change cases.
+`script.js` compiled in V8 and `git diff --check` passed. The Node runner is wired
+into CI but was not executed locally because Node is unavailable. This does not
+verify live reward validation, online PvP callbacks or every other combat timer.
+
 ## Remaining release blockers / next areas
 
 - SQL: serialize cross-role create/join per participant and enforce timeout in
   the same transaction/lock as action application; add actual PostgreSQL race tests.
 - Production has seven missing PvP migrations and 25 applied historical versions
   absent from tracked files. Economy baseline and full local runtime proof remain missing.
-- Gameplay: guard late RPG network/timer callbacks, repair online chess reconnect,
+- Gameplay: review other RPG combat and online PvP callbacks; repair online chess reconnect,
   resignation, delivery/synchronization and invitation timeout/settings handling.
 - Browser checks: real Web Audio, mobile rendering, pointer capture, CDN/library
   availability, two-account chess and RPG flows remain unverified.

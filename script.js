@@ -2529,16 +2529,27 @@ function enemyTurn(isPlayerDefending = false) {
     }
 }
 
+function captureRpgBattle() {
+    const fighter = rpgChar;
+    const enemy = rpgEnemy;
+    const userId = currentAuthUserId;
+    return () => !!fighter && rpgChar === fighter && rpgEnemy === enemy && currentAuthUserId === userId;
+}
+
 async function winRpg() {
+    const isCurrentBattle = captureRpgBattle();
+    if (!isCurrentBattle()) return;
     let reward = Math.min(100, 10 + (rpgFloorMain * 3));
     const wonFloorMain = rpgFloorMain;
     try {
         const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'rpg_win', username: currentUser, data: { floorMain: wonFloorMain, floorSub: rpgFloorSub, charType: currentCharType } } });
+        if (!isCurrentBattle()) return;
         if (!error && data && data.success) { currentCoins = data.newCoins; if (data.newUpgrades) currentUpgrades = data.newUpgrades; if (data.newMaxFloors) currentMaxFloors = data.newMaxFloors; updateUI(); addLog(`Победа! +${data.earned} монет.${data.bossBonus ? ` БОНУС БОССА: +${data.bossBonus}!` : ''}`); }
         else if (data && data.rewardPaused) { addLog('Победа! Но монеты и серверный рекорд этажа временно не сохраняются до проверки результата сервером.'); }
         else if (data && data.error) { addLog(`Сервер: ${data.error}`); }
-    } catch(e) { addLog(`Ошибка сети: ${e.message}`); }
+    } catch(e) { if (isCurrentBattle()) addLog(`Ошибка сети: ${e.message}`); }
     finally {
+        if (!isCurrentBattle()) return;
         const gearState = ensureRpgGear();
         const equippedCharm = gearState.equipped[currentCharType]?.charm;
         if (equippedCharm === 'phoenix_heart' && rpgChar && rpgChar.hp > 0) {
@@ -2559,7 +2570,10 @@ async function winRpg() {
             }
         }
         rpgMana = Math.min(rpgMaxMana, rpgMana + 30);
-        enemyTurnTimeout = setTimeout(() => { addLog(`=== ЭТАЖ ${rpgFloorMain}.${rpgFloorSub} ===`); spawnEnemy(); }, 2000);
+        enemyTurnTimeout = setTimeout(() => {
+            if (!isCurrentBattle()) return;
+            addLog(`=== ЭТАЖ ${rpgFloorMain}.${rpgFloorSub} ===`); spawnEnemy();
+        }, 2000);
     }
 }
 
@@ -3248,7 +3262,9 @@ function openItemMenu() {
 function closeItemMenu() { document.getElementById('rpg-item-modal').classList.add('hidden'); }
 
 async function useItemInBattle(itemName) {
-    if (!isPlayerTurn) return;
+    const isCurrentBattle = captureRpgBattle();
+    const inventoryOwner = currentAuthUserId;
+    if (!isPlayerTurn || !isCurrentBattle()) return;
     rpgBonusAttacks = 0;
     const itemIndex = currentInventory.findIndex(i => i.name === itemName);
     if (itemIndex === -1) return;
@@ -3267,10 +3283,19 @@ async function useItemInBattle(itemName) {
     animateItemUse(item, isDamaging);
     try {
         const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'consume_item', username: currentUser, data: { item_id: item.id } } });
-        if (!error && data.success) { currentInventory = data.newInventory; currentItemPoints = data.newItemPoints; updateUI(); } 
-        else { addLog("Ошибка при использовании."); isPlayerTurn = true; rpgItemUsed = false; checkButtons(); return; }
-    } catch(e) { addLog("Фатальная ошибка сервера."); isPlayerTurn = true; rpgItemUsed = false; checkButtons(); return; }
+        if (!error && data?.success) {
+            if (currentAuthUserId === inventoryOwner) { currentInventory = data.newInventory; currentItemPoints = data.newItemPoints; updateUI(); }
+        } else {
+            if (isCurrentBattle()) { addLog("Ошибка при использовании."); isPlayerTurn = true; rpgItemUsed = false; checkButtons(); }
+            return;
+        }
+    } catch(e) {
+        if (isCurrentBattle()) { addLog("Фатальная ошибка сервера."); isPlayerTurn = true; rpgItemUsed = false; checkButtons(); }
+        return;
+    }
+    if (!isCurrentBattle()) return;
     const applyEffect = () => {
+        if (!isCurrentBattle()) return;
         if (item.name === 'хуйня') { const heal = percentOf(rpgChar.maxHp, 15); rpgChar.hp = Math.min(rpgChar.maxHp, rpgChar.hp + heal); addLog(`Использовал ${item.name}: +${heal} HP (15% максимального здоровья).`); playSoundEffect('heal'); }
         else if (item.name === 'картофель') { rpgPotatoBuff = true; addLog('Сожрал картофель: следующий обычный удар нанесёт на 15% больше урона!'); }
         else if (item.name === 'голова барана') { 

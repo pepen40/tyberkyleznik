@@ -24,6 +24,8 @@ jobs:
         run: node --check script.js
       - name: Test frontend widgets
         run: node tests/run-frontend-widgets.cjs
+      - name: Test RPG async lifecycle
+        run: node tests/run-rpg-lifecycle.cjs
       - name: Check Supabase Edge Function
         run: deno check supabase/functions/award-coins/index.ts supabase/functions/rpg-pvp/index.ts
       - name: Test PvP error responses
