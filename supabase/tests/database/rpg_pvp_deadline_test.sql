@@ -26,6 +26,10 @@ values
 
 select lives_ok($$select public.create_rpg_pvp_match('00000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','room_test00001','ashab')$$,'create fixture');
 select lives_ok($$select public.join_rpg_pvp_match('00000000-0000-4000-8000-000000000002','room_test00001','apostol')$$,'join fixture');
+-- Defense costs 50 mana. Keep that server rule enabled while testing deadlines;
+-- the fixture must fund its first valid action before checking exact retries.
+update public.pvp_matches set state=jsonb_set(state,'{host,mp}','50'::jsonb,true)
+where room_topic='room_test00001';
 select lives_ok($$select public.apply_rpg_pvp_action('00000000-0000-4000-8000-000000000001','room_test00001','20000000-0000-4000-8000-000000000001',1,'defend',null)$$,'an on-time turn still succeeds');
 select is(public.apply_rpg_pvp_action('00000000-0000-4000-8000-000000000001','room_test00001','20000000-0000-4000-8000-000000000001',1,'defend',null)->>'duplicate','true','exact retry is idempotent');
 

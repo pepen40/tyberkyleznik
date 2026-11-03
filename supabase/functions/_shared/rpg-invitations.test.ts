@@ -191,7 +191,7 @@ Deno.test('browser deduplicates room invitations and joins the same room id on a
   assert(source.includes("action: 'close_rpg_invitation'"));
 });
 
-Deno.test('acceptance joins the same server match before acknowledging the host', async () => {
+Deno.test('acceptance authorizes the recipient before joining and confirms the ready match after joining', async () => {
   const source = await Deno.readTextFile(new URL('../../../script.js', import.meta.url));
   const joinStart = source.indexOf('async function joinPvpRoom(roomId, charType)');
   const joinEnd = source.indexOf('\nasync function leavePvpRoom(', joinStart);
@@ -203,7 +203,13 @@ Deno.test('acceptance joins the same server match before acknowledging the host'
   assert(joinRoom.includes('myRoomId = roomId'));
   assert(joinRoom.includes('return true;'));
   assert(accept.includes('joined = await joinPvpRoom(roomId, charType)'));
-  assert(accept.indexOf('if (joined && myRoomId === roomId)') < accept.indexOf("sendRpgInvitationResponse(roomId, 'accepted')"));
+  const authorization = accept.indexOf("const accepted = await sendRpgInvitationResponse(roomId, 'accepted')");
+  const join = accept.indexOf('joined = await joinPvpRoom(roomId, charType)');
+  const ready = accept.indexOf('if (joined && myRoomId === roomId)');
+  const confirmation = accept.indexOf("await sendRpgInvitationResponse(roomId, 'accepted')", ready);
+  assert(authorization >= 0 && authorization < join);
+  assert(accept.indexOf('if (!accepted)') > authorization && accept.indexOf('if (!accepted)') < join);
+  assert(ready > join && confirmation > ready);
   assert(!joinRoom.includes("event: 'start_game'"));
   assert(!joinRoom.includes("event: 'join_request'"));
 });
@@ -266,9 +272,15 @@ Deno.test('server-authoritative PvP ignores client combat broadcasts', async () 
   assert(!source.includes("action: 'pvp_result'"));
   assert(source.includes("invokeRpgPvp('submit_action'"));
 });
-Deno.test('RPG changes keep shared chat and chess invitation channels intact', async () => {
+Deno.test('shared chat remains and chess invitations use the authenticated server adapter', async () => {
   const source = await Deno.readTextFile(new URL('../../../script.js', import.meta.url));
-  assert(source.includes("supabaseClient.channel('chess-invitations'"));
+  assert(!source.includes("supabaseClient.channel('chess-invitations'"));
+  assert(source.includes('chessInviteChannel = createServerChessInvitations({'));
+  const adapterStart = source.indexOf('chessInviteChannel = createServerChessInvitations({');
+  const adapter = source.slice(adapterStart, source.indexOf('});', adapterStart));
+  assert(adapter.includes('supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body })'));
+  assert(adapter.includes('account: () => currentAuthUserId'));
+  assert(source.includes("action: 'game_invitation'"));
   assert(source.includes("event: 'chess_invite'"));
   assert(source.includes("event: 'site_message'"));
 });

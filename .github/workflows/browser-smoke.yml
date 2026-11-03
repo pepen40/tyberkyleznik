@@ -6,7 +6,9 @@ on:
   workflow_dispatch:
 jobs:
   smoke:
-    runs-on: ubuntu-24.04
+    # Ubuntu 24.04 AppArmor blocks the downloaded Chromium's user namespaces.
+    # Keep Chromium's sandbox enabled on the supported 22.04 runner instead.
+    runs-on: ubuntu-22.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
