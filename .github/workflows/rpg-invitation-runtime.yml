@@ -8,6 +8,8 @@ on:
     branches: [main]
     paths:
       - supabase/migrations/20261102130000_add_private_rpg_invitation_inbox.sql
+      - supabase/migrations/20261103170000_authoritative_game_invitations.sql
+      - supabase/tests/database/game_invitation_security_test.sql
       - supabase/migrations/20261101145407_secure_realtime_room_membership.sql
       - supabase/migrations/20261101145936_move_room_membership_management_to_edge.sql
       - supabase/migrations/20261101152713_validate_realtime_room_invitations.sql
@@ -22,6 +24,8 @@ on:
   push:
     paths:
       - supabase/migrations/20261102130000_add_private_rpg_invitation_inbox.sql
+      - supabase/migrations/20261103170000_authoritative_game_invitations.sql
+      - supabase/tests/database/game_invitation_security_test.sql
       - supabase/migrations/20261101145407_secure_realtime_room_membership.sql
       - supabase/migrations/20261101145936_move_room_membership_management_to_edge.sql
       - supabase/migrations/20261101152713_validate_realtime_room_invitations.sql
@@ -79,6 +83,8 @@ jobs:
           cp "$GITHUB_WORKSPACE/supabase/migrations/20261101145936_move_room_membership_management_to_edge.sql" supabase/migrations/
           cp "$GITHUB_WORKSPACE/supabase/migrations/20261101152713_validate_realtime_room_invitations.sql" supabase/migrations/
           cp "$GITHUB_WORKSPACE/supabase/migrations/20261102130000_add_private_rpg_invitation_inbox.sql" supabase/migrations/
+          cp "$GITHUB_WORKSPACE/supabase/migrations/20261103170000_authoritative_game_invitations.sql" supabase/migrations/
+          cp "$GITHUB_WORKSPACE/supabase/tests/database/game_invitation_security_test.sql" supabase/tests/database/
           cp "$GITHUB_WORKSPACE/supabase/tests/database/rpg_invitation_inbox_test.sql" supabase/tests/database/
           cp -R "$GITHUB_WORKSPACE/supabase/functions/award-coins" supabase/functions/
           cp -R "$GITHUB_WORKSPACE/supabase/functions/_shared" supabase/functions/

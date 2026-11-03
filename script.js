@@ -601,6 +601,7 @@ async function finishAuthLogin(user) {
     if (currentAuthUserId !== user.id) window.resetChessSession?.();
     currentUser = data.username;
     currentAuthUserId = user.id;
+    await window.syncServerInviteSettings?.();
     currentHighScore = data.max_score || 0;
     currentCoins = data.coins || 0;
     currentInventory = data.inventory || [];
@@ -1786,6 +1787,12 @@ async function expireOutgoingRpgChallenge(roomId) {
 
 function listenForChallenges(channel = rpgInvitationChannel) {
     if (!channel) return;
+    channel.on('broadcast', { event: 'challenge_cancelled' }, message => {
+        const data = message?.payload;
+        if (channel !== rpgInvitationChannel || data?.targetUserId !== currentAuthUserId || data?.roomId !== pendingChallengeRoomId) return;
+        pendingChallengeRoomId = null; pendingChallengeHost = null;
+        document.getElementById('pvp-receive-modal').classList.add('hidden');
+    });
     channel.on('broadcast', { event: 'challenge' }, async message => {
         if (channel !== rpgInvitationChannel) return;
         const data = message?.payload;
@@ -1806,6 +1813,7 @@ function listenForChallenges(channel = rpgInvitationChannel) {
             processingIncomingChallengeRoomId = null;
             return;
         }
+        if (channel !== rpgInvitationChannel || data.targetUserId !== currentAuthUserId) return;
         if (error || !invitation?.success || invitation.kind !== 'rpg') {
             processingIncomingChallengeRoomId = null;
             return;
@@ -1871,6 +1879,11 @@ async function executeAcceptChallenge() {
     if (receiveStatus) receiveStatus.textContent = 'Подключаемся к комнате…';
     const charType = document.getElementById('pvp-receive-char-select').value;
     let joined = false;
+    if (!await sendRpgInvitationResponse(roomId, 'accepted')) {
+        document.getElementById('pvp-receive-modal').classList.remove('hidden');
+        if (receiveStatus) receiveStatus.textContent = 'Сервер не подтвердил принятие приглашения.';
+        return;
+    }
     try { joined = await joinPvpRoom(roomId, charType); } catch (_) {}
     if (joined && myRoomId === roomId) {
         pendingChallengeRoomId = null;
@@ -4628,6 +4641,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 await chessInviteChannel.send({ type: 'broadcast', event: 'chess_invite', payload: {
                     id: pending.id, from: currentUser, target, expiresAt: pending.expiresAt,
                 } });
+                const serverDeadline = chessInviteChannel.deadline?.(pending.id);
+                if (current() && Number.isFinite(serverDeadline)) {
+                    pending.expiresAt = serverDeadline;
+                    clearTimeout(pending.expiryTimer);
+                    pending.expiryTimer = setTimeout(() => {
+                        if (!current()) return;
+                        outgoingInvite = null; outgoingStatus.textContent = 'Серверный срок приглашения истёк.';
+                    }, Math.max(0, serverDeadline - Date.now()));
+                }
             } catch (_) {}
             if (!current()) return;
             outgoingStatus.textContent = pending.received ? 'Получение подтверждено. Ожидаем решения…' : 'Ожидаем подтверждения доставки…';
@@ -4704,6 +4726,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     backButton.addEventListener('click', () => {
+        if (outgoingInvite) {
+            const invite = outgoingInvite;
+            outgoingInvite = null; clearTimeout(invite.timer); clearTimeout(invite.expiryTimer);
+            chessInviteChannel?.cancel?.(invite.id);
+        }
         panel.classList.add('hidden');
         menu.classList.remove('hidden');
     });
@@ -4724,8 +4751,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    chessInviteChannel = supabaseClient.channel('chess-invitations', {
-        config: { broadcast: { self: false }, private: true }
+    chessInviteChannel = createServerChessInvitations({
+        invoke: body => supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body }),
+        account: () => currentAuthUserId, username: () => currentUser,
+        setTimer: setTimeout, clearTimer: clearTimeout,
     });
 
     chessInviteChannel
@@ -4737,7 +4766,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.id !== outgoingInvite.id) return;
             if (data.target !== currentUser) return;
             if (data.from !== outgoingInvite.target || outgoingInvite.account !== currentAuthUserId || outgoingInvite.expiresAt <= Date.now()) return;
-            if (!['received', 'accepted', 'declined', 'disabled', 'busy', 'expired'].includes(data.reason) || data.accepted !== (data.reason === 'accepted')) return;
+            if (!['received', 'accepted', 'declined', 'disabled', 'busy', 'expired', 'cancelled'].includes(data.reason) || data.accepted !== (data.reason === 'accepted')) return;
             if (data.reason === 'received') {
                 outgoingInvite.received = true;
                 outgoingStatus.textContent = 'Получение подтверждено. Ожидаем решения…';
@@ -4777,6 +4806,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const chessToggle = document.getElementById('chess-invites-toggle');
 
     if (!rpgToggle || !chessToggle) return;
+    let serverInviteSettings = null;
+    window.syncServerInviteSettings = async (save = false) => {
+        if (!currentAuthUserId) return false;
+        const account = currentAuthUserId;
+        try {
+            const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: {
+                action: 'game_invitation', data: { op: 'settings', value: save ? JSON.stringify({ rpg: rpgToggle.checked, chess: chessToggle.checked }) : '' }
+            } });
+            if (account !== currentAuthUserId) return false;
+            if (error || !data?.success) throw new Error('Настройки приглашений не сохранены на сервере.');
+            serverInviteSettings = { rpg: data.rpg === true, chess: data.chess === true };
+            rpgToggle.checked = serverInviteSettings.rpg; chessToggle.checked = serverInviteSettings.chess;
+            localStorage.setItem('rpgInvitesEnabled', String(rpgToggle.checked));
+            localStorage.setItem('chessInvitesEnabled', String(chessToggle.checked));
+            return true;
+        } catch (_) {
+            if (account !== currentAuthUserId) return false;
+            if (serverInviteSettings) { rpgToggle.checked = serverInviteSettings.rpg; chessToggle.checked = serverInviteSettings.chess; }
+            const info = document.getElementById('chess-outgoing-status');
+            if (info) info.textContent = 'Не удалось подтвердить настройки приглашений. Проверьте соединение.';
+            return false;
+        }
+    };
 
     rpgToggle.checked =
         localStorage.getItem('rpgInvitesEnabled') !== 'false';
@@ -4785,6 +4837,7 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.getItem('chessInvitesEnabled') !== 'false';
 
     rpgToggle.addEventListener('change', () => {
+        window.syncServerInviteSettings(true);
         localStorage.setItem(
             'rpgInvitesEnabled',
             String(rpgToggle.checked)
@@ -4797,6 +4850,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     chessToggle.addEventListener('change', () => {
+        window.syncServerInviteSettings(true);
         localStorage.setItem(
             'chessInvitesEnabled',
             String(chessToggle.checked)

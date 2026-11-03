@@ -71,6 +71,7 @@ The dry run must show exactly these unapplied migrations, in order, and no other
 20261103140000_rpg_pvp_turn_timeout.sql
 20261103150000_serialize_rpg_pvp_admission.sql
 20261103160000_atomic_rpg_pvp_deadline.sql
+20261103170000_authoritative_game_invitations.sql
 ```
 
 Stop if the pending list differs. Save the dry-run output for review. After approval, apply only the reviewed migration set:

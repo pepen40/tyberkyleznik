@@ -1,6 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { deliverRpgInvitation, respondToRpgInvitation, type RpgInvitationDependencies } from '../_shared/rpg-invitations.ts'
 import { isServerVerifiedRpgRewardClaim } from '../_shared/reward-policy.ts'
 import { validateMarketplaceSale } from '../_shared/marketplace-policy.ts'
 
@@ -169,11 +168,20 @@ serve(async (req) => {
       'consume_item', 'buy_upgrade', 'buy_gear', 'equip_gear',
       'register_room_membership', 'join_room_membership', 'validate_room_invitation', 'send_chat_message',
       'register_rpg_invitation', 'deliver_rpg_invitation', 'respond_rpg_invitation', 'close_rpg_invitation',
-      'get_player_profile'
+      'get_player_profile', 'game_invitation'
     ]);
     if (!allowedActions.has(action)) {
       return new Response(JSON.stringify({ success: false, error: 'Неизвестное действие.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400
+      });
+    }
+    if (action === 'game_invitation') {
+      const { data: result, error: commandError } = await supabaseAdmin.rpc('game_invitation_command', {
+        p_user_id: authData.user.id, p_op: String(data?.op || ''),
+        p_topic: String(data?.topic || ''), p_value: String(data?.value || '')
+      });
+      return new Response(JSON.stringify(commandError ? { success: false, error: 'Приглашение недоступно или действие запрещено.' } : result), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: commandError ? 400 : 200
       });
     }
     const { data: player, error } = await supabaseAdmin
@@ -277,6 +285,16 @@ serve(async (req) => {
         p_is_public: false
       });
       if (registerError) throw new Error('RPG invitation registration failed.');
+      if (result?.success) {
+        const { data: created, error: createError } = await supabaseAdmin.rpc('game_invitation_command', {
+          p_user_id: authData.user.id, p_op: 'create', p_topic: String(data?.topic || ''), p_value: ''
+        });
+        if (createError || !created?.success || created?.invitation?.status === 'disabled') {
+          return new Response(JSON.stringify({ success: false, error: 'Игрок запретил приглашения или приглашение недоступно.' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400
+          });
+        }
+      }
       return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: result?.success ? 200 : 400
@@ -285,56 +303,32 @@ serve(async (req) => {
 
     if (action === 'deliver_rpg_invitation' || action === 'respond_rpg_invitation' || action === 'close_rpg_invitation') {
       const roomId = String(data?.roomId || '');
-      const dependencies: RpgInvitationDependencies = {
-        getPeer: async (userId, topic, role) => {
-          const { data: result, error: peerError } = await supabaseAdmin.rpc('get_rpg_invitation_peer', {
-            p_user_id: userId,
-            p_topic: topic,
-            p_role: role
-          });
-          if (peerError) throw new Error('Could not verify RPG invitation.');
-          return result;
-        },
-        joinRoom: async (userId, topic) => {
-          const { data: result, error: joinError } = await supabaseAdmin.rpc('join_realtime_room', {
-            p_user_id: userId,
-            p_topic: topic
-          });
-          return !joinError && result?.success === true;
-        },
-        closeInvitation: async (userId, topic, role) => {
-          const { data: closed, error: closeError } = await supabaseAdmin.rpc('close_rpg_invitation', {
-            p_user_id: userId,
-            p_topic: topic,
-            p_role: role
-          });
-          return !closeError && closed === true;
-        },
-        broadcast: (topic, event, payload) => broadcastPrivateRealtime(supabaseAdmin, topic, event, payload)
-      };
-
-      try {
-        if (action === 'deliver_rpg_invitation') {
-          await deliverRpgInvitation(authData.user.id, roomId, player.username, dependencies);
-        } else if (action === 'respond_rpg_invitation') {
-          await respondToRpgInvitation(authData.user.id, player.username, roomId, String(data?.status || ''), dependencies);
-        } else {
-          const { data: closed, error: closeError } = await supabaseAdmin.rpc('close_rpg_invitation', {
-            p_user_id: authData.user.id,
-            p_topic: roomId,
-            p_role: 'host'
-          });
-          if (closeError || closed !== true) throw new Error('RPG invitation could not be closed.');
-        }
-        return new Response(JSON.stringify({ success: true }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200
-        });
-      } catch (invitationError) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: invitationError instanceof Error ? invitationError.message : 'RPG invitation failed.'
-        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 });
+      const op = action === 'deliver_rpg_invitation' ? 'create' : action === 'close_rpg_invitation' ? 'cancel' : 'reply';
+      const { data: state, error: invitationError } = await supabaseAdmin.rpc('game_invitation_command', {
+        p_user_id: authData.user.id, p_op: op, p_topic: roomId, p_value: String(data?.status || '')
+      });
+      const invitation = state?.invitation;
+      if (invitationError || !state?.success || invitation?.kind !== 'rpg') {
+        return new Response(JSON.stringify({ success: false, error: 'RPG invitation is unavailable.' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 });
       }
+      if (op === 'create' && ['pending', 'received'].includes(invitation.status)) {
+        await broadcastPrivateRealtime(supabaseAdmin, 'rpg-invitations:' + invitation.invitee_id, 'challenge', {
+          roomId, targetUserId: invitation.invitee_id, host: invitation.host
+        });
+      } else if (op === 'cancel' && invitation.status === 'cancelled') {
+        await broadcastPrivateRealtime(supabaseAdmin, 'rpg-invitations:' + invitation.invitee_id, 'challenge_cancelled', {
+          roomId, targetUserId: invitation.invitee_id
+        });
+      } else if (op === 'reply' || op === 'create') {
+        await broadcastPrivateRealtime(supabaseAdmin, 'rpg-invitations:' + invitation.host_id, 'challenge_response', {
+          roomId, targetUserId: invitation.host_id, fromUserId: invitation.invitee_id,
+          from: invitation.invitee, status: invitation.status
+        });
+      }
+      return new Response(JSON.stringify({ success: true, invitation }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200
+      });
     }
 
     // Room membership is managed only after this function has verified the caller's JWT.

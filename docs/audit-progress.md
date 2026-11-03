@@ -148,6 +148,27 @@ coverage or production readiness is made. Important protocol limits:
 
 ## Outstanding release checks
 
+## Server invitation security source stage
+
+Verified all requested predecessor commits are ancestors of HEAD and started
+with a clean working copy. The earlier shared-bus limitation is now corrected in
+source: `20261103170000` adds an actor-bound invitation ledger/preferences,
+terminal-state and server-time checks, acceptance-gated room admission and a
+restrictive policy retiring the chess bus and preventing client RPG inbox writes.
+The Edge command derives the actor solely from validated Auth; RPG events are
+built from canonical SQL records. Chess uses filtered server polling rather than
+browser-authored shared broadcasts. Client settings synchronize with the server.
+See `invitation-security.md` for findings, scope, rollback and rollout dependency.
+
+Observed: five authentication-boundary fixtures and six affected chess invitation
+fixtures passed in V8; old spoofed acceptance was reproduced with the actual
+frozen `18f28dc` handler before testing the new boundary. Main JavaScript and the
+protocol compile; diff whitespace checks pass. Added 20 SQL assertions to the
+isolated invitation CI workflow. SQL tests, Node, Deno, real Realtime/Edge and
+two-browser E2E have **not** been run. Source changes are not production proof.
+
+## Current release blockers
+
 - SQL source corrections and regression harness are present; run PostgreSQL
   race/deadline tests and review runtime results before rollout.
 - Production was missing seven PvP migrations at the read-only snapshot; two

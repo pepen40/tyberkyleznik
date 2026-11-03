@@ -52,9 +52,10 @@ select ok(
     select 1 from pg_policy
     where polrelid = 'realtime.messages'::regclass
       and polcmd in ('a', 'w', '*')
+      and polpermissive
       and coalesce(pg_get_expr(polwithcheck, polrelid), '') like '%rpg-invitations:%'
   ),
-  'clients have no RLS policy to send directly to invitation inboxes'
+  'clients have no permissive RLS policy to send directly to invitation inboxes (restrictive deny policies do not grant access)'
 );
 
 select * from finish();

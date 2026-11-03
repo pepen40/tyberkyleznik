@@ -84,3 +84,63 @@ function createChessDelivery(options) {
     isActive: current,
   };
 }
+
+// Compatibility adapter for the existing chess invitation UI. No shared
+// Realtime topic is opened: all event-shaped data comes from authenticated SQL.
+function createServerChessInvitations(options) {
+  const handlers = new Map();
+  let timer = null, polling = false, stopped = false, readyAccount = null, lastDeadline = null, onState = () => {};
+  async function command(op, topic = '', value = '') {
+    const result = await options.invoke({ action: 'game_invitation', data: { op, topic, value } });
+    if (result.error || !result.data?.success) throw new Error('Invitation server unavailable');
+    return result.data;
+  }
+  function emit(event, payload) { handlers.get(event)?.({ payload }); }
+  async function poll() {
+    if (stopped || polling) return;
+    polling = true;
+    const account = options.account();
+    try {
+      if (!account) return;
+      const result = await command('list');
+      if (stopped || options.account() !== account) return;
+      if (readyAccount !== account) { readyAccount = account; onState('SUBSCRIBED'); }
+      for (const row of result.invitations || []) {
+        if (row.kind !== 'chess' || !row.topic?.startsWith('chess-room-')) continue;
+        const id = row.topic.slice('chess-room-'.length);
+        if (row.invitee_id === account && ['pending','received'].includes(row.status)) {
+          // Translate server lifetime, not the sender browser's clock.
+          const remaining = Math.max(0, Date.parse(row.expires_at) - Date.parse(result.server_now));
+          if (remaining) emit('chess_invite', { id, target: options.username(), from: row.host, expiresAt: Date.now() + Math.min(30000, remaining) });
+        } else if (row.host_id === account && row.status !== 'pending') {
+          emit('chess_invite_answer', { id, target: options.username(), from: row.invitee,
+            accepted: row.status === 'accepted', reason: row.status });
+        }
+      }
+    } catch (_) { if (!stopped && options.account() === account) onState('CHANNEL_ERROR'); }
+    finally {
+      polling = false;
+      if (!stopped) timer = options.setTimer(poll, 2000);
+    }
+  }
+  return {
+    on(_type, filter, fn) { handlers.set(filter.event, fn); return this; },
+    subscribe(fn) { onState = fn; poll(); return this; },
+    async send(message) {
+      const account = options.account(), packet = message.payload;
+      if (!account || !packet || stopped) return 'error';
+      try {
+        if (message.event === 'chess_invite') {
+          const state = await command('create', 'chess-room-' + packet.id);
+          lastDeadline = { id: packet.id, time: Date.now() + Math.max(0, Date.parse(state.invitation.expires_at) - Date.parse(state.server_now)) };
+        }
+        else if (message.event === 'chess_invite_answer') await command('reply', 'chess-room-' + packet.id, packet.reason || (packet.accepted ? 'accepted' : 'declined'));
+        else return 'error';
+        return !stopped && options.account() === account ? 'ok' : 'error';
+      } catch (_) { return 'error'; }
+    },
+    deadline(id) { return lastDeadline?.id === id ? lastDeadline.time : null; },
+    async cancel(id) { try { await command('cancel', 'chess-room-' + id); } catch (_) {} },
+    stop() { stopped = true; if (timer !== null) options.clearTimer(timer); },
+  };
+}
