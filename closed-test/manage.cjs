@@ -113,8 +113,11 @@ async function main() {
     if(process.env.GITHUB_ACTIONS!=='true') throw Error('seed-ci is only for ephemeral CI accounts');
     const users=[];for(const [name,allowed] of [['tester_a',true],['tester_b',true],['observer',true],['outsider',false]]) users.push(await addUser(directory,name,allowed));
     const values=localSettings(directory);
+    const signup=await fetch(values.API_URL+'/auth/v1/signup',{method:'POST',headers:{apikey:values.ANON_KEY,'Content-Type':'application/json'},body:JSON.stringify({email:crypto.randomBytes(12).toString('hex')+'@username.pepen.invalid',password:crypto.randomBytes(24).toString('base64url')})});
+    const signupResult=await signup.json();
+    if(signup.ok || signupResult.error_code!=='signup_disabled') throw Error('The isolated Auth server did not enforce disabled public signup');
     fs.writeFileSync(path.join(directory,'ci-users.json'),JSON.stringify({url:values.API_URL,publicKey:values.ANON_KEY,users}),{mode:0o600});
-    return console.log('Four disposable CI identities created; credentials are NOT logged or uploaded');
+    return console.log('Four disposable identities authenticated; public signup rejected by Auth; credentials are NOT logged or uploaded');
   }
   if(operation==='add-user') {
     if(!process.stdout.isTTY) throw Error('add-user must be run in a private interactive terminal');
