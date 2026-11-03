@@ -46,6 +46,20 @@ async function runAsyncRoomLifecycleTests(source, reportFailures = false) {
     const pending=fn(false);env.myRoomId='new-room';env.pvpMatchId='new-match';resolve();await pending;
     if(env.myRoomId!=='new-room')throw new Error('Late removal cleared replacement room');
   });
+  for(const reject of [false,true]) await test('private RPG registration '+(reject?'failure':'denial')+' cannot clear another account room',async()=>{
+    let resolve,rejectRequest;
+    const noop=()=>{};
+    const env={currentAuthUserId:'old',currentUser:'old',myRoomId:null,pendingChallengeTarget:'peer',pendingOutgoingChallenge:null,outgoingChallengeRegistrationInProgress:false,
+      rpgInvitationChannelStatus:'SUBSCRIBED',onlinePlayers:['peer'],normalizeRpgUsername:x=>x,closeChallengeModal:noop,
+      document:{getElementById:()=>({value:'ashab'})},currentUpgrades:{ashab:{hp:0,atk:0}},getGearBonuses:()=>({hp:0,atk:0}),
+      crypto:{randomUUID:()=> '11111111-1111-4111-8111-111111111111'},EDGE_FUNCTION_NAME:'award-coins',alert:noop,
+      supabaseClient:{functions:{invoke:()=>new Promise((ok,bad)=>{resolve=ok;rejectRequest=bad;})}}};
+    const fn=new Function('env','with(env){return ('+cut('async function executeChallenge()', 'async function expireOutgoingRpgChallenge(')+');}')(env);
+    const pending=fn();env.currentAuthUserId='new';env.myRoomId='new-account-room';
+    if(reject)rejectRequest(Error('offline'));else resolve({data:{success:false}});
+    await pending;
+    if(env.myRoomId!=='new-account-room')throw Error('Late private registration cleared another account room');
+  });
   for(const name of ['createPvpRoom','joinPvpRoom']) await test(name+' retires the previous offline battle only after admission',async()=>{
     const nodes=new Map(),cleared=[];
     const node=id=>{if(!nodes.has(id)){const classes=new Set();nodes.set(id,{value:'ashab',classList:{add:x=>classes.add(x),remove:x=>classes.delete(x),contains:x=>classes.has(x)}});}return nodes.get(id);};
