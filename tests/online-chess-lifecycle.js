@@ -48,5 +48,12 @@ async function runOnlineChessLifecycleTests(source) {
   fixture.currentAuthUserId = 'replacement-account';
   resolveMembership({ data: { success: true } }); await lateJoin;
   assert(rooms.length === 2, 'Late membership response created a room for another account');
-  return { passed: 4, tests: ['foreign-room resignation ignored', 'resignation ends logical game', 'reconnect and removed channels preserve active board', 'late membership response is ignored after account change'] };
+  const nodes=new Map();
+  env.$=id=>{if(!nodes.has(id)){const classes=new Set(['hidden']);nodes.set(id,{classList:{add:x=>classes.add(x),remove:x=>classes.delete(x),contains:x=>classes.has(x)}});}return nodes.get(id);};
+  env.onlineChessChannel={};
+  const setup=new Function('env','with(env){return ('+cut('function showSetup()', 'window.finishOnlineChessFromOpponent = ')+');}')(env);
+  setup();
+  assert(!env.$('chess-multiplayer-menu').classList.contains('hidden'),'New game left the online-play menu unreachable');
+  assert(env.$('chess-multiplayer-panel').classList.contains('hidden'),'New game retained the previous opponent list');
+  return { passed: 5, tests: ['foreign-room resignation ignored', 'resignation ends logical game', 'reconnect and removed channels preserve active board', 'late membership response is ignored after account change', 'new game restores online-play entry'] };
 }

@@ -4314,6 +4314,8 @@ playMoveSound(playedMove);
     $('chess-engine-status')?.classList.remove('online-turn-status');
     $('chess-play').classList.add('hidden');
     $('chess-setup').classList.remove('hidden');
+    $('chess-multiplayer-panel')?.classList.add('hidden');
+    $('chess-multiplayer-menu')?.classList.remove('hidden');
     setStatus('Выбери цвет и сложность.');
   }
 
