@@ -2,10 +2,10 @@
 
 Project: `zfvinbamwavibnhmfwnz`
 
-## Current deployment
+## Historical deployment observations (not current verification)
 
 - Edge Function: `award-coins`
-- Active version at the latest security pass: `48`
+- One earlier security pass recorded version `48`; a later audit recorded `50`. Neither is a fresh deployment attestation.
 - JWT verification: enabled
 - Browser client uses only the publishable key. The service-role key must remain exclusively in Edge Function secrets.
 
@@ -23,7 +23,7 @@ Project: `zfvinbamwavibnhmfwnz`
 
 The live Supabase database has historical applied migration versions from the earlier security work that are not all represented by SQL files in this repository. The current `supabase/migrations` directory contains the newer tracked migrations, but it is not a complete fresh-project bootstrap.
 
-Do not reset the production database or assume that a fresh project can be reconstructed by applying only the files currently in this directory. Recover or create a reviewed baseline snapshot of the live schema before attempting a clean rebuild.
+Do not reset production or assume that the runner can reconstruct a fresh project. Recover original ordered migration statements and any pre-migration schema source first. A current schema snapshot alone cannot be presented as recovered historical semantics. See [baseline recovery](../docs/database-baseline-recovery.md).
 
 One old, unapplied draft was moved out of `supabase/migrations` into `supabase/archive` because its SQL no longer matched the live schema.
 
@@ -35,6 +35,6 @@ One old, unapplied draft was moved out of `supabase/migrations` into `supabase/a
 
 ## Known limitations
 
-- Server-authoritative validation for Simon, RPG combat, roach clears, chess results, and PvP outcomes is not implemented yet. Reward actions remain paused until those game engines are validated on the server.
+- Local source implements an authoritative RPG PvP action engine; its production deployment and full runtime checks remain unverified. Simon, RPG PvE, roach and chess results still lack trusted outcome validation. Result rewards remain closed in local source; deployed gates require separate verification.
 - Legacy player rows without an Auth user remain unlinked. They are not automatically claimable because the old credential proof was removed; do not attach them to new accounts based on username alone.
 - No code audit can guarantee the absence of every vulnerability. Re-test the live game flows after dashboard settings are changed.

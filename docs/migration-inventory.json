@@ -1,0 +1,363 @@
+{
+  "schema_version": 1,
+  "project_ref": "zfvinbamwavibnhmfwnz",
+  "source_commit": "e03ecd46225f119b5e43dad8cd9cecc9f50824f3",
+  "recorded_snapshot": {
+    "date": "2026-11-03",
+    "applied_versions": 34,
+    "source": "Earlier read-only Supabase list_migrations inventory recorded in this task; names only, no original SQL or production hashes",
+    "last_version": "20261101160151",
+    "freshness": "not refreshed"
+  },
+  "current_metadata": {
+    "status": "unavailable",
+    "reason": "OAuth token refresh failed: Failed to parse server response",
+    "production_sql_executed": false
+  },
+  "bootstrap_ready": false,
+  "additional_gaps": [
+    "Original pre-security schema creation, if it was outside recorded migrations",
+    "Original historical statements, grants, triggers, data transformations and any untracked dashboard DDL",
+    "Current production definitions and migration/source byte correspondence"
+  ],
+  "migrations": [
+    {
+      "version": "20261031105609",
+      "name": "security_phase1_restrict_public_player_writes",
+      "status": "missing_historical_sql",
+      "path": null,
+      "git_blob_sha1": null
+    },
+    {
+      "version": "20261031110553",
+      "name": "lock_down_player_table_access",
+      "status": "missing_historical_sql",
+      "path": null,
+      "git_blob_sha1": null
+    },
+    {
+      "version": "20261031110649",
+      "name": "create_legacy_player_sessions",
+      "status": "missing_historical_sql",
+      "path": null,
+      "git_blob_sha1": null
+    },
+    {
+      "version": "20261031113256",
+      "name": "grant_service_role_player_sessions",
+      "status": "missing_historical_sql",
+      "path": null,
+      "git_blob_sha1": null
+    },
+    {
+      "version": "20261031113540",
+      "name": "restore_public_players_read_for_leaderboard",
+      "status": "missing_historical_sql",
+      "path": null,
+      "git_blob_sha1": null
+    },
+    {
+      "version": "20261101042150",
+      "name": "rollback_chatgpt_player_marketplace_lockdown",
+      "status": "missing_historical_sql",
+      "path": null,
+      "git_blob_sha1": null
+    },
+    {
+      "version": "20261101044820",
+      "name": "remove_assistant_player_auth_sessions",
+      "status": "missing_historical_sql",
+      "path": null,
+      "git_blob_sha1": null
+    },
+    {
+      "version": "20261101130046",
+      "name": "auth_profile_foundation",
+      "status": "missing_historical_sql",
+      "path": null,
+      "git_blob_sha1": null
+    },
+    {
+      "version": "20261101135723",
+      "name": "revoke_excess_public_table_privileges",
+      "status": "missing_historical_sql",
+      "path": null,
+      "git_blob_sha1": null
+    },
+    {
+      "version": "20261101140242",
+      "name": "add_server_reward_budget_guardrails",
+      "status": "missing_historical_sql",
+      "path": null,
+      "git_blob_sha1": null
+    },
+    {
+      "version": "20261101140601",
+      "name": "atomic_marketplace_transactions",
+      "status": "missing_historical_sql",
+      "path": null,
+      "git_blob_sha1": null
+    },
+    {
+      "version": "20261101140755",
+      "name": "atomic_pvp_and_floor_updates",
+      "status": "missing_historical_sql",
+      "path": null,
+      "git_blob_sha1": null
+    },
+    {
+      "version": "20261101141214",
+      "name": "atomic_case_inventory_and_upgrade_transactions",
+      "status": "missing_historical_sql",
+      "path": null,
+      "git_blob_sha1": null
+    },
+    {
+      "version": "20261101141227",
+      "name": "atomic_rpg_gear_transactions",
+      "status": "missing_historical_sql",
+      "path": null,
+      "git_blob_sha1": null
+    },
+    {
+      "version": "20261101141242",
+      "name": "atomic_rpg_claims_and_battle_rewards",
+      "status": "missing_historical_sql",
+      "path": null,
+      "git_blob_sha1": null
+    },
+    {
+      "version": "20261101141311",
+      "name": "fix_atomic_rpg_economy_variable_collisions",
+      "status": "missing_historical_sql",
+      "path": null,
+      "git_blob_sha1": null
+    },
+    {
+      "version": "20261101141333",
+      "name": "atomic_arcade_rewards_and_daily_state",
+      "status": "missing_historical_sql",
+      "path": null,
+      "git_blob_sha1": null
+    },
+    {
+      "version": "20261101141445",
+      "name": "preserve_empty_case_drop_behavior",
+      "status": "missing_historical_sql",
+      "path": null,
+      "git_blob_sha1": null
+    },
+    {
+      "version": "20261101141756",
+      "name": "require_auth_for_private_realtime_channels",
+      "status": "missing_historical_sql",
+      "path": null,
+      "git_blob_sha1": null
+    },
+    {
+      "version": "20261101141838",
+      "name": "scope_realtime_authorization_to_app_topics",
+      "status": "missing_historical_sql",
+      "path": null,
+      "git_blob_sha1": null
+    },
+    {
+      "version": "20261101142346",
+      "name": "bind_rpg_floor_progress_to_win_transaction",
+      "status": "missing_historical_sql",
+      "path": null,
+      "git_blob_sha1": null
+    },
+    {
+      "version": "20261101142808",
+      "name": "optimize_realtime_rls_auth_checks",
+      "status": "missing_historical_sql",
+      "path": null,
+      "git_blob_sha1": null
+    },
+    {
+      "version": "20261101142918",
+      "name": "preserve_game_progress_after_reward_caps",
+      "status": "missing_historical_sql",
+      "path": null,
+      "git_blob_sha1": null
+    },
+    {
+      "version": "20261101143029",
+      "name": "restore_compatible_atomic_game_rpc_overloads",
+      "status": "missing_historical_sql",
+      "path": null,
+      "git_blob_sha1": null
+    },
+    {
+      "version": "20261101143139",
+      "name": "order_marketplace_player_locks_to_avoid_deadlocks",
+      "status": "missing_historical_sql",
+      "path": null,
+      "git_blob_sha1": null
+    },
+    {
+      "version": "20261101145407",
+      "name": "secure_realtime_room_membership",
+      "path": "supabase/migrations/20261101145407_secure_realtime_room_membership.sql",
+      "git_blob_sha1": "dd8b25ea519b8b1cb399b08acaf33c78c1134c50",
+      "status": "tracked_recorded_applied"
+    },
+    {
+      "version": "20261101145936",
+      "name": "move_room_membership_management_to_edge",
+      "path": "supabase/migrations/20261101145936_move_room_membership_management_to_edge.sql",
+      "git_blob_sha1": "e766f242bcfd8cbf0b8c9d9605f196818959922b",
+      "status": "tracked_recorded_applied"
+    },
+    {
+      "version": "20261101150657",
+      "name": "index_realtime_room_access",
+      "path": "supabase/migrations/20261101150657_index_realtime_room_access.sql",
+      "git_blob_sha1": "1e413b6e0b7c6662a6f4561f266a6547044ec89f",
+      "status": "tracked_recorded_applied"
+    },
+    {
+      "version": "20261101152123",
+      "name": "enforce_case_insensitive_usernames",
+      "path": "supabase/migrations/20261101152123_enforce_case_insensitive_usernames.sql",
+      "git_blob_sha1": "17c74d7a072787609ebf0aa310cf975a5b23d88d",
+      "status": "tracked_recorded_applied"
+    },
+    {
+      "version": "20261101152421",
+      "name": "lock_down_default_privileges",
+      "path": "supabase/migrations/20261101152421_lock_down_default_privileges.sql",
+      "git_blob_sha1": "08b17808f8f9f40f486a6cb0e948249fca014a36",
+      "status": "tracked_recorded_applied"
+    },
+    {
+      "version": "20261101152713",
+      "name": "validate_realtime_room_invitations",
+      "path": "supabase/migrations/20261101152713_validate_realtime_room_invitations.sql",
+      "git_blob_sha1": "a46ffad455cfea398bbf8150ea04e0f98d16a9f7",
+      "status": "tracked_recorded_applied"
+    },
+    {
+      "version": "20261101153137",
+      "name": "minimize_public_rpg_profile_data",
+      "path": "supabase/migrations/20261101153137_minimize_public_rpg_profile_data.sql",
+      "git_blob_sha1": "7596391659223f4c06074436f1c5689ee450cbfa",
+      "status": "tracked_recorded_applied"
+    },
+    {
+      "version": "20261101155354",
+      "name": "restrict_direct_realtime_chat_sends",
+      "path": "supabase/migrations/20261101155354_restrict_direct_realtime_chat_sends.sql",
+      "git_blob_sha1": "a08ba40650cdf6509341b5611b1281a05ff3d09f",
+      "status": "tracked_recorded_applied"
+    },
+    {
+      "version": "20261101160151",
+      "name": "add_auth_and_profile_foreign_keys",
+      "path": "supabase/migrations/20261101160151_add_auth_and_profile_foreign_keys.sql",
+      "git_blob_sha1": "4a6e88b3576ba889fe5789bf89cf72d7c8136b3d",
+      "status": "tracked_recorded_applied"
+    },
+    {
+      "version": "20261102120000",
+      "name": "create_pvp_match_storage",
+      "path": "supabase/migrations/20261102120000_create_pvp_match_storage.sql",
+      "git_blob_sha1": "6ca11cd5a1310c038a62a4fa9da33030aee69260",
+      "status": "not_in_recorded_applied_snapshot"
+    },
+    {
+      "version": "20261102130000",
+      "name": "add_private_rpg_invitation_inbox",
+      "path": "supabase/migrations/20261102130000_add_private_rpg_invitation_inbox.sql",
+      "git_blob_sha1": "2219eb84c67eaed9ba28045ae99239bb0ec1bdac",
+      "status": "not_in_recorded_applied_snapshot"
+    },
+    {
+      "version": "20261103100000",
+      "name": "add_rpg_pvp_server_build",
+      "path": "supabase/migrations/20261103100000_add_rpg_pvp_server_build.sql",
+      "git_blob_sha1": "acf529448a8408cbb5744c8f305538096ae388b4",
+      "status": "not_in_recorded_applied_snapshot"
+    },
+    {
+      "version": "20261103110000",
+      "name": "rpg_pvp_match_lifecycle",
+      "path": "supabase/migrations/20261103110000_rpg_pvp_match_lifecycle.sql",
+      "git_blob_sha1": "6137608813c7815104210ec1d209dde81b3d502f",
+      "status": "not_in_recorded_applied_snapshot"
+    },
+    {
+      "version": "20261103120000",
+      "name": "rpg_pvp_atomic_actions",
+      "path": "supabase/migrations/20261103120000_rpg_pvp_atomic_actions.sql",
+      "git_blob_sha1": "e7b84bd992c4ece19e3c782b0ed2c17a3381d497",
+      "status": "not_in_recorded_applied_snapshot"
+    },
+    {
+      "version": "20261103130000",
+      "name": "rpg_pvp_waiting_cancel",
+      "path": "supabase/migrations/20261103130000_rpg_pvp_waiting_cancel.sql",
+      "git_blob_sha1": "bcb9d969aec03a2c3c4c1b8b8224435ca2d86552",
+      "status": "not_in_recorded_applied_snapshot"
+    },
+    {
+      "version": "20261103140000",
+      "name": "rpg_pvp_turn_timeout",
+      "path": "supabase/migrations/20261103140000_rpg_pvp_turn_timeout.sql",
+      "git_blob_sha1": "3dc3a3ab94a1412e3b1e742dfb0f5ff898e46cc5",
+      "status": "not_in_recorded_applied_snapshot"
+    },
+    {
+      "version": "20261103150000",
+      "name": "serialize_rpg_pvp_admission",
+      "path": "supabase/migrations/20261103150000_serialize_rpg_pvp_admission.sql",
+      "git_blob_sha1": "0e72aeb6af847dfbcc4f7c9999aa879147b6edc8",
+      "status": "not_in_recorded_applied_snapshot"
+    },
+    {
+      "version": "20261103160000",
+      "name": "atomic_rpg_pvp_deadline",
+      "path": "supabase/migrations/20261103160000_atomic_rpg_pvp_deadline.sql",
+      "git_blob_sha1": "3a70cb2861bedb41388e1ef1fb74fb6e32029fc0",
+      "status": "not_in_recorded_applied_snapshot"
+    },
+    {
+      "version": "20261103170000",
+      "name": "authoritative_game_invitations",
+      "path": "supabase/migrations/20261103170000_authoritative_game_invitations.sql",
+      "git_blob_sha1": "a40edd2436af7c8ac9667869482d6a063224a038",
+      "status": "not_in_recorded_applied_snapshot"
+    }
+  ],
+  "excluded_history": [
+    {
+      "path": "supabase/migrations/20261101150000_secure_realtime_room_membership.sql",
+      "reason": "byte-identical duplicate of 20261101145407",
+      "first_commit": "5c430ae2de513303b73a1904b10b2621acdcc211",
+      "blob": "dd8b25ea519b8b1cb399b08acaf33c78c1134c50"
+    },
+    {
+      "path": "supabase/migrations/20261101150100_move_room_membership_management_to_edge.sql",
+      "reason": "byte-identical duplicate of 20261101145936",
+      "first_commit": "f52275c8a35266e21c9231e69f02608c2038c67c",
+      "blob": "e766f242bcfd8cbf0b8c9d9605f196818959922b"
+    },
+    {
+      "path": "supabase/migrations/20261101153200_minimize_public_rpg_profile_data.sql",
+      "reason": "byte-identical duplicate of 20261101153137",
+      "first_commit": "199d984abecd21cf2e5d4586b3f7e4845139c7ef",
+      "blob": "7596391659223f4c06074436f1c5689ee450cbfa"
+    },
+    {
+      "path": "supabase/migrations/20261101161000_grant_service_read_for_room_chat_membership.sql",
+      "reason": "transient table grant removed by 9e7909c after moving room checks to service-only RPC",
+      "first_commit": "3575b0393ec11893cb10e918960e7094d9b3f353",
+      "blob": "b78ae50d429468730a30d7e989e8ed3662b2c94f"
+    },
+    {
+      "path": "supabase/archive/20261101000100_auth_profile_access.sql.txt",
+      "reason": "unapplied stale draft, not a historical production baseline; archived by 7b8009d and removed from runner by a361f14"
+    }
+  ]
+}

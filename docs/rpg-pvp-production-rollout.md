@@ -4,7 +4,13 @@ This runbook is for a separately approved production change. No command below ha
 
 ## Current production blockers
 
-Read-only inspection of project `zfvinbamwavibnhmfwnz` found migration history ending at `20261101160151`. Production does not list the PvP storage, private invitation inbox, or server match migrations. The only active Edge Function found was `award-coins` v50; `rpg-pvp` was not deployed. The deployed `award-coins` source did not contain the RPG invitation actions or profile action needed by the current client. It still accepts `pvp_result` with the caller's `win: true` and has client-result reward actions that the reviewed local source now fails closed. This is an active production payout risk until the safe Edge Function is deployed.
+An earlier read-only inspection of project `zfvinbamwavibnhmfwnz` found migration history ending at `20261101160151`, without the PvP storage, private invitation inbox or server match migrations. That snapshot found only `award-coins` v50 and no deployed `rpg-pvp`. Its source lacked the RPG invitation/profile actions and accepted `pvp_result` with the caller's `win: true`, plus other client-result reward actions that the reviewed local source now fails closed. Treat that observation as an unresolved payout risk, not a fresh attestation of the current deployment.
+
+The latest migration/table metadata requests failed with an OAuth refresh parsing
+error. No production SQL was executed as a fallback. Refresh read-only metadata
+and deployed source before approving any rollout. The exact source gaps and safe
+recovery options are in [baseline recovery](database-baseline-recovery.md) and
+[the version inventory](migration-inventory.json).
 
 The repository has CI workflows for the invitation migration and PvP schema, but no workflow deploys migrations, Edge Functions, or the site.
 
@@ -17,7 +23,7 @@ The repository has CI workflows for the invitation migration and PvP schema, but
 
 ## Close current client-result payout endpoints first
 
-After reviewing the exact PR head and confirming its auth/runtime CI, deploy the reviewed, fail-closed `award-coins` function before applying schema migrations. This is the first production action because the currently deployed version accepts client-declared results. The function change disables client-result payouts while retaining only the locally allowlisted RPG spending claim.
+After reviewing the exact PR head, refreshing the deployed-source comparison and confirming its auth/runtime CI, deploy the reviewed, fail-closed `award-coins` function before applying schema migrations. This is the first proposed production action because the earlier deployed source accepted client-declared results. The function change disables client-result payouts while retaining only the locally allowlisted RPG spending claim.
 
 From the reviewed repository checkout, after separate approval:
 
@@ -28,13 +34,13 @@ supabase functions deploy award-coins --project-ref zfvinbamwavibnhmfwnz
 supabase functions list --project-ref zfvinbamwavibnhmfwnz
 ```
 
-Verify a test account's direct attempts to claim `pvp_result`, `rpg_win`, `chess_reward`, `score`, and `roach_clear` return a paused/denied result and leave coins/rating unchanged. Also verify an unknown RPG claim ID is rejected. Do not restore the currently deployed v50 if later steps fail; keep the fail-closed function active and pause client publication.
+Verify a test account's direct attempts to claim `pvp_result`, `rpg_win`, `chess_reward`, `score`, and `roach_clear` return a paused/denied result and leave coins/rating unchanged. Also verify an unknown RPG claim ID is rejected. Do not restore the previously observed v50 if later steps fail; keep the fail-closed function active and pause client publication.
 
 ## Migration dry run and apply
 
 ### Migration history prerequisite (read-only audit, 2026-11-03)
 
-Production metadata lists 34 applied versions ending at `20261101160151`.
+The earlier production metadata snapshot listed 34 applied versions ending at `20261101160151`.
 Only nine of those applied migrations are present in this repository; 25 older
 versions, including the economy foundation, are missing. The ten pending game
 migrations below do not provide a complete bootstrap.
