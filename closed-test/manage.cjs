@@ -59,6 +59,14 @@ function start(directory) {
   catch { command('docker',['network','create','--driver','bridge','--opt','com.docker.network.bridge.host_binding_ipv4=127.0.0.1',network],directory); }
   command('supabase',['start','--network-id',network,'--exclude','imgproxy,storage-api,mailpit,postgres-meta,studio,logflare,vector,supavisor'],directory);
   localSettings(directory);
+  const ids=execFileSync('docker',['ps','--filter','label=com.supabase.cli.project='+info.projectId,'--format','{{.ID}}'],{encoding:'utf8'}).trim().split(/\s+/).filter(Boolean);
+  if(!ids.length)throw Error('Cannot verify test container port bindings');
+  for(const id of ids){
+    const ports=JSON.parse(execFileSync('docker',['inspect','--format','{{json .NetworkSettings.Ports}}',id],{encoding:'utf8'}));
+    for(const bindings of Object.values(ports||{}))for(const binding of bindings||[])
+      if(!['127.0.0.1','::1'].includes(binding.HostIp))throw Error('Unsafe non-loopback test backend port binding');
+  }
+  console.log('All published backend ports verified loopback-only');
 }
 function apply(directory) {
   const values=localSettings(directory);
@@ -83,6 +91,8 @@ async function addUser(directory,username,allowed=true) {
   const email=Buffer.from(username.toLowerCase()).toString('hex')+'@username.pepen.invalid';
   const user=await request(values,'/auth/v1/admin/users',{email,password,email_confirm:true});
   if(allowed) await request(values,'/rest/v1/rpc/provision_closed_test_player',{p_user_id:user.id,p_username:username});
+  const session=await request(values,'/auth/v1/token?grant_type=password',{email,password},false);
+  if(!session.access_token || session.user?.id!==user.id)throw Error('Provisioned test identity could not authenticate');
   return {username,password,id:user.id};
 }
 async function main() {

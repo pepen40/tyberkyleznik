@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.118.0'
 import { isServerVerifiedRpgRewardClaim } from '../_shared/reward-policy.ts'
 import { validateMarketplaceSale } from '../_shared/marketplace-policy.ts'
 import { CLOSED_TEST_ACTIONS, closedTestAccess } from '../_shared/closed-test-policy.ts'

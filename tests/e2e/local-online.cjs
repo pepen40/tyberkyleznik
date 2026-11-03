@@ -46,6 +46,14 @@ async function run() {
         return local || staticCdn ? route.continue() : route.abort();
       });
       const page = await context.newPage(); pages.push(page);
+      const authTransport=[];
+      page.on('response',async response=>{
+        const pathname=new URL(response.url()).pathname;
+        if(!pathname.includes('/auth/v1/token'))return;
+        let code='';if(!response.ok()){try{const body=await response.json();code=String(body.error_code||body.code||body.error||'').replace(/[^a-zA-Z0-9_ -]/g,'').slice(0,100);}catch(_){code='non-json';}}
+        authTransport.push({path:pathname,status:response.status(),code});
+      });
+      page.on('requestfailed',request=>{const pathname=new URL(request.url()).pathname;if(pathname.includes('/auth/v1/'))authTransport.push({path:pathname,failed:request.failure()?.errorText});});
       page.on('pageerror', error => pageErrors.push(String(error.stack || error.message)));
       page.on('dialog', dialog => dialog.dismiss());
       await page.goto(frontend, { waitUntil: 'domcontentloaded' });
@@ -55,7 +63,7 @@ async function run() {
         await login();
       }, user);
       const loginState=await page.evaluate(()=>({user:currentUser,hasAuth:!!currentAuthUserId,error:document.getElementById('auth-msg').textContent,inbox:rpgInvitationChannelStatus}));
-      assert.equal(loginState.user,user.u,'Real login failed: '+JSON.stringify(loginState));
+      assert.equal(loginState.user,user.u,'Real login failed: '+JSON.stringify({...loginState,authTransport}));
       await page.waitForFunction(name => currentUser === name && !!currentAuthUserId, user.u);
       assert(await page.evaluate(async () => {
         document.getElementById('rpg-invites-toggle').checked = true;
