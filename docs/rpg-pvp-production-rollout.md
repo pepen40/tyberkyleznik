@@ -36,7 +36,7 @@ Verify a test account's direct attempts to claim `pvp_result`, `rpg_win`, `chess
 
 Production metadata lists 34 applied versions ending at `20261101160151`.
 Only nine of those applied migrations are present in this repository; 25 older
-versions, including the economy foundation, are missing. The nine pending PvP
+versions, including the economy foundation, are missing. The ten pending game
 migrations below do not provide a complete bootstrap.
 
 **Block database rollout until the original missing migration SQL has been
@@ -81,7 +81,7 @@ supabase db push --linked
 supabase migration list --linked
 ```
 
-Verify all nine target migration versions are recorded. The migration set is additive; rollback means keeping the fail-closed `award-coins` active, disabling the client/PvP feature, and pausing rollout. Do not restore deployed v50 or any Edge Function source that accepts client results. Do not drop tables or rewrite migration history as a rollback.
+Verify all ten target migration versions are recorded. The migration set is additive; rollback means keeping the fail-closed `award-coins` active, disabling the client/PvP feature, and pausing rollout. Do not restore deployed v50 or any Edge Function source that accepts client results. Do not drop tables or rewrite migration history as a rollback.
 
 Before deploying the matching `rpg-pvp` Edge version, verify the admission-race
 and deadline tests pass on PostgreSQL 17. Its action path now delegates expiry to
