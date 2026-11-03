@@ -37,5 +37,12 @@ function runCiControlsTests(api) {
   test('diagnostic failures remain readable after sanitization', () => {
     assert(api.redact('ERROR: relation public.players does not exist') === 'ERROR: relation public.players does not exist', 'Diagnostic was lost');
   });
+  test('failure annotations escape commands and percent sequences', () => {
+    const output = api.failureAnnotation('test\n,unsafe', 'failure\r\n::warning::injected%0A');
+    assert(output === '::error title=test--unsafe::failure%0D%0A::warning::injected%250A', 'Annotation injected a command');
+  });
+  test('failure annotation tail is bounded', () => {
+    assert(api.failureAnnotation('test', 'x'.repeat(4000) + 'end').length < 3600, 'Unbounded public diagnostic');
+  });
   return passed;
 }

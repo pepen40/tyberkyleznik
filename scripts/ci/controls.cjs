@@ -35,4 +35,10 @@ function baselineStatus(inventory, localNames) {
   return { status: reasons.length ? 'BLOCKED' : 'READY', missing, reasons, databaseTestsExecuted: false };
 }
 
-module.exports = { redact, baselineStatus };
+function failureAnnotation(name, sanitizedLog) {
+  const title = String(name).replace(/[^a-z0-9-]/gi, '-');
+  const detail = String(sanitizedLog).slice(-3500).replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+  return '::error title=' + title + '::' + detail;
+}
+
+module.exports = { redact, baselineStatus, failureAnnotation };

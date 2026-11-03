@@ -2,7 +2,7 @@
 // Only this sanitized directory is uploaded. Never upload the workspace/temp tree.
 const fs = require('node:fs'), path = require('node:path');
 const { spawnSync } = require('node:child_process');
-const { redact } = require('./controls.cjs');
+const { redact, failureAnnotation } = require('./controls.cjs');
 const [name, command, ...args] = process.argv.slice(2);
 if (!/^[a-z0-9-]+$/.test(name || '') || !command) throw new Error('Expected a safe result name and command');
 const directory = path.resolve(__dirname, '../../.runtime/ci/safe');
@@ -14,4 +14,5 @@ const log = redact((result.stdout || '') + (result.stderr || '') + (result.error
 fs.writeFileSync(path.join(directory, name + '.log'), log);
 fs.writeFileSync(path.join(directory, name + '.json'), JSON.stringify({ name, status: code === 0 ? 'PASSED' : 'FAILED', exitCode: code, durationMs: Date.now() - started }, null, 2));
 process.stdout.write(log);
+if (code !== 0 && process.env.GITHUB_ACTIONS === 'true') console.log('\n' + failureAnnotation(name, log));
 process.exitCode = code;
