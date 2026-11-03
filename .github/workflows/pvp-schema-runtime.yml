@@ -21,6 +21,8 @@ on:
       - supabase/tests/database/rpg_pvp_items_test.sql
       - supabase/tests/database/rpg_pvp_combat_rules_test.sql
       - supabase/functions/rpg-pvp/index.ts
+      - supabase/functions/_shared/pvp-errors.ts
+      - supabase/functions/_shared/pvp-errors.test.ts
       - supabase/functions/award-coins/index.ts
       - script.js
       - .github/pvp-schema-test/preflight.sql
@@ -37,6 +39,8 @@ on:
       - supabase/migrations/20261103140000_rpg_pvp_turn_timeout.sql
       - supabase/tests/database/**
       - supabase/functions/rpg-pvp/index.ts
+      - supabase/functions/_shared/pvp-errors.ts
+      - supabase/functions/_shared/pvp-errors.test.ts
       - supabase/functions/award-coins/index.ts
       - script.js
       - .github/pvp-schema-test/preflight.sql

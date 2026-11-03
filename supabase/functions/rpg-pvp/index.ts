@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getPvpErrorResponse } from '../_shared/pvp-errors.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -122,14 +123,8 @@ serve(async (req) => {
     }
     return json(result)
   } catch (error) {
-    const message = error instanceof Error ? error.message : ''
-    if (message === 'User is not an authorized RPG room participant') {
-      return json({ success: false, error: 'Ты не состоишь в этой PvP-комнате.' }, 403)
-    }
-    if (/^(Stale match version|Not your turn|Match is not active|Match timed out|User is not a participant|Not enough mana|Item is not owned|Item is not supported in PvP|Item action is unavailable|Idempotency key reused with different command|Match is unavailable|Only the match host can cancel this room|Only a waiting PvP room can be cancelled)$/.test(message)) {
-      return json({ success: false, error: message }, 409)
-    }
-    console.error('rpg-pvp request failed')
-    return json({ success: false, error: 'Внутренняя ошибка сервера.' }, 500)
+    const response = getPvpErrorResponse(error)
+    if (response.status === 500) console.error('rpg-pvp request failed')
+    return json({ success: false, error: response.error }, response.status)
   }
 })

@@ -32,6 +32,24 @@ Verify a test account's direct attempts to claim `pvp_result`, `rpg_win`, `chess
 
 ## Migration dry run and apply
 
+### Migration history prerequisite (read-only audit, 2026-11-03)
+
+Production metadata lists 34 applied versions ending at `20261101160151`.
+Only nine of those applied migrations are present in this repository; 25 older
+versions, including the economy foundation, are missing. The seven pending PvP
+migrations below do not provide a complete bootstrap.
+
+**Block database rollout until the original missing migration SQL has been
+recovered and reviewed against the applied history.** Do not create empty history
+files, rewrite existing versions, run migration repair, or reset production.
+Then verify the recovered baseline in a disposable database, run the economy and
+PvP tests, and confirm the exact pending list with a linked dry run. Until these
+steps pass, the commands below are a conditional plan, not a verified rollout.
+
+The current audit could not retrieve deployed Edge Function source. The v50
+source observations above belong to the earlier audit and must be rechecked
+before deployment; they are not a fresh attestation of the deployed version.
+
 From the reviewed repository checkout:
 
 ```sh

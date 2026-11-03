@@ -3,6 +3,7 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>RPG скотобойня 1998</title>
 <link href="style.css?v=win98-case" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
@@ -1444,6 +1445,13 @@
   }
   compass.addEventListener('pointerup', stopDragging);
   compass.addEventListener('pointercancel', stopDragging);
+  compass.addEventListener('lostpointercapture', stopDragging);
+  window.addEventListener('resize', () => {
+    const rect = compass.getBoundingClientRect();
+    if (!compass.style.left) return;
+    compass.style.left = `${Math.max(0, Math.min(rect.left, window.innerWidth - rect.width))}px`;
+    compass.style.top = `${Math.max(0, Math.min(rect.top, window.innerHeight - rect.height))}px`;
+  });
 })();
 </script>
 <audio id="antique-tick" loop="" preload="auto" src="./tick.mp3"></audio>
@@ -1460,6 +1468,24 @@
 
   let audioEnabled = false;
   let lastMinute = new Date().getMinutes();
+  const visibleToggle = document.getElementById('clock-toggle');
+  const soundToggle = document.getElementById('clock-sound-toggle');
+  if (!visibleToggle || !soundToggle) return;
+  try {
+    visibleToggle.checked = localStorage.getItem('antiqueClockEnabled') !== 'false';
+    soundToggle.checked = localStorage.getItem('antiqueClockSoundEnabled') !== 'false';
+  } catch (_) {}
+
+  function syncClockAudio() {
+    if (audioEnabled && visibleToggle.checked && soundToggle.checked && !document.hidden) {
+      if (tick.paused) tick.play().catch(() => {});
+    } else {
+      tick.pause();
+      cuckoo.pause();
+      tick.currentTime = 0;
+      cuckoo.currentTime = 0;
+    }
+  }
     
   window.toggleAntiqueClockSound = function() {
     const checkbox = document.getElementById('clock-sound-toggle');
@@ -1468,9 +1494,10 @@
 
     if (!checkbox) return;
 
-    audioEnabled = checkbox.checked;
+    audioEnabled = true;
+    try { localStorage.setItem('antiqueClockSoundEnabled', String(checkbox.checked)); } catch (_) {}
 
-    if (!audioEnabled) {
+    if (!checkbox.checked) {
       if (tickSound) {
         tickSound.pause();
         tickSound.currentTime = 0;
@@ -1481,7 +1508,7 @@
       }
     } else {
       // Запуск аудио после нажатия на переключатель, разрешённый браузером.
-      if (tickSound) tickSound.play().catch(() => {});
+      syncClockAudio();
     }
   };
 
@@ -1493,9 +1520,12 @@
   const bird = document.getElementById('clock-bird');
 
   if (!checkbox || !clock) return;
+  try { localStorage.setItem('antiqueClockEnabled', String(checkbox.checked)); } catch (_) {}
 
   if (checkbox.checked) {
     clock.style.setProperty('display', 'block', 'important');
+    lastMinute = new Date().getMinutes();
+    syncClockAudio();
   } else {
     clock.style.setProperty('display', 'none', 'important');
 
@@ -1517,7 +1547,7 @@
 
 function updateClock() {
   const now = new Date();
-      if (!document.getElementById('clock-toggle').checked) {
+      if (!visibleToggle.checked || document.hidden) {
     lastMinute = new Date().getMinutes();
     return;
   }
@@ -1529,11 +1559,7 @@ function updateClock() {
   minute.style.transform = `rotate(${m * 6}deg)`;
   second.style.transform = `rotate(${s * 6}deg)`;
 
-  if (audioEnabled && tick.paused) {
-    tick.play().catch(() => {});
-  }
-
-  if (audioEnabled && now.getMinutes() !== lastMinute) {
+  if (audioEnabled && soundToggle.checked && now.getMinutes() !== lastMinute) {
     const bird = document.getElementById('clock-bird');
 
     if (bird) {
@@ -1551,15 +1577,17 @@ function updateClock() {
     
 
   function enableAudio() {
-    const soundCheckbox = document.getElementById('clock-sound-toggle');
-    if (soundCheckbox && !soundCheckbox.checked) return;
-    if (audioEnabled) return;
     audioEnabled = true;
-    tick.play().catch(() => {});
+    syncClockAudio();
   }
 
   document.addEventListener('pointerdown', enableAudio, { once: true });
   document.addEventListener('keydown', enableAudio, { once: true });
+  document.addEventListener('visibilitychange', () => {
+    lastMinute = new Date().getMinutes();
+    syncClockAudio();
+    updateClock();
+  });
 
   // Перетаскивание часов вместе с петухом
   const clockElement = document.getElementById('antique-clock');
@@ -1613,9 +1641,52 @@ function updateClock() {
 
   clockElement.addEventListener('pointerup', stopClockDragging);
   clockElement.addEventListener('pointercancel', stopClockDragging);
+  clockElement.addEventListener('lostpointercapture', stopClockDragging);
+  window.addEventListener('resize', () => {
+    if (!clockElement.style.top) return;
+    const rect = clockElement.getBoundingClientRect();
+    clockElement.style.left = `${Math.max(0, Math.min(rect.left, window.innerWidth - rect.width))}px`;
+    clockElement.style.top = `${Math.max(0, Math.min(rect.top, window.innerHeight - rect.height))}px`;
+  });
 
+  window.toggleAntiqueClock();
   updateClock();
   setInterval(updateClock, 100);
+})();
+</script>
+<script>
+(() => {
+  // Restore controls before the audio handlers are installed. Playback still
+  // waits for a user gesture; storage may be unavailable in private contexts.
+  const root = document.getElementById('aura-mock');
+  if (!root) return;
+  const controls = [...root.querySelectorAll('input, select')];
+  let saved = [];
+  try {
+    const value = JSON.parse(localStorage.getItem('auraSettingsV1') || '[]');
+    if (Array.isArray(value)) saved = value;
+  } catch (_) {}
+  controls.forEach((control, index) => {
+    const value = saved[index];
+    if (control.type === 'checkbox') {
+      control.checked = !!(value && value.checked === true);
+    } else if (control.type === 'radio') {
+      if (value && typeof value.checked === 'boolean') control.checked = value.checked;
+    } else if (value && typeof value.value === 'string') {
+      if (control.tagName !== 'SELECT' || [...control.options].some(option => option.value === value.value)) {
+        control.value = value.value;
+      }
+    }
+  });
+  function saveSettings() {
+    try {
+      localStorage.setItem('auraSettingsV1', JSON.stringify(controls.map(control => ({
+        checked: control.checked, value: control.value
+      }))));
+    } catch (_) {}
+  }
+  root.addEventListener('change', saveSettings);
+  root.addEventListener('input', saveSettings);
 })();
 </script>
 <script>
@@ -1689,7 +1760,11 @@ function updateClock() {
 
   function routeMedia(media) {
     if (!(media instanceof HTMLMediaElement) || routed.has(media)) return;
+    if (!toggle.checked) return;
     try {
+      // Routing cross-origin media without CORS permission silences playback.
+      const sourceUrl = new URL(media.currentSrc || media.src, document.baseURI);
+      if (sourceUrl.origin !== location.origin && !media.crossOrigin) return;
       initAudioGraph();
       let source = mediaSources.get(media);
       if (!source) {
@@ -1707,7 +1782,9 @@ function updateClock() {
 
   // Route media elements that already exist, and any created later.
   function scanMedia() {
-    document.querySelectorAll('audio, video').forEach(routeMedia);
+    document.querySelectorAll('audio, video').forEach(media => {
+      if (!media.paused) routeMedia(media);
+    });
   }
 
   const originalPlay = HTMLMediaElement.prototype.play;
@@ -1719,9 +1796,8 @@ function updateClock() {
     return originalPlay.apply(this, args);
   };
 
-  const observer = new MutationObserver(scanMedia);
-  observer.observe(document.documentElement, { childList: true, subtree: true });
-  scanMedia();
+  // The play wrapper also handles detached Audio objects and newly created
+  // elements. A document-wide observer would rescan on every clock/FPS update.
 
   toggle.addEventListener('change', () => {
     try {
@@ -1768,13 +1844,6 @@ function updateClock() {
     "windows": "autostartwindows.mp3"
   };
   const root = document.getElementById('aura-mock');
-  // Безопасный запуск: при открытии сайта все звуки выключены.
-  if (root) {
-    root.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
-      checkbox.checked = false;
-    });
-  }
-
   if (!root) return;
 
   const players = new Map();
@@ -1801,18 +1870,8 @@ function updateClock() {
     if (!label) return null;
     const box = label.closest('.aura-sliderbox');
     if (box) return box.querySelector('input[type="range"]');
-    let node = label;
-    for (let i = 0; i < 3 && node; i++, node = node.parentElement) {
-      let sibling = node.nextElementSibling;
-      while (sibling) {
-        const range = sibling.matches && sibling.matches('input[type="range"]')
-          ? sibling : sibling.querySelector && sibling.querySelector('input[type="range"]');
-        if (range) return range;
-        if (sibling.matches && sibling.matches('select')) break;
-        sibling = sibling.nextElementSibling;
-      }
-    }
-    return null;
+    const sibling = label.nextElementSibling;
+    return sibling && sibling.matches('input[type="range"]') ? sibling : null;
   }
 
   function getFrequencyControl(label) {
@@ -1821,21 +1880,12 @@ function updateClock() {
     if (inside) return inside;
     const box = label.closest('.aura-sliderbox');
     if (box) return null;
-    let node = label;
-    for (let i = 0; i < 3 && node; i++, node = node.parentElement) {
-      let sibling = node.nextElementSibling;
-      while (sibling) {
-        if (sibling.matches && sibling.matches('select')) return sibling;
-        if (sibling.matches && sibling.matches('input[type="range"]')) {
-          sibling = sibling.nextElementSibling;
-          continue;
-        }
-        if (sibling.matches && sibling.matches('fieldset')) break;
-        sibling = sibling.nextElementSibling;
-      }
+    let sibling = label.nextElementSibling;
+    if (sibling && sibling.matches('input[type="range"]')) sibling = sibling.nextElementSibling;
+    if (!sibling && label.parentElement.classList.contains('aura-row')) {
+      sibling = label.parentElement.nextElementSibling;
     }
-    const fieldset = label.closest('fieldset');
-    return fieldset ? fieldset.querySelector('select') : null;
+    return sibling && sibling.matches('select') ? sibling : null;
   }
 
   function getPlayer(key, sourceKey = key) {
@@ -1925,6 +1975,7 @@ function updateClock() {
       for (const item of managed) stopKey(item.playerKey);
       // Stop alarm sound as well.
       stopKey('alarm');
+      stopKey('windows');
       return;
     }
     managed.forEach(item => {
@@ -1997,7 +2048,7 @@ function updateClock() {
       managed.push(item);
       input.addEventListener('change', () => {
         if (input.checked && masterEnabled) startItem(item);
-        else stopKey('hmix');
+        else stopKey(item.playerKey);
       });
     }
   }
@@ -2052,6 +2103,15 @@ function updateClock() {
     // Do not auto-start every checked layer: the click itself may be on a checkbox.
   }, { once: true });
 
+  // Resume saved layers only after an intentional interaction with the panel.
+  // A click on a checkbox is handled by its own change listener first.
+  root.addEventListener('click', (event) => {
+    if (!masterEnabled || event.target.closest('input, select, button, label')) return;
+    managed.forEach(item => {
+      if (item.input.checked && !players.has(item.playerKey)) startItem(item);
+    });
+  });
+
   // Initial volume levels and UI wiring; browsers require a user gesture before playback.
   managed.forEach(item => {
     if (item.range) {
@@ -2061,7 +2121,7 @@ function updateClock() {
   });
 })();
 </script>
-<div id="performance-overlay" style="position: fixed; top: 55px !important; left: 20px !important; right: auto !important; bottom: auto !important;">
+<div id="performance-overlay" title="FPS измеряются браузером. Температуры и параметры оборудования — декоративная симуляция." style="position: fixed; top: 55px !important; left: 20px !important; right: auto !important; bottom: auto !important;">
 <div>FPS <span id="perf-fps">НЕИЗВЕСТНО</span></div>
 <div>FPS 1% <span>НЕИЗВЕСТНО</span></div>
 <div>GPU UTIL <span>НЕИЗВЕСТНО</span></div>
@@ -2083,51 +2143,6 @@ function updateClock() {
 <script>
 (() => {
     const overlay = document.getElementById('performance-overlay');
-    const fps = document.getElementById('perf-fps');
-    const toggle = document.getElementById('fps-overlay-toggle');
-
-    if (!overlay || !toggle) {
-        console.error('Не найден оверлей или переключатель FPS');
-        return;
-    }
-
-    // Восстанавливаем сохранённое состояние
-    const saved = localStorage.getItem('fpsOverlayEnabled');
-    toggle.checked = saved !== 'false';
-    overlay.hidden = !toggle.checked;
-
-    // Переключатель
-    toggle.addEventListener('change', () => {
-        overlay.hidden = !toggle.checked;
-        localStorage.setItem('fpsOverlayEnabled', String(toggle.checked));
-    });
-
-    // Измерение FPS
-    if (fps) {
-        let frames = 0;
-        let lastTime = performance.now();
-
-        function update(now) {
-            frames++;
-
-            const elapsed = now - lastTime;
-
-            if (elapsed >= 500) {
-                fps.textContent = Math.round(frames * 1000 / elapsed);
-                frames = 0;
-                lastTime = now;
-            }
-
-            requestAnimationFrame(update);
-        }
-
-        requestAnimationFrame(update);
-    }
-})();
-</script>
-<script>
-(() => {
-    const overlay = document.getElementById('performance-overlay');
     const toggle = document.getElementById('fps-overlay-toggle');
 
     if (!overlay || overlay.dataset.monitorReady) return;
@@ -2140,14 +2155,16 @@ function updateClock() {
     }
 
     // Сохраняем работу переключателя в настройках.
-    const saved = localStorage.getItem('fpsOverlayEnabled');
+    let saved = null;
+    try { saved = localStorage.getItem('fpsOverlayEnabled'); } catch (_) {}
     const enabled = saved === null ? true : saved !== 'false';
 
     if (toggle) {
         toggle.checked = enabled;
         toggle.addEventListener('change', () => {
             overlay.hidden = !toggle.checked;
-            localStorage.setItem('fpsOverlayEnabled', String(toggle.checked));
+            try { localStorage.setItem('fpsOverlayEnabled', String(toggle.checked)); } catch (_) {}
+            syncMonitor();
         });
     }
     overlay.hidden = !enabled;
@@ -2162,8 +2179,12 @@ function updateClock() {
     let previousFrame = 0;
     let lastDisplay = 0;
     let fps = 0;
+    let frameRequest = null;
+    let simulationTimer = null;
 
     function measureFrame(now) {
+        frameRequest = null;
+        if (overlay.hidden || document.hidden) return;
         if (previousFrame) {
             const dt = now - previousFrame;
 
@@ -2199,9 +2220,8 @@ function updateClock() {
             lastDisplay = now;
         }
 
-        requestAnimationFrame(measureFrame);
+        frameRequest = requestAnimationFrame(measureFrame);
     }
-    requestAnimationFrame(measureFrame);
 
     // Симуляция показателей современного игрового ПК.
     // Это НЕ реальные датчики твоего компьютера.
@@ -2215,6 +2235,8 @@ function updateClock() {
     };
 
     function updateSimulation() {
+        simulationTimer = null;
+        if (overlay.hidden || document.hidden) return;
         sim.gpuLoadTarget = clamp(sim.gpuLoadTarget + rand(-12, 12), 8, 98);
         sim.cpuLoadTarget = clamp(sim.cpuLoadTarget + rand(-9, 9), 4, 85);
 
@@ -2266,10 +2288,24 @@ function updateClock() {
         rows[14].textContent = (3 + rand(0, 8)).toFixed(1) + ' ms';
         rows[15].textContent = (rand(0.1, 1.8)).toFixed(1);
 
-        setTimeout(updateSimulation, 400);
+        simulationTimer = setTimeout(updateSimulation, 400);
     }
 
-    updateSimulation();
+    function syncMonitor() {
+        if (frameRequest !== null) cancelAnimationFrame(frameRequest);
+        if (simulationTimer !== null) clearTimeout(simulationTimer);
+        frameRequest = null;
+        simulationTimer = null;
+        previousFrame = 0;
+        frameTimes.length = 0;
+        lastDisplay = 0;
+        if (!overlay.hidden && !document.hidden) {
+            frameRequest = requestAnimationFrame(measureFrame);
+            updateSimulation();
+        }
+    }
+    document.addEventListener('visibilitychange', syncMonitor);
+    syncMonitor();
 })();
 </script>
 <script>
@@ -2328,6 +2364,12 @@ function updateClock() {
 
     overlay.addEventListener('pointerup', stopDragging);
     overlay.addEventListener('pointercancel', stopDragging);
+    overlay.addEventListener('lostpointercapture', stopDragging);
+    window.addEventListener('resize', () => {
+        const rect = overlay.getBoundingClientRect();
+        overlay.style.setProperty('left', Math.max(0, Math.min(rect.left, window.innerWidth - rect.width)) + 'px', 'important');
+        overlay.style.setProperty('top', Math.max(0, Math.min(rect.top, window.innerHeight - rect.height)) + 'px', 'important');
+    });
 })();
 </script>
 

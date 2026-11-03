@@ -7,6 +7,8 @@ button { font-family: "Courier New", Courier, monospace; font-size: 18px; font-w
 button:active { border: 4px inset #ffffff; }
 button:disabled { opacity: 0.5; cursor: not-allowed; border: 4px inset #ffffff; }
 .hidden { display: none !important; }
+.panel, .modal-content, .item-modal-content { box-sizing: border-box; }
+.modal-content, .item-modal-content { max-height: calc(100vh - 32px); overflow-y: auto; }
 #status { font-size: 24px; font-weight: bold; color: #00FF00; background-color: #000080; border: 3px inset #c0c0c0; padding: 10px; margin-bottom: 20px; cursor: pointer; }
 table { margin: 0 auto; border-collapse: separate; border-spacing: 10px; }
 .pad { width: 100px; height: 100px; background-color: #c0c0c0; border: 5px outset #ffffff; cursor: pointer; }
