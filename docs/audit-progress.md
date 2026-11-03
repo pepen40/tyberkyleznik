@@ -283,8 +283,48 @@ server; chess delivery/RPG invitations/account-switch browser scenarios remain
 blocked on the full schema and fixtures, regardless of DOM smoke results.
 
 Restricted-shell GitHub access failed to connect; an approved read-only network
-retry succeeded and found no remote audit branch. Publication/remote CI results
-will be recorded separately after an actual attempt.
+retry succeeded and found no remote audit branch. The branch was then published
+through normal Git push, without merge or deploy.
+
+### Observed hosted results and corrections
+
+The completed [run 41621630675](https://github.com/pepen40/tyberkyleznik/actions/runs/41621630675)
+tested source commit `b027f4a3825e27c517213adf9de638583e3a7640`:
+
+- Source job PASSED: real Node JavaScript/V8 runners (including new timer tests),
+  PowerShell, Python, actionlint, Deno typecheck and all configured Deno unit tests.
+- PvP fixture PASSED: eight original migrations, eight pgTAP suites (150 planned
+  assertions) and both actual multi-connection concurrency/admission/deadline tests.
+- Invitation fixture PASSED: eight original migrations, both pgTAP suites (31
+  planned assertions), actual Auth/private Realtime and locally served Edge tests.
+- Browser DOM smoke PASSED with sandbox enabled and two independent desktop/mobile
+  contexts. This is not full authenticated online chess/RPG E2E.
+- Full historical bootstrap correctly FAILED as BLOCKED, listing the 25 missing
+  originals. No full-schema SQL was applied; no fabricated baseline was supplied.
+
+The first runs exposed two stale Deno source expectations: the new server ledger
+must authorize acceptance before room join, then confirm match readiness afterward;
+chess must use the authenticated adapter rather than restore the old shared bus.
+Tests now assert those stricter contracts. The deadline pgTAP fixture attempted
+defense with zero mana; it now funds the fixture's 50-mana defense without changing
+the server rule or weakening deadline/idempotency assertions (`57e1de0`).
+
+Ubuntu24.04 AppArmor rejected Chromium sandbox startup. The browser job uses the
+supported Ubuntu22.04 image, retaining `chromiumSandbox:true` and all protections.
+Actual DOM smoke then exposed four Illegal invocation errors on two clients and
+reloads: native timers were called as methods of the options object. Commit
+`b027f4a` invokes injected timers as standalone callbacks in peer delivery and
+invitation polling. Two new receiver regressions failed before and passed after;
+the seven existing protocol cases passed after, and the actual browser run is now
+clean. Game mechanics/design and historical migration SQL were not changed.
+
+All five expected artifacts were uploaded and listed through public API metadata.
+See `ci-observed-results.json` for exact job/step conclusions and artifact IDs.
+Protected logs/artifacts were not downloaded: automatic review rejected extracting
+a stored GitHub credential for API reuse. No credential was extracted. Sanitized
+public failure annotations (`09df7f2`) supplied the necessary diagnosis instead.
+PR creation through authenticated API is still pending; a reviewable draft body
+is saved in `audit-pr-description.md`.
 
 ## Remaining production gates
 

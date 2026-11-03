@@ -1,9 +1,10 @@
-# Prepared two-client E2E — NOT EXECUTED
+# Browser verification — DOM smoke passed, full online E2E not run
 
 ## Separate CI DOM smoke
 
-`browser-smoke.yml` installs test-only Playwright 1.58.2 and Chromium on the hosted
-runner. `tests/e2e/browser-smoke.cjs` opens independent desktop/mobile contexts,
+`browser-smoke.yml` installed test-only Playwright 1.58.2 and Chromium on the
+Ubuntu22.04 hosted runner. Its [actual passing run](https://github.com/pepen40/tyberkyleznik/actions/runs/41621630675)
+tested `b027f4a`. `tests/e2e/browser-smoke.cjs` opens independent desktop/mobile contexts,
 blocks backend access and verifies tabs, persisted background/FPS, chess setup
 controls and Simon start/tab cancellation. It exposes the main DOM for testing
 without assigning an Auth identity. This is UI smoke, not a successful login or
@@ -15,11 +16,15 @@ schema and disposable user fixtures are recovered. RPG invitation UI, live
 account switches, stale callbacks and full mini-game behavior are not established
 by a DOM smoke pass. See [CI scopes and status](ci-verification.md).
 
-The following full-online commands remain prepared and unexecuted:
+Ubuntu24.04 originally rejected Chromium sandbox startup through AppArmor. No
+`--no-sandbox` or global security relaxation was used. The 22.04 smoke then exposed
+native timer receiver errors, now fixed and covered by two regression cases.
 
-`tests/e2e/local-online.cjs` is a prepared Playwright library runner. Only its
-JavaScript syntax compiled in V8. Node, Playwright and the backend/browser flow
-have not been executed here.
+## Full online runner — not executed
+
+`tests/e2e/local-online.cjs` remains a prepared Playwright library runner. Its
+Node syntax check passed in CI; its authenticated backend/browser flow has not
+been executed. Passing DOM smoke is not a substitute.
 
 ## Preconditions
 
@@ -60,7 +65,8 @@ node tests/e2e/local-online.cjs
 Installation stays in ignored `.runtime`, outside frontend dependencies/global
 PATH. It records a resolved version and lock file there; review/preserve them in
 test infrastructure and use `npm ci --prefix .runtime/e2e` to reproduce that set.
-No package/version was installed or tested here. Installation pattern reference:
+The pinned package was installed/tested for hosted DOM smoke; it was not installed
+in the restricted local workspace. Installation pattern reference:
 [Playwright library](https://playwright.dev/docs/library).
 
 ## Exact scenario

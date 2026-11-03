@@ -1,0 +1,489 @@
+{
+  "observed_date": "2026-11-03",
+  "run_id": 41621630675,
+  "head_sha": "b027f4a3825e27c517213adf9de638583e3a7640",
+  "status": "completed",
+  "conclusion": "failure",
+  "html_url": "https://github.com/pepen40/tyberkyleznik/actions/runs/41621630675",
+  "jobs": [
+    {
+      "id": 125868523044,
+      "name": "Full historical bootstrap / explicit BLOCKED gate",
+      "status": "completed",
+      "conclusion": "failure",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report exact missing sources before any database operation",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run supabase/setup-cli@v3",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install PostgreSQL client",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Prepare full scope without feature fixtures",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Start clean disposable stack",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Apply all original migration files from scratch, no fixture baseline",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Full-schema pgTAP",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Stop disposable stack",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Enforce BLOCKED as a failing check, never a green skip",
+          "status": "completed",
+          "conclusion": "failure"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 125868523412,
+      "name": "invitations / Fixture scope / PostgreSQL 17 Auth, Realtime, Edge and pgTAP",
+      "status": "completed",
+      "conclusion": "success",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run supabase/setup-cli@v3",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run denoland/setup-deno@v2",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install PostgreSQL client",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Prepare fixture scope without copying application SQL yet",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Start empty disposable PostgreSQL, Auth and Realtime",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Apply fixture before the eight original invitation migrations",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Export and mask only disposable local test settings",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run both pgTAP invitation authorization suites",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Serve award-coins with local runtime credentials and verify readiness",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Private inbox Auth and Realtime integration",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Authenticated invitation lifecycle through the actual local Edge Function",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Stop disposable stack",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run denoland/setup-deno@v2",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run supabase/setup-cli@v3",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 125868523558,
+      "name": "source / syntax",
+      "status": "completed",
+      "conclusion": "success",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run denoland/setup-deno@v2",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Existing JavaScript/V8 suites, CI controls and syntax",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Validate GitHub Actions semantics with pinned actionlint",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "PowerShell migration-source checks (no database)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "CI migration scope and configuration regression tests (no SQL execution)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Deno typecheck for both Edge Functions",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Deno PvP error tests",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Deno atomic action routing",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Deno invitation, profile, reward and marketplace policies",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run denoland/setup-deno@v2",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 125868523582,
+      "name": "pvp / Fixture scope / PostgreSQL 17 PvP, pgTAP and concurrency",
+      "status": "completed",
+      "conclusion": "success",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run supabase/setup-cli@v3",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install PostgreSQL client (server is supplied by the local stack)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Prepare fixture scope, without invented migration timestamps",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Start empty disposable Supabase stack / PostgreSQL 17",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Apply fixture, then original PvP migration chain",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Competing action versions and idempotency",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Admission and deadline under multi-connection lock contention",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run all eight PvP pgTAP suites",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Stop disposable stack",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run supabase/setup-cli@v3",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 125868523627,
+      "name": "browser-smoke / smoke",
+      "status": "completed",
+      "conclusion": "success",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install pinned, test-only Playwright library",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install sandboxed Chromium and runner OS dependencies",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Two independent desktop/mobile contexts, DOM only",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Explicit online gate",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "id": 13223693188,
+      "name": "browser-dom-smoke-results",
+      "expired": false
+    },
+    {
+      "id": 13223653382,
+      "name": "full-bootstrap-status",
+      "expired": false
+    },
+    {
+      "id": 13222914179,
+      "name": "pvp-fixture-results",
+      "expired": false
+    },
+    {
+      "id": 13222609862,
+      "name": "invitation-fixture-results",
+      "expired": false
+    },
+    {
+      "id": 13222404922,
+      "name": "source-check-results",
+      "expired": false
+    }
+  ],
+  "scope_note": "Component fixtures and DOM smoke only. Full historical bootstrap and full online E2E remain BLOCKED. Artifacts were listed through public metadata, not downloaded.",
+  "artifact_contents_locally_verified": false
+}

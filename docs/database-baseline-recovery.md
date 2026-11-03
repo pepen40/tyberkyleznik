@@ -8,6 +8,13 @@ and [dependency/scope map](ci-verification.md). Three excluded aliases are check
 against their kept source blob identities by the new Python regression suite.
 No historical timestamp, SQL content or migration-history record was changed.
 
+The later hosted [CI run](https://github.com/pepen40/tyberkyleznik/actions/runs/41621630675)
+really applied 16 unchanged originals across two explicit component fixtures and
+passed their ten pgTAP suites plus concurrency/Auth/Realtime/Edge tests. These
+fixtures are not production history. The separate full-bootstrap check remained
+BLOCKED and applied no SQL; this result does not recover the other three tracked
+migrations' foundation or the 25 missing original sources.
+
 **Full historical bootstrap is not recovered and cannot be declared safe.** No
 SQL was executed against production, no snapshot baseline was invented, and no
 historical runner file was added, renamed, removed or repaired.

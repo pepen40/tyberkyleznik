@@ -1,5 +1,44 @@
 # Runtime verification — 2026-11-03
 
+## Latest observed hosted verification
+
+[Completed run 41621630675](https://github.com/pepen40/tyberkyleznik/actions/runs/41621630675)
+tested `b027f4a3825e27c517213adf9de638583e3a7640`. Exact public metadata is saved in
+[ci-observed-results.json](ci-observed-results.json).
+
+| Actually executed on GitHub-hosted runners | Result |
+| --- | --- |
+| Node22: JavaScript syntax and every `tests/run-*.cjs` | PASSED |
+| PowerShell source/provenance tests | PASSED |
+| Python staging/configuration regressions; actionlint | PASSED |
+| Deno2 typecheck and all configured error/routing/invitation/profile/reward/marketplace unit suites | PASSED |
+| Two fresh fixture stacks, 16 unchanged original migrations | PASSED within component scope |
+| Eight PvP pgTAP files / 150 planned assertions | PASSED |
+| Two invitation pgTAP files / 31 planned assertions | PASSED |
+| Both real multi-connection SQL harnesses: competing versions, admission, deadline contention and retries | PASSED |
+| Actual local Auth/private Realtime/Edge invitation integrations | PASSED |
+| Sandboxed Chromium DOM smoke, independent desktop/mobile contexts | PASSED |
+| Full historical bootstrap | BLOCKED / failing check; 25 original sources missing, baseline/correspondence unreviewed |
+| Full authenticated online chess/RPG E2E and real browser PvP timeout/account switching | NOT RUN; full schema/user fixtures unavailable |
+
+The overall workflow conclusion is failure because the bootstrap gate deliberately
+refuses missing history. Four available component jobs passed; this does not mean
+the site or production is complete. Five sanitized artifacts were uploaded;
+their contents were not downloaded/independently inspected locally.
+
+Normal Git push published the branch; public REST calls read run/job/step,
+annotation and artifact-list metadata. A credential-helper extraction request for
+protected artifact download was rejected by automatic review as unauthorized API
+credential reuse. It did not execute. Public sanitized annotations resolved the
+test failures without that credential. No production credentials or SQL were used.
+
+Earlier failed runs are retained evidence: `41620032170` and `41620544391` exposed
+the invalid deadline fixture, stale Deno expectations and AppArmor sandbox issue;
+`41621163632` passed source/PvP/invitations and exposed browser timer invocation.
+Corrections kept server mana checks, RLS/Auth and Chromium sandbox enabled.
+The final timer tests observed two before-failures, two after-passes and seven
+protocol regression passes locally in V8, then passed real Node/browser CI.
+
 ## Isolated CI stage — local observations
 
 Implementation commit: `38e8d85`. Workflow/scopes/artifact details and run commands
@@ -22,8 +61,8 @@ The embedded Python was already present; no installer or system setting changed.
 Native Semgrep itself failed to initialize its X509 store; its Python/ruamel tools
 provided the available parser checks without weakening certificate verification.
 The default sandbox could not connect to GitHub; a separately approved read-only
-network retry succeeded and found no published audit branch. Remote publication
-and Actions outcomes are recorded only after an actual attempt.
+network retry succeeded. The subsequent publication and actual hosted results
+are recorded above. Older environment limitations below describe local execution.
 
 ## Observed environment
 
@@ -139,8 +178,9 @@ These commands have **not** been executed here and are not evidence of success.
 
 A test-only local server and two-context runner are now prepared:
 `tests/e2e/local-online.cjs`. See [scenario and exact commands](browser-e2e-local.md).
-Only its syntax compiled in V8; it was not executed in Node/a browser. A complete
-local backend and fixture identities remain prerequisites.
+Its Node syntax check passed in the hosted source job; its full authenticated
+flow was not executed. A complete local backend and fixture identities remain
+prerequisites. The separate DOM smoke did pass, as recorded above.
 
 There is no runtime-verified full frontend E2E harness yet. The repository's historical
 database bootstrap is incomplete; the narrow CI fixtures cannot be represented

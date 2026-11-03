@@ -1,42 +1,33 @@
-# Stabilize site widgets, PvP error handling and offline RPG lifecycle
+# Draft PR — not submitted
 
-Base: `integration/pvp-authoritative-mainline` at
-`f639cb6dd39cf7817b4b0cc12d1aba6cc4bb5907`.
-Target branch: `audit/site-completion-20261103`.
-Remote PR state and target freshness could not be verified in this environment.
+Suggested title: Harden game lifecycle and invitations; add isolated verification gates
 
-The FPS monitor had multiple sampling loops; hiding it did not stop all work.
-Clock audio/settings, Aura layer stopping, compressor rescanning and small-screen
-modal sizing have been corrected while retaining the existing visual style.
+This branch closes spoofable invitation/client-reward paths in source, preserves
+game state across reconnect/account changes and adds isolated runtime verification.
+It is not ready for production: historical SQL sources and full authenticated
+browser E2E remain missing. No merge, deploy, production SQL or reward enablement
+has occurred.
 
-PvP expected PostgREST errors now retain safe 403/409 responses instead of
-incorrect generic 500s. Unknown database messages stay hidden. Offline RPG win
-and item callbacks now check the original battle/account so a delayed response
-cannot advance an escaped battle, heal a replacement fighter or overwrite a
-different account's inventory. Successful item consumption still reconciles the
-same account's inventory after leaving a battle.
+Changes include server-owned invitation identity/preferences/lifecycle, private
+inboxes, authoritative PvP admission/action/deadline handling, callback ownership,
+chess move/message recovery and native browser timer invocation. The existing
+Windows98 style and game mechanics are retained. See audit-progress.md for earlier
+commits and the full scope.
 
-Observed verification: six widget cases, eight inline script compilations,
-eight RPG lifecycle cases and script.js compilation passed in functions.exec V8.
-The Edge worker observed three test bodies / 38 assertions passing in V8 with
-imports/type annotation removed. The security reviewer observed 11 extracted
-reward-guard checks passing. Diff whitespace checks passed. Tests use actual
-source with mocks; none constitute browser E2E or deployed Edge integration.
-Node/Deno runners and typechecks are configured in CI but not observed running.
+CI uses separate source, PvP fixture, invitation fixture, DOM smoke and complete
+bootstrap jobs. No synthetic migration baseline is committed. Original timestamps
+are unchanged; the incomplete historical bootstrap fails explicitly as BLOCKED.
+Exact pending rollout migrations and the missing-history prerequisite are listed
+in rpg-pvp-production-rollout.md and missing-migration-sources.md.
 
-No SQL migration was added in these stages. The rollout runbook explicitly blocks
-database rollout pending recovery and testing of missing historical migrations.
-Cross-role PvP create/join races, atomic timeout enforcement, online chess flows,
-remaining game callbacks and whole-site verification remain open. Source payout
-guards remain fail-closed; deployed Edge source has not been reverified.
+Validation: completed run https://github.com/pepen40/tyberkyleznik/actions/runs/41621630675
+on b027f4a passed real Node/PowerShell/Python/actionlint/Deno checks, ten pgTAP suites
+(150 PvP + 31 invitation planned assertions), both multi-connection SQL harnesses,
+Auth/Realtime/Edge integrations and sandboxed two-context DOM smoke. Full bootstrap
+was BLOCKED; full authenticated online chess/RPG browser E2E was not run. Final
+documentation commits do not change the tested source.
 
-No merge, deployment, production migration, data deletion or reward enablement
-was performed. This is not a production-ready sign-off.
-
-Further source stage: added peer history reconciliation and application ACKs for
-online chess, bounded invitation retries/reply caching and PvP callback ownership
-guards. Twenty-one related V8 fixture cases passed; runners are configured in CI
-but Node/browser/Realtime execution was not observed. See `audit-progress.md` for
-mixed-client, in-memory recovery, invitation identity/clock and remaining game
-coverage limits. Both chess clients must receive the updated source together
-after independent runtime approval; this change was not deployed.
+Production gates: recover/review the 25 original migration sources plus initial
+schema, refresh deployed-schema/function correspondence, pass clean full bootstrap
+and full two-account browser E2E, then obtain separate rollout approval. Existing
+component fixture passes cannot authorize deployment or enable game rewards.

@@ -1,4 +1,10 @@
-# Isolated CI verification — prepared, remote results unobserved
+# Isolated CI verification — observed hosted results
+
+[Run 41621630675](https://github.com/pepen40/tyberkyleznik/actions/runs/41621630675)
+on `b027f4a3825e27c517213adf9de638583e3a7640` completed with source, PvP,
+invitation and browser DOM smoke jobs successful. The overall result is failure
+because full historical bootstrap is explicitly BLOCKED. Exact steps and five
+artifact IDs are in [ci-observed-results.json](ci-observed-results.json).
 
 `site-verification.yml` is the entry point for PRs to main, pushes to main/the
 audit branch, and manual runs. It calls the source, PvP, invitation and browser
@@ -14,7 +20,7 @@ deploys, merges or enables rewards. Permissions are `contents: read`.
 | PvP fixture | Supabase CLI 2.84.2, disposable PG17/Auth/Realtime, eight original migrations, eight pgTAP suites, both multi-connection shell harnesses | Minimal existing fixture, not historical bootstrap/full application schema |
 | Invitation fixture | PG17/Auth/Realtime/Edge, eight original migrations, two pgTAP suites and both actual Deno Auth/Realtime/Edge integrations | Minimal existing player/cooldown fixture, not economy validation |
 | Full bootstrap | Prerequisite gate, then clean stack + every original migration + all pgTAP suites if READY | Currently BLOCKED by 25 missing SQL files and unreviewed baseline/current correspondence |
-| Browser DOM smoke | Pinned Playwright 1.58.2, sandboxed Chromium, two independent desktop/mobile contexts | No Auth identity/backend; full online E2E remains BLOCKED |
+| Browser DOM smoke | Ubuntu22.04, pinned Playwright 1.58.2, sandboxed Chromium, two independent desktop/mobile contexts | No Auth identity/backend; full online E2E remains BLOCKED |
 
 The PostgreSQL server is the Supabase PG17 container; runners install the `psql`
 client. Docker is provided by the GitHub-hosted Ubuntu runner. No local installation
@@ -73,7 +79,9 @@ sanitized output in `.runtime/ci/safe`. Uploads include only that directory for
 seven days. Redaction covers runtime secret environment values, JWTs, Supabase key
 formats, connection credentials, session/password/header fields and email literals.
 Generated local keys are masked before being written to `GITHUB_ENV`.
-No raw status dump, `.env`, Auth/session response, browser trace/profile/screenshot,
+Failures also emit escaped, bounded, sanitized error annotations for diagnosis
+through public check metadata without exposing a credential. No raw status dump,
+`.env`, Auth/session response, browser trace/profile/screenshot,
 Docker inspect or whole workspace/temp directory is uploaded.
 
 The readiness probe uses local ephemeral Auth credentials. The CLI automatically
@@ -93,9 +101,12 @@ gh run view RUN_ID --log
 gh run download RUN_ID --dir .runtime/downloaded-ci
 ```
 
-These commands were not executed in the restricted local environment. No CI run
-URL or remote pass result has been observed. Missing baseline is expected to keep
-the aggregate workflow red until recovery, even if every available narrow job passes.
+GitHub CLI was unavailable, so these `gh` commands were not executed. Normal Git
+push and public REST requests observed the hosted results above. Protected log/
+artifact download was not authorized; no token was extracted from the credential
+helper. The public metadata confirms upload success, not a local content review.
+Missing baseline keeps the aggregate workflow red until recovery even when every
+available narrow job passes.
 
 References: [Supabase local CI](https://supabase.com/docs/guides/deployment/ci/testing),
 [local migration up](https://supabase.com/docs/reference/cli/supabase-migration-up),
