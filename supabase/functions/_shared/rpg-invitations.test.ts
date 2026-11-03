@@ -240,7 +240,8 @@ Deno.test('host preserves the server match when cancellation races with guest ac
   assert(cancel >= 0 && reconcile > cancel);
   assert(clear.includes("match?.status === 'active' || match?.status === 'completed'"));
   assert(clear.includes('applyAuthoritativePvpMatch(match);'));
-  assert(clear.includes('pending.timer = setTimeout(() => clearOutgoingRpgChallenge(message), 5000)'));
+  assert(clear.includes('pending.timer = setTimeout(() => { if (isCurrent()) clearOutgoingRpgChallenge(message); }, 5000)'));
+  assert(clear.includes('pendingOutgoingChallenge === (clearing ? null : pending)'));
   assert(clear.indexOf('pendingOutgoingChallenge = null') > reconcile);
 });
 
