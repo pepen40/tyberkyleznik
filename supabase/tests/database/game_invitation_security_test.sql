@@ -1,5 +1,5 @@
 begin;
-select plan(20);
+select plan(22);
 insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at) values
 ('00000000-0000-4000-8000-000000000601','authenticated','authenticated','invite-a@example.invalid','',now(),'{}','{}',now(),now()),
 ('00000000-0000-4000-8000-000000000602','authenticated','authenticated','invite-b@example.invalid','',now(),'{}','{}',now(),now()),
@@ -33,5 +33,10 @@ select public.game_invitation_command('00000000-0000-4000-8000-000000000601','cr
 update public.game_invitations set expires_at=clock_timestamp()-interval '1 second' where topic='room_expire001';
 select is(public.game_invitation_command('00000000-0000-4000-8000-000000000603','reply','room_expire001','accepted')->'invitation'->>'status','expired','expired invitation cannot be accepted');
 select ok((select qual like '%chess-invitations%' and with_check like '%rpg-invitations%' from pg_policies where schemaname='realtime' and policyname='no_shared_invitation_bus'),'RLS retires shared bus and forbids client RPG inbox writes');
+select ok((select qual like '%online-users%' and with_check like '%challenge_response%' from pg_policies where schemaname='realtime' and policyname='no_shared_invitation_bus'),'legacy public RPG invitation broadcasts are denied too');
+select public.register_realtime_room('00000000-0000-4000-8000-000000000601','room_block0001','rpg','invite-c',false);
+select public.game_invitation_command('00000000-0000-4000-8000-000000000601','create','room_block0001');
+select public.game_invitation_command('00000000-0000-4000-8000-000000000603','settings','','{"rpg":false,"chess":false}');
+select is(public.game_invitation_command('00000000-0000-4000-8000-000000000601','read','room_block0001')->'invitation'->>'status','disabled','blocking finalizes already pending invitations for the sender');
 select * from finish();
 rollback;

@@ -45,9 +45,22 @@ begin
       insert into public.game_invitation_preferences(user_id,rpg,chess)
       values(p_user_id,(v_json->>'rpg')::boolean,(v_json->>'chess')::boolean)
       on conflict(user_id) do update set rpg=excluded.rpg,chess=excluded.chess;
+      -- Blocking also finalizes pending invitations. Acquire the room first,
+      -- just like reply/cancel, so acceptance and blocking have a defined order.
+      for r in
+        select rooms.* from public.realtime_room_access rooms
+        join public.game_invitations g on g.topic=rooms.topic
+        where g.invitee_id=p_user_id and g.status in ('pending','received')
+          and ((g.kind='rpg' and not (v_json->>'rpg')::boolean)
+            or (g.kind='chess' and not (v_json->>'chess')::boolean))
+        order by rooms.topic for update of rooms
+      loop
+        update public.game_invitations set status='disabled',updated_at=clock_timestamp()
+        where topic=r.topic and status in ('pending','received');
+      end loop;
     end if;
     select * into prefs from public.game_invitation_preferences where user_id=p_user_id;
-    return jsonb_build_object('success',true,'rpg',coalesce(prefs.rpg,true),'chess',coalesce(prefs.chess,true));
+    return jsonb_build_object('success',true,'configured',prefs.user_id is not null,'rpg',coalesce(prefs.rpg,true),'chess',coalesce(prefs.chess,true));
   end if;
   if p_op = 'list' then
     -- Filtering precedes projection: no other user's invitation or email is exposed.
@@ -232,6 +245,14 @@ grant execute on function public.validate_realtime_room_invitation(uuid,text,tex
 -- Retire the shared invitation bus completely. A restrictive policy also
 -- protects against older permissive policies left on the deployment.
 create policy no_shared_invitation_bus on realtime.messages as restrictive
-for all to authenticated using (realtime.topic()<>'chess-invitations')
-with check (realtime.topic()<>'chess-invitations' and realtime.topic() !~ '^rpg-invitations:');
+for all to authenticated using (
+  realtime.topic()<>'chess-invitations'
+  and not (realtime.topic()='online-users' and extension='broadcast'
+    and coalesce(payload->>'event','') in ('challenge','challenge_response'))
+)
+with check (
+  realtime.topic()<>'chess-invitations' and realtime.topic() !~ '^rpg-invitations:'
+  and not (realtime.topic()='online-users' and extension='broadcast'
+    and coalesce(payload->>'event','') in ('challenge','challenge_response'))
+);
 commit;

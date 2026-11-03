@@ -230,6 +230,7 @@ let roachCountdown = ROACH_FIRST_DELAY;
 let roachAnimationFrame = null;
 let roachRewardSent = false;
 let roachActive = false;
+let roachGeneration = 0;
 let roachItems = [];
 let roachSplats = [];
 let roachTool = 'none';
@@ -314,6 +315,7 @@ function spawnRoachWave() {
     const field = document.getElementById('roach-field');
     const tools = document.getElementById('roach-tools');
     if (!layer || !field || !tools) return;
+    roachGeneration++;
     roachActive = true;
     roachRewardSent = false;
     roachTool = 'hammer';
@@ -484,12 +486,15 @@ function checkRoachClear() {
 }
 async function finishRoachWave() {
     if (!roachActive || roachRewardSent) return;
+    const generation = roachGeneration, account = currentAuthUserId;
+    const isCurrentWave = () => generation === roachGeneration && account === currentAuthUserId;
     roachRewardSent = true;
     try {
         if (currentUser) {
             const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
                 body: { action: 'roach_clear', username: currentUser, data: {} }
             });
+            if (!isCurrentWave()) return;
             if (error) throw error;
             if (data?.success) {
                 playRoachAudio('roach-applause-audio');
@@ -509,9 +514,11 @@ async function finishRoachWave() {
             }
         }
     } catch (e) {
+        if (!isCurrentWave()) return;
         roachRewardSent = false;
         console.error('Ошибка награды за бойню:', e);
     }
+    if (!isCurrentWave()) return;
     roachActive = false;
     if (roachAnimationFrame) cancelAnimationFrame(roachAnimationFrame);
     roachAnimationFrame = null;
@@ -531,6 +538,7 @@ async function finishRoachWave() {
     }, 10000);
 }
 function stopRoachEvent(resetSchedule = false) {
+    roachGeneration++;
     stopRoachSchedule();
     roachActive = false;
     if (roachAnimationFrame) cancelAnimationFrame(roachAnimationFrame);
@@ -786,12 +794,14 @@ function getLocalRpgProgress() {
     return state && typeof state === 'object' ? state : { date: '', wins: 0, bosses: 0, spent: 0, claimed: [], totalWins: 0, totalBosses: 0, achievementsClaimed: [] };
 }
 async function loadRpgContracts() {
+    const account = currentAuthUserId;
     const dailyEl = document.getElementById('rpg-daily-contracts');
     const achEl = document.getElementById('rpg-achievements');
     if (!dailyEl || !achEl || !currentUser) return;
     dailyEl.innerHTML = '<p>Обновляем контракты...</p>';
     try {
         const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'daily_status', username: currentUser, data: {} } });
+        if (account !== currentAuthUserId) return;
         if (error) throw error;
         if (!data || !data.success) throw new Error(data?.error || 'Не удалось загрузить доску. Проверь соединение и открой вкладку снова.');
         currentUpgrades = data.newUpgrades || currentUpgrades;
@@ -799,6 +809,7 @@ async function loadRpgContracts() {
         updateUI();
         renderRpgContracts(data.progress || getLocalRpgProgress());
     } catch (e) {
+        if (account !== currentAuthUserId) return;
         dailyEl.innerHTML = '<p>Не удалось загрузить доску. Проверь соединение и открой вкладку снова.</p>';
         achEl.innerHTML = '';
     }
@@ -823,15 +834,17 @@ function renderRpgContracts(progress) {
     }).join('');
 }
 async function claimRpgReward(kind, id) {
+    const account = currentAuthUserId;
     if (rpgContractBusy) return; rpgContractBusy = true;
     const status = document.getElementById('rpg-contract-status'); if (status) status.textContent = 'Проверяем награду...';
     try {
         const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'claim_rpg_reward', username: currentUser, data: { kind, id } } });
+        if (account !== currentAuthUserId) return;
         if (error) throw error;
         if (!data || !data.success) throw new Error(data?.error || 'Награда недоступна');
         currentCoins = Number(data.newCoins ?? currentCoins); currentUpgrades = data.newUpgrades || currentUpgrades; updateUI(); renderRpgContracts(data.progress || getLocalRpgProgress());
         if (status) status.textContent = `Забрано +${data.earned} монет.`;
-    } catch (e) { if (status) status.textContent = e.message || 'Не удалось забрать награду.'; }
+    } catch (e) { if (account !== currentAuthUserId) return; if (status) status.textContent = e.message || 'Не удалось забрать награду.'; }
     finally { rpgContractBusy = false; }
 }
 
@@ -925,6 +938,7 @@ function renderGearCabinet() {
 }
 
 async function buyGear(itemId) {
+    const account = currentAuthUserId;
     const item = RPG_GEAR.find(g => g.id === itemId);
     if (!item) return;
     const gear = ensureRpgGear();
@@ -936,6 +950,7 @@ async function buyGear(itemId) {
         const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
             body: { action: 'buy_gear', username: currentUser, data: { itemId } }
         });
+        if (account !== currentAuthUserId) return;
         if (error) throw error;
         if (!data || !data.success) { showGearMessage(data?.error || 'Покупка не удалась.'); return; }
         currentCoins = data.newCoins;
@@ -944,7 +959,7 @@ async function buyGear(itemId) {
         updateUI();
         renderGearCabinet();
         showGearMessage(`Приобретено: ${item.name}! Теперь надень его на бойца.`);
-    } catch (e) {
+    } catch (e) { if (account !== currentAuthUserId) return;
         showGearMessage('Ошибка покупки: ' + (e.message || e));
     } finally {
         if (button) button.disabled = false;
@@ -952,6 +967,7 @@ async function buyGear(itemId) {
 }
 
 async function equipGear(itemId, unequip = false) {
+    const account = currentAuthUserId;
     const item = RPG_GEAR.find(g => g.id === itemId);
     const charSelect = document.getElementById('rpg-gear-char');
     const charType = charSelect ? charSelect.value : 'ashab';
@@ -961,6 +977,7 @@ async function equipGear(itemId, unequip = false) {
         const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
             body: { action: 'equip_gear', username: currentUser, data: { itemId, charType, unequip: !!unequip } }
         });
+        if (account !== currentAuthUserId) return;
         if (error) throw error;
         if (!data || !data.success) { showGearMessage(data?.error || 'Не удалось изменить экипировку.'); return; }
         currentUpgrades = data.newUpgrades;
@@ -968,7 +985,7 @@ async function equipGear(itemId, unequip = false) {
         renderGearCabinet();
         renderCharStats();
         showGearMessage(unequip ? 'Предмет снят.' : `${item.name} надет на выбранного бойца.`);
-    } catch (e) {
+    } catch (e) { if (account !== currentAuthUserId) return;
         showGearMessage('Ошибка экипировки: ' + (e.message || e));
     }
 }
@@ -996,6 +1013,7 @@ let pvpBattleFinished = false;
 
 let pendingChallengeTarget = null;
 let pendingChallengeRoomId = null;
+let pendingChallengeExpiryTimer = null;
 let pendingChallengeHost = null;
 let processingIncomingChallengeRoomId = null;
 let pendingOutgoingChallenge = null;
@@ -1446,6 +1464,7 @@ function renderCharStats() {
 }
 
 function switchTab(tab) {
+    if (tab !== 'game' && typeof cancelSimonGame === 'function') cancelSimonGame();
 ['minigames', 'game', 'chess', 'rpg', 'cases', 'inventory', 'market', 'leaderboard', 'howto', 'settings'].forEach(t => {
         const el = document.getElementById('tab-' + t);
         if (el) el.classList.add('hidden');
@@ -1467,14 +1486,16 @@ function openMiniGame(game) {
     }
 }
 async function buyUpgrade(charType, statType) {
+    const account = currentAuthUserId;
     try {
         const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
             body: { action: 'buy_upgrade', username: currentUser, data: { charType, statType } }
         });
+        if (account !== currentAuthUserId) return;
         if (error) { alert("Ошибка сети: " + error.message); return; }
         if (data.error) { alert(data.error); return; }
         currentCoins = data.newCoins; currentUpgrades = data.newUpgrades; updateUI();
-    } catch(e) { alert("Фатальная ошибка: " + e.message); }
+    } catch(e) { if (account !== currentAuthUserId) return; alert("Фатальная ошибка: " + e.message); }
 }
 
 function openItemInfo(itemName) {
@@ -1824,6 +1845,12 @@ function listenForChallenges(channel = rpgInvitationChannel) {
             return;
         }
         pendingChallengeRoomId = data.roomId;
+        if (pendingChallengeExpiryTimer) clearTimeout(pendingChallengeExpiryTimer);
+        pendingChallengeExpiryTimer = setTimeout(() => {
+            if (channel !== rpgInvitationChannel || pendingChallengeRoomId !== data.roomId) return;
+            pendingChallengeRoomId = null; pendingChallengeHost = null;
+            document.getElementById('pvp-receive-modal').classList.add('hidden');
+        }, Math.min(30000, Math.max(0, Number(data.remainingMs) || 30000)));
         processingIncomingChallengeRoomId = null;
         pendingChallengeHost = String(invitation.hostUsername || data.host || 'Игрок');
         document.getElementById('pvp-receive-host-name').textContent = 'Игрок: ' + pendingChallengeHost;
@@ -1831,6 +1858,7 @@ function listenForChallenges(channel = rpgInvitationChannel) {
         if (receiveStatus) receiveStatus.textContent = 'Приглашение проверено. Отправляем подтверждение…';
         document.getElementById('pvp-receive-modal').classList.remove('hidden');
         const acknowledged = await sendRpgInvitationResponse(data.roomId, 'received');
+        if (channel !== rpgInvitationChannel || data.targetUserId !== currentAuthUserId || pendingChallengeRoomId !== data.roomId) return;
         if (receiveStatus) receiveStatus.textContent = acknowledged
             ? 'Получение подтверждено. Выберите действие.'
             : 'Не удалось подтвердить получение. Проверьте соединение и повторите действие.';
@@ -1861,6 +1889,7 @@ function listenForChallenges(channel = rpgInvitationChannel) {
 }
 
 async function closeReceiveModal() {
+    if (pendingChallengeExpiryTimer) clearTimeout(pendingChallengeExpiryTimer);
     const roomId = pendingChallengeRoomId;
     document.getElementById('pvp-receive-modal').classList.add('hidden');
     const receiveStatus = document.getElementById('pvp-receive-status');
@@ -1873,18 +1902,23 @@ async function closeReceiveModal() {
 async function executeAcceptChallenge() {
     if (!pendingChallengeRoomId) return;
     const roomId = pendingChallengeRoomId;
+    const account = currentAuthUserId;
+    const isCurrent = () => account === currentAuthUserId && pendingChallengeRoomId === roomId;
     pvpOpponentName = pendingChallengeHost;
     document.getElementById('pvp-receive-modal').classList.add('hidden');
     const receiveStatus = document.getElementById('pvp-receive-status');
     if (receiveStatus) receiveStatus.textContent = 'Подключаемся к комнате…';
     const charType = document.getElementById('pvp-receive-char-select').value;
     let joined = false;
-    if (!await sendRpgInvitationResponse(roomId, 'accepted')) {
+    const accepted = await sendRpgInvitationResponse(roomId, 'accepted');
+    if (!isCurrent()) return;
+    if (!accepted) {
         document.getElementById('pvp-receive-modal').classList.remove('hidden');
         if (receiveStatus) receiveStatus.textContent = 'Сервер не подтвердил принятие приглашения.';
         return;
     }
     try { joined = await joinPvpRoom(roomId, charType); } catch (_) {}
+    if (!isCurrent()) return;
     if (joined && myRoomId === roomId) {
         pendingChallengeRoomId = null;
         pendingChallengeHost = null;
@@ -1996,13 +2030,14 @@ async function syncPvpMatch() {
     pvpSyncBusy = true;
     const roomTopic = myRoomId;
     const currentMatchId = pvpMatchId;
+    const account = currentAuthUserId;
     try {
         const match = await invokeRpgPvp('get_match', { room_topic: roomTopic });
-        if (myRoomId === roomTopic && (!currentMatchId || pvpMatchId === currentMatchId) && (!pvpMatchId || match.match_id === pvpMatchId)) {
+        if (currentAuthUserId === account && myRoomId === roomTopic && (!currentMatchId || pvpMatchId === currentMatchId) && (!pvpMatchId || match.match_id === pvpMatchId)) {
             applyAuthoritativePvpMatch(match);
         }
     }
-    catch (_) { if (pvpBattleStarted && !pvpBattleFinished) logPvp('Нет связи с сервером. Подтверждённое состояние сохранено.'); }
+    catch (_) { if (currentAuthUserId === account && pvpBattleStarted && !pvpBattleFinished) logPvp('Нет связи с сервером. Подтверждённое состояние сохранено.'); }
     finally { pvpSyncBusy = false; }
 }
 
@@ -2084,12 +2119,15 @@ async function pvpUseItem(itemName) {
 
 function finishPvpFromServer(won, status) {
     if (pvpBattleFinished) return;
+    const room = myRoomId, match = pvpMatchId, account = currentAuthUserId;
     pvpBattleFinished = true; disablePvpButtons();
     document.getElementById('battle-music')?.pause();
     logPvp(status === 'completed' ? (won ? 'Сервер подтвердил победу.' : 'Сервер подтвердил поражение.') : 'Матч завершён сервером: ' + status + '.');
     document.getElementById('pvp-turn-indicator').textContent = won ? 'ПОБЕДА' : 'МАТЧ ЗАВЕРШЁН';
     if (pvpSyncTimer) clearInterval(pvpSyncTimer);
-    setTimeout(() => leavePvpRoom(false), 2500);
+    setTimeout(() => {
+        if (room === myRoomId && match === pvpMatchId && account === currentAuthUserId && pvpBattleFinished) leavePvpRoom(false);
+    }, 2500);
 }
 
 async function endPvpBattle() { if (pvpMatchId && !pvpBattleFinished) return submitPvpIntent('leave'); }
@@ -2097,43 +2135,57 @@ async function endPvpBattle() { if (pvpMatchId && !pvpBattleFinished) return sub
 function attachPvpRoomChannel(roomTopic) {
     if (roomChannel) supabaseClient.removeChannel(roomChannel);
     roomChannel = supabaseClient.channel(roomTopic, { config: { broadcast: { self: false }, private: true } });
-    roomChannel.on('broadcast', { event: 'chat_message' }, ({ payload }) => addPvpChatMessage(payload?.nick || '???', payload?.text || ''));
-    roomChannel.subscribe(status => { if (status === 'SUBSCRIBED') syncPvpMatch(); });
+    const channel = roomChannel, account = currentAuthUserId;
+    const isCurrent = () => roomChannel === channel && myRoomId === roomTopic && account === currentAuthUserId;
+    roomChannel.on('broadcast', { event: 'chat_message' }, ({ payload }) => { if (isCurrent()) addPvpChatMessage(payload?.nick || '???', payload?.text || ''); });
+    roomChannel.subscribe(status => { if (isCurrent() && status === 'SUBSCRIBED') syncPvpMatch(); });
     initPvpChat(roomTopic);
 }
 
 async function createPvpRoom() {
+    const account = currentAuthUserId, initialRoom = myRoomId, initialMatch = pvpMatchId;
+    const isCurrent = () => account === currentAuthUserId && myRoomId === initialRoom && pvpMatchId === initialMatch;
     const roomTopic = 'room_' + Math.random().toString(36).slice(2, 11).padEnd(9, '0');
     const charType = document.getElementById('pvp-char-select').value;
     const registered = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'register_room_membership', data: { topic: roomTopic, kind: 'rpg', inviteeUsername: null, isPublic: true } } });
+    if (!isCurrent()) return;
     if (registered.error || !registered.data?.success) { alert(registered.data?.error || 'Не удалось создать комнату.'); return; }
     try {
         const match = await invokeRpgPvp('create_match', { match_id: newPvpActionId(), room_topic: roomTopic, char_type: charType });
+        if (!isCurrent()) return;
         myRoomId = roomTopic; pvpMatchId = match.match_id; pvpMatchVersion = Number(match.version);
         isPvpHost = true; currentPvpChar = charType; pvpOpponentName = null; pvpBattleFinished = false; pvpPendingAction = null;
         await lobbyChannel?.track({ room: { roomId: roomTopic, roomName: document.getElementById('pvp-room-name').value.trim() || 'Комната ' + currentUser, hostName: currentUser, hostPts: currentPvpPts, charName: charType, hp: 0, atk: 0 } });
+        if (account !== currentAuthUserId || myRoomId !== roomTopic || pvpMatchId !== match.match_id) return;
         closePvpLobby(); attachPvpRoomChannel(roomTopic); switchTab('rpg');
         document.getElementById('rpg-char-select').classList.add('hidden'); document.getElementById('pvp-battle-screen').classList.remove('hidden');
         startPvpMatchSync();
-    } catch (error) { alert(error.message || 'Не удалось создать матч.'); }
+    } catch (error) { if (account === currentAuthUserId) alert(error.message || 'Не удалось создать матч.'); }
 }
 
 async function joinPvpRoom(roomId, charType) {
+    const account = currentAuthUserId, initialRoom = myRoomId, initialMatch = pvpMatchId;
+    const isCurrent = () => account === currentAuthUserId && myRoomId === initialRoom && pvpMatchId === initialMatch;
     const joinedRoom = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'join_room_membership', data: { topic: roomId } } });
+    if (!isCurrent()) return false;
     if (joinedRoom.error || !joinedRoom.data?.success) { alert(joinedRoom.data?.error || 'Нет доступа к комнате.'); return false; }
     try {
         const match = await invokeRpgPvp('join_match', { room_topic: roomId, char_type: charType });
+        if (!isCurrent()) return false;
         myRoomId = roomId; pvpMatchId = match.match_id; pvpMatchVersion = Number(match.version);
         isPvpHost = false; currentPvpChar = charType; pvpBattleFinished = false; pvpPendingAction = null;
         closePvpLobby(); switchTab('rpg');
         document.getElementById('rpg-char-select').classList.add('hidden'); document.getElementById('pvp-battle-screen').classList.remove('hidden');
         attachPvpRoomChannel(roomId); startPvpMatchSync();
         return true;
-    } catch (error) { alert(error.message || 'Не удалось подключиться к матчу.'); return false; }
+    } catch (error) { if (isCurrent()) alert(error.message || 'Не удалось подключиться к матчу.'); return false; }
 }
 
 async function leavePvpRoom(sendSignal = true) {
+    const account = currentAuthUserId, room = myRoomId, match = pvpMatchId;
+    const isCurrent = () => account === currentAuthUserId && room === myRoomId && match === pvpMatchId;
     if (sendSignal && isPvpHost && pendingOutgoingChallenge) await syncPvpMatch();
+    if (!isCurrent()) return;
     if (sendSignal && isPvpHost && pendingOutgoingChallenge) {
         await clearOutgoingRpgChallenge('Вызов отменён.');
         return;
@@ -2143,10 +2195,13 @@ async function leavePvpRoom(sendSignal = true) {
         try { await invokeRpgPvp('cancel_match', { room_topic: myRoomId }); }
         catch (error) { alert(error.message || 'Не удалось отменить комнату на сервере.'); return; }
     }
+    if (!isCurrent()) return;
     if (pvpSyncTimer) clearInterval(pvpSyncTimer);
     pvpSyncTimer = null;
     if (roomChannel) { const channel = roomChannel; roomChannel = null; await supabaseClient.removeChannel(channel); }
+    if (!isCurrent()) return;
     if (isPvpHost && lobbyChannel) { try { await lobbyChannel.track({ online: true }); } catch (_) {} }
+    if (!isCurrent()) return;
     document.getElementById('pvp-battle-screen')?.classList.add('hidden');
     document.getElementById('rpg-char-select')?.classList.remove('hidden');
     document.getElementById('battle-music')?.pause();
@@ -2425,8 +2480,8 @@ function rpgAttack() {
     else if (rpgBonusAttacks > 0) {
         rpgBonusAttacks--;
         if (rpgBonusAttacks > 0) { isPlayerTurn = true; setTurnIndicator(true); checkButtons(); addLog(`Бонус защиты: остался ${rpgBonusAttacks} дополнительный удар.`); }
-        else { enemyTurnTimeout = setTimeout(enemyTurn, 800); }
-    } else { enemyTurnTimeout = setTimeout(enemyTurn, 800); }
+        else { enemyTurnTimeout = scheduleRpgBattle(enemyTurn, 800); }
+    } else { enemyTurnTimeout = scheduleRpgBattle(enemyTurn, 800); }
 }
 function rpgDefend() {
     if (!isPlayerTurn || rpgChar.hp <= 0 || rpgEnemy.hp <= 0) return;
@@ -2435,7 +2490,7 @@ function rpgDefend() {
     rpgMana -= 50;
     rpgBonusAttacks = 2;
     isPlayerTurn = false; rpgItemUsed = false; rpgPlayerDefending = true; rpgEnemyStunned = true; setTurnIndicator(false); checkButtons();
-    addLog(`${rpgChar.name} защищается (-50 маны). Враг пропускает ход, а ты получаешь 2 удара!`); updateRpgUI(); enemyTurnTimeout = setTimeout(() => enemyTurn(false), 800);
+    addLog(`${rpgChar.name} защищается (-50 маны). Враг пропускает ход, а ты получаешь 2 удара!`); updateRpgUI(); enemyTurnTimeout = scheduleRpgBattle(() => enemyTurn(false), 800);
 }
 function rpgSkill() {
     rpgBonusAttacks = 0;
@@ -2457,10 +2512,11 @@ function rpgSkill() {
             rpgEnemy.hp -= dmg; 
         }
     }
-    updateRpgUI(); if (rpgEnemy.hp <= 0) winRpg(); else enemyTurnTimeout = setTimeout(enemyTurn, 800);
+    updateRpgUI(); if (rpgEnemy.hp <= 0) winRpg(); else enemyTurnTimeout = scheduleRpgBattle(enemyTurn, 800);
 }
 
 function enemyTurn(isPlayerDefending = false) {
+    if (!rpgChar || !rpgEnemy) return;
     if (rpgEnemyStunned && !isPlayerDefending) {
         rpgEnemyStunned = false;
         addLog(`${rpgEnemy.name} спотыкается и пропускает ход!`);
@@ -2500,9 +2556,9 @@ function enemyTurn(isPlayerDefending = false) {
         }
         updateRpgUI();
         if (rpgChar.hp <= 0) { 
-            addLog(`Ты сдох...`); isPlayerTurn = false; checkButtons(); document.getElementById('battle-music').pause(); setTimeout(() => { document.getElementById('rpg-char-select').classList.remove('hidden'); document.getElementById('rpg-battle-screen').classList.add('hidden'); renderCharStats(); updateUI(); }, 3000); 
+            addLog(`Ты сдох...`); isPlayerTurn = false; checkButtons(); document.getElementById('battle-music').pause(); scheduleRpgBattle(() => { document.getElementById('rpg-char-select').classList.remove('hidden'); document.getElementById('rpg-battle-screen').classList.add('hidden'); renderCharStats(); updateUI(); }, 3000);
         } else {
-            enemyTurnTimeout = setTimeout(() => { isPlayerTurn = true; setTurnIndicator(true); checkButtons(); }, 800);
+            enemyTurnTimeout = scheduleRpgBattle(() => { isPlayerTurn = true; setTurnIndicator(true); checkButtons(); }, 800);
         }
         return;
     }
@@ -2535,7 +2591,7 @@ function enemyTurn(isPlayerDefending = false) {
     updateRpgUI();
     
     if (rpgChar.hp <= 0) { 
-        addLog(`Ты сдох...`); isPlayerTurn = false; checkButtons(); document.getElementById('battle-music').pause(); setTimeout(() => { document.getElementById('rpg-char-select').classList.remove('hidden'); document.getElementById('rpg-battle-screen').classList.add('hidden'); renderCharStats(); updateUI(); }, 3000); 
+        addLog(`Ты сдох...`); isPlayerTurn = false; checkButtons(); document.getElementById('battle-music').pause(); scheduleRpgBattle(() => { document.getElementById('rpg-char-select').classList.remove('hidden'); document.getElementById('rpg-battle-screen').classList.add('hidden'); renderCharStats(); updateUI(); }, 3000);
     } else { 
         if(rpgPlayerParashnikHp > 0) {
             const poisonBase = percentOf(rpgChar.maxHp, 5); const poisonDmg = Math.max(1, Math.round(poisonBase * (1 - (rpgChar.gearBonus?.defense || 0) / 100))); const poisonMana = 15;
@@ -2543,12 +2599,16 @@ function enemyTurn(isPlayerDefending = false) {
             addLog(`Тебя отравил парашник! -${poisonDmg} HP (5%), -${poisonMana} маны (15%).`);
             rpgPlayerParashnikHp = Math.max(0, rpgPlayerParashnikHp - 10); if (rpgPlayerParashnikHp === 0) addLog('Парашник на тебе развалился сам!');
             updateRpgUI();
-            if(rpgChar.hp <= 0) { addLog(`Ты сдох от яда...`); isPlayerTurn = false; checkButtons(); document.getElementById('battle-music').pause(); setTimeout(() => { document.getElementById('rpg-char-select').classList.remove('hidden'); document.getElementById('rpg-battle-screen').classList.add('hidden'); renderCharStats(); updateUI(); }, 3000); return; }
+            if(rpgChar.hp <= 0) { addLog(`Ты сдох от яда...`); isPlayerTurn = false; checkButtons(); document.getElementById('battle-music').pause(); scheduleRpgBattle(() => { document.getElementById('rpg-char-select').classList.remove('hidden'); document.getElementById('rpg-battle-screen').classList.add('hidden'); renderCharStats(); updateUI(); }, 3000); return; }
         }
         isPlayerTurn = true; setTurnIndicator(true); checkButtons(); 
     }
 }
 
+function scheduleRpgBattle(callback, delay) {
+    const isCurrent = captureRpgBattle();
+    return setTimeout(() => { if (isCurrent()) callback(); }, delay);
+}
 function captureRpgBattle() {
     const fighter = rpgChar;
     const enemy = rpgEnemy;
@@ -2965,6 +3025,7 @@ async function runCaseRoulette(price, rawAwardedItem) {
 
 
 async function openCase(price) {
+    const account = currentAuthUserId;
     if (caseOpeningInProgress || caseRouletteBusy) return;
     const resBox = document.getElementById('case-result');
     if (!resBox) return;
@@ -2975,6 +3036,7 @@ async function openCase(price) {
         const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
             body: { action: 'open_case', username: currentUser, data: { price } }
         });
+        if (account !== currentAuthUserId) return;
 
         if (error) {
             resBox.textContent = 'Ошибка сети: ' + error.message;
@@ -2999,6 +3061,7 @@ async function openCase(price) {
         // Звуки кейсов независимы от настройки звуков тараканов.
         playIndependentAudio('case-open-audio');
         await runCaseRoulette(price, data.droppedItem);
+        if (account !== currentAuthUserId) return;
 
         const item = data.droppedItem;
         if (item.name !== 'Вам не повезло') playIndependentAudio('case-win-audio');
@@ -3033,7 +3096,7 @@ async function openCase(price) {
         resultCard.appendChild(detailsButton);
         resBox.replaceChildren(resultCard);
         resBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    } catch (e) {
+    } catch (e) { if (account !== currentAuthUserId) return;
         console.error('Ошибка открытия кейса:', e);
         resBox.textContent = 'Ошибка открытия кейса: ' + e.message;
     } finally {
@@ -3077,24 +3140,28 @@ async function renderInventory() {
 }
 
 async function sellItem(itemName) {
+    const account = currentAuthUserId;
     const realItem = currentInventory.find(i => i.name === itemName);
     if (!realItem) { alert("Предмет не найден!"); return; }
     const price = prompt(`За сколько монет продать "${realItem.name}"?`, 50);
     if (!price || isNaN(price) || price <= 0) return;
     try {
         const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'sell_item', username: currentUser, data: { item: realItem, price: parseInt(price) } } });
+        if (account !== currentAuthUserId) return;
         if (error) alert("Ошибка сети: " + error.message); else if (data.error) alert(data.error);
         else { currentInventory = data.newInventory; currentItemPoints = data.newItemPoints; updateUI(); renderInventory(); alert("Выставлено на рынок!"); }
-    } catch(e) { alert("Фатальная ошибка: " + e.message); }
+    } catch(e) { if (account !== currentAuthUserId) return; alert("Фатальная ошибка: " + e.message); }
 }
 
 async function removeListing(listing_id) {
+    const account = currentAuthUserId;
     if (!confirm("Снять лот с продажи?")) return;
     try {
         const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'remove_listing', username: currentUser, data: { listing_id: listing_id } } });
+        if (account !== currentAuthUserId) return;
         if (error) alert("Ошибка сети: " + error.message); else if (data.error) alert(data.error);
         else { currentInventory = data.newInventory; currentItemPoints = data.newItemPoints; updateUI(); renderInventory(); alert("Лот снят с продажи."); }
-    } catch(e) { alert("Фатальная ошибка: " + e.message); }
+    } catch(e) { if (account !== currentAuthUserId) return; alert("Фатальная ошибка: " + e.message); }
 }
 
 async function renderMarket() {
@@ -3124,12 +3191,14 @@ async function renderMarket() {
 }
 
 async function buyItem(listing_id) {
+    const account = currentAuthUserId;
     if (!confirm("Купить предмет?")) return;
     try {
         const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'buy_item', username: currentUser, data: { listing_id: listing_id } } });
+        if (account !== currentAuthUserId) return;
         if (error) alert("Ошибка сети: " + error.message); else if (data.error) alert(data.error);
         else { currentCoins = data.newCoins; currentInventory = data.newInventory; currentItemPoints = data.newItemPoints; updateUI(); renderMarket(); alert("Успешно куплено!"); }
-    } catch(e) { alert("Фатальная ошибка: " + e.message); }
+    } catch(e) { if (account !== currentAuthUserId) return; alert("Фатальная ошибка: " + e.message); }
 }
 
 async function renderLeaderboard() {
@@ -3385,6 +3454,22 @@ const pads = document.querySelectorAll('.pad'); const statusText = document.getE
 const AudioContext = window.AudioContext || window.webkitAudioContext; const audioCtx = new AudioContext();
 const frequencies = { '1': 200, '2': 300, '3': 400, '4': 500 }; 
 let gameSequence = [], playerSequence = [], level = 1, maxPads = 1, isPlayingSequence = false, canClick = false, gameStarted = false;
+let simonGeneration = 0;
+const simonTimers = new Set();
+function cancelSimonGame() {
+    simonGeneration++;
+    simonTimers.forEach(clearTimeout); simonTimers.clear();
+    gameStarted = false; canClick = false; isPlayingSequence = false;
+}
+function scheduleSimon(callback, delay) {
+    const generation = simonGeneration, account = currentAuthUserId;
+    const timer = setTimeout(() => {
+        simonTimers.delete(timer);
+        if (generation === simonGeneration && account === currentAuthUserId) callback();
+    }, delay);
+    simonTimers.add(timer);
+    return timer;
+}
 
 function playSound(id) {
     if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -3396,11 +3481,13 @@ function playSound(id) {
     if(pad) { pad.classList.add('active'); setTimeout(() => pad.classList.remove('active'), 300); }
 }
 function resetGame() {
+    cancelSimonGame();
     gameSequence = []; level = 1; maxPads = 1; gameStarted = false; restartBtn.classList.add('hidden');
     statusText.textContent = "привет ножми"; statusText.style.color = "#00FF00"; pads.forEach(p => p.classList.add('disabled')); updateActivePads();
 }
 
 function startSimonGame() {
+    cancelSimonGame();
     gameSequence = [];
     playerSequence = [];
     level = 1;
@@ -3418,19 +3505,21 @@ function updateActivePads() { pads.forEach(p => { const id = parseInt(p.dataset.
 function nextRound() {
     playerSequence = []; statusText.textContent = "ЗАПОМИНАЙТЕ...";
     if (level > 1 && level % 2 === 0 && maxPads < 4) { maxPads++; updateActivePads(); }
-    const randomId = Math.floor(Math.random() * maxPads) + 1; gameSequence.push(randomId.toString()); setTimeout(playSequence, 500);
+    const randomId = Math.floor(Math.random() * maxPads) + 1; gameSequence.push(randomId.toString()); scheduleSimon(playSequence, 500);
 }
 function playSequence() {
     isPlayingSequence = true; canClick = false;
     gameSequence.forEach((id, index) => {
-        setTimeout(() => {
+        scheduleSimon(() => {
             playSound(id);
-            if (index === gameSequence.length - 1) { setTimeout(() => { isPlayingSequence = false; canClick = true; statusText.textContent = "ВАШ ХОД!"; }, 400); }
+            if (index === gameSequence.length - 1) { scheduleSimon(() => { isPlayingSequence = false; canClick = true; statusText.textContent = "ВАШ ХОД!"; }, 400); }
         }, index * 600);
     });
 }
 async function handlePadClick(e) {
     if (!canClick || isPlayingSequence || !gameStarted) return;
+    const generation = simonGeneration, account = currentAuthUserId;
+    const isCurrentSimon = () => generation === simonGeneration && account === currentAuthUserId;
     const id = e.currentTarget.dataset.id; playSound(id); playerSequence.push(id);
     const currentStep = playerSequence.length - 1;
     if (playerSequence[currentStep] !== gameSequence[currentStep]) {
@@ -3439,6 +3528,7 @@ async function handlePadClick(e) {
         const currentScore = Math.max(0, level - 1);
         try {
             const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'score', username: currentUser, data: { rounds: currentScore } } });
+            if (!isCurrentSimon()) return;
             if (error) { statusText.textContent += ` (Ошибка сети: награда не подтверждена)`; }
             else if (data.rewardPaused) { statusText.textContent = `ОШИБКА! Пройдено раундов: ${currentScore}. Онлайн-рекорд и награда временно не сохраняются до серверной проверки.`; }
             else if (data.error) { statusText.textContent += ` (${data.error})`; }
@@ -3452,18 +3542,16 @@ async function handlePadClick(e) {
                     statusText.textContent = 'ОШИБКА! Ни одного раунда не пройдено — награда не начислена.';
                 }
             }
-        } catch(e) { statusText.textContent += ` (Сбой при начислении награды)`; }
+        } catch(e) { if (!isCurrentSimon()) return; statusText.textContent += ` (Сбой при начислении награды)`; }
         const osc = audioCtx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 1);
         osc.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 1); restartBtn.classList.remove('hidden'); return;
     }
     if (playerSequence.length === gameSequence.length) {
         canClick = false;
         const completedRound = gameSequence.length;
-        const roundReward = 20 + 2 * (completedRound - 1);
-        const totalReward = completedRound * (completedRound + 19);
         level++;
-        statusText.textContent = `РАУНД ${completedRound} ПРОЙДЕН! +${roundReward} монет · за серию: ${totalReward} монет`;
-        setTimeout(nextRound, 1500);
+        statusText.textContent = `РАУНД ${completedRound} ПРОЙДЕН! Награды ожидают серверной проверки.`;
+        scheduleSimon(nextRound, 1500);
     }
 }
 
@@ -3651,6 +3739,7 @@ document.getElementById("freeotp-modal")?.addEventListener("click", function(eve
           }
 
           const positionAtReply = engineSearchFen || game.fen();
+          const gameAtReply = game, accountAtReply = currentAuthUserId;
           if (game.fen() !== positionAtReply) {
             enginePvCandidates.clear();
             engineSearchFen = null;
@@ -3668,6 +3757,7 @@ document.getElementById("freeotp-modal")?.addEventListener("click", function(eve
           // Небольшая пауза для естественного ощущения, что бот обдумывает ход.
           setStatus('PEPENAI обдумывает ход…');
           window.setTimeout(() => {
+            if (game !== gameAtReply || currentAuthUserId !== accountAtReply) return;
             if (!game || ended || game.fen() !== positionAtReply) return;
             try {
               const from = uci.slice(0, 2), to = uci.slice(2, 4);
@@ -3838,8 +3928,10 @@ document.getElementById("freeotp-modal")?.addEventListener("click", function(eve
       engineBusy = true;
       setStatus('Лёгкий бот думает…');
       const positionAtStart = game.fen();
+      const gameAtStart = game, accountAtStart = currentAuthUserId;
 
       window.setTimeout(() => {
+        if (game !== gameAtStart || currentAuthUserId !== accountAtStart) return;
         if (!game || ended || game.fen() !== positionAtStart) {
           engineBusy = false;
           return;
@@ -4089,6 +4181,7 @@ playMoveSound(playedMove);
   let chessRewardClaimed = false;
   async function awardOfflineChessCoins() {
     if (onlineChessMode || chessRewardClaimed || !currentUser) return;
+    const gameAtClaim = game, accountAtClaim = currentAuthUserId;
     const rewards = { 1: 25, 2: 50, 3: 75, 4: 150, 5: 200 };
     const opponentLevel = Number(level);
     if (!rewards[opponentLevel]) return;
@@ -4101,6 +4194,7 @@ playMoveSound(playedMove);
           data: { level: opponentLevel }
         }
       });
+      if (game !== gameAtClaim || accountAtClaim !== currentAuthUserId || onlineChessMode) return;
       if (error) throw error;
       if (data?.success) {
         currentCoins = Number(data.newCoins ?? currentCoins);
@@ -4113,6 +4207,7 @@ playMoveSound(playedMove);
         console.error('Шахматная награда не начислена:', data?.error);
       }
     } catch (e) {
+      if (game !== gameAtClaim || accountAtClaim !== currentAuthUserId || onlineChessMode) return;
       chessRewardClaimed = false;
       console.error('Ошибка шахматной награды:', e);
     }
@@ -4816,6 +4911,11 @@ document.addEventListener('DOMContentLoaded', () => {
             } });
             if (account !== currentAuthUserId) return false;
             if (error || !data?.success) throw new Error('Настройки приглашений не сохранены на сервере.');
+            if (!save && data.configured === false && (localStorage.getItem('rpgInvitesEnabled') === 'false' || localStorage.getItem('chessInvitesEnabled') === 'false')) {
+                rpgToggle.checked = localStorage.getItem('rpgInvitesEnabled') !== 'false';
+                chessToggle.checked = localStorage.getItem('chessInvitesEnabled') !== 'false';
+                return window.syncServerInviteSettings(true);
+            }
             serverInviteSettings = { rpg: data.rpg === true, chess: data.chess === true };
             rpgToggle.checked = serverInviteSettings.rpg; chessToggle.checked = serverInviteSettings.chess;
             localStorage.setItem('rpgInvitesEnabled', String(rpgToggle.checked));

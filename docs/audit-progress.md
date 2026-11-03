@@ -169,6 +169,37 @@ two-browser E2E have **not** been run. Source changes are not production proof.
 
 ## Current release blockers
 
+## Remaining-game callbacks and runtime verification stage
+
+Four timer regressions fixed: RPG death, PvP auto-exit, Simon reset and same-FEN
+chess replacement. Ten account handlers now ignore stale contract load/claim,
+gear buy/equip, upgrade, case, market sell/remove/buy and roach reward results.
+Seven room/chess cases guard polling, create/join, removed-channel callbacks,
+channel-removal completion, inbox expiry and delayed chess reward status.
+See `game-callback-audit.md` for scope and remaining browser/Worker proof.
+
+One-time server preference synchronization preserves an existing browser block.
+The unreleased local invitation migration now reports whether settings exist,
+finalizes pending invitations when blocked, and denies legacy public RPG invite
+events too. Its SQL suite now has **22 assertions**, not executed. Earlier commits
+remain intact; no deployed migration or production state was changed.
+
+Final observed affected-suite run: **43 V8 fixture cases passed**: four timers,
+ten stale-account, ten current-account positive, seven room/chess, one preference,
+five authentication-boundary and six existing affected invitation cases. All 22
+new callback/preference regressions were first observed failing on pre-stage
+source, then passing. Main JS/protocol compiled; both concurrency scripts passed
+Bash syntax; `git diff --check` passed. Unchanged widget tests were not repeated.
+
+Node, Deno, psql, Docker, Supabase CLI and gh are not on PATH; checked standard
+executable locations did not expose them. Chrome exists, but no disposable local
+backend/Auth accounts or connected browser automation is available. Production
+credentials were not substituted. Node/Deno/PostgreSQL/pgTAP/concurrent SQL/live
+Auth/Realtime/Edge/two-browser E2E checks are **not run**, not passing. Commands
+and prerequisites are recorded in `integration-verification.md`.
+
+## Remaining production gates
+
 - SQL source corrections and regression harness are present; run PostgreSQL
   race/deadline tests and review runtime results before rollout.
 - Production was missing seven PvP migrations at the read-only snapshot; two

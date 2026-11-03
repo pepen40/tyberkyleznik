@@ -314,7 +314,8 @@ serve(async (req) => {
       }
       if (op === 'create' && ['pending', 'received'].includes(invitation.status)) {
         await broadcastPrivateRealtime(supabaseAdmin, 'rpg-invitations:' + invitation.invitee_id, 'challenge', {
-          roomId, targetUserId: invitation.invitee_id, host: invitation.host
+          roomId, targetUserId: invitation.invitee_id, host: invitation.host,
+          remainingMs: Math.max(0, Date.parse(invitation.expires_at) - Date.now())
         });
       } else if (op === 'cancel' && invitation.status === 'cancelled') {
         await broadcastPrivateRealtime(supabaseAdmin, 'rpg-invitations:' + invitation.invitee_id, 'challenge_cancelled', {

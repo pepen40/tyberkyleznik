@@ -33,7 +33,9 @@ actual current Edge command branch with a forged `data.user_id` ignored.
 `node tests/run-chess-invitations.cjs`: six affected UI cases observed passing in
 V8. Actual Node execution was unavailable. The new SQL suite has 20 assertions
 for actor/type binding, ACL, blocked, duplicate, cancelled and expired states;
-it is included in the isolated PostgreSQL/Auth/Realtime/Edge CI workflow.
+it is included in the isolated PostgreSQL/Auth/Realtime/Edge CI workflow. The
+follow-up review extends the suite to 22 assertions for pending-invitation
+blocking and denial of legacy public RPG invitation events.
 PostgreSQL/pgTAP and live Auth/Realtime/Edge checks have not run in this environment.
 
 The older inbox test now distinguishes a permissive grant policy from the new

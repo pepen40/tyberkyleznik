@@ -36,6 +36,14 @@ jobs:
         run: node tests/run-pvp-callbacks.cjs
       - name: Test invitation authentication boundary
         run: node tests/run-server-invitations.cjs
+      - name: Test game timer ownership
+        run: node tests/run-game-timers.cjs
+      - name: Test account-bound economy callbacks
+        run: node tests/run-account-callbacks.cjs
+      - name: Test migration of invitation preferences
+        run: node tests/run-invitation-preferences.cjs
+      - name: Test polling and inbox lifecycle
+        run: node tests/run-async-room-lifecycle.cjs
       - name: Check Supabase Edge Function
         run: deno check supabase/functions/award-coins/index.ts supabase/functions/rpg-pvp/index.ts
       - name: Test PvP error responses
