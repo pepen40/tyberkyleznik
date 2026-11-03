@@ -21,7 +21,7 @@ export function getPvpErrorResponse(error: unknown) {
       'message' in error && typeof error.message === 'string'
     ? error.message
     : '';
-  if (message === 'User is not an authorized RPG room participant') {
+  if (message === 'User is not an authorized RPG room participant' || message === 'Match not found for participant') {
     return { status: 403, error: 'Ты не состоишь в этой PvP-комнате.' };
   }
   if (conflictMessages.has(message)) {

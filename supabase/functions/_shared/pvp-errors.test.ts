@@ -20,6 +20,8 @@ Deno.test('PvP maps room authorization failure to a safe forbidden response', ()
   for (const error of [
     new Error('User is not an authorized RPG room participant'),
     { message: 'User is not an authorized RPG room participant', code: 'P0001' },
+    new Error('Match not found for participant'),
+    { message: 'Match not found for participant', code: 'P0001', details: 'private' },
   ]) {
     assertEquals(getPvpErrorResponse(error), { status: 403, error: 'Ты не состоишь в этой PvP-комнате.' });
   }
