@@ -116,6 +116,7 @@ async function run() {
     };
     stage('chess invitation and acceptance');
     await openChessPlayers(a);
+    const chessInviteSentAt=Date.now();
     await a.locator('#chess-online-players .pvp-room-item').filter({ hasText: users[1].u }).getByRole('button').click();
     await b.locator('#chess-invite-modal').waitFor({ state: 'visible' });
     const hostSpoofDenied = await a.evaluate(async () => {
@@ -156,9 +157,16 @@ async function run() {
     passed.push('chat receipt and remote resignation');
     for (const page of pages) await page.locator('#chess-new').click();
     assert(await b.evaluate(async () => { document.getElementById('chess-invites-toggle').checked = false; return window.syncServerInviteSettings(true); }));
+    // Registration has a real ten-second server cooldown. Keep it enabled and
+    // test the recipient's block only after that earlier limit has elapsed.
+    await new Promise(resolve=>setTimeout(resolve,Math.max(0,11000-(Date.now()-chessInviteSentAt))));
     await openChessPlayers(a);
     await a.locator('#chess-online-players .pvp-room-item').filter({ hasText: users[1].u }).getByRole('button').click();
-    await a.waitForFunction(() => document.getElementById('chess-outgoing-status').textContent.includes('отключил'));
+    try {
+      await a.waitForFunction(() => document.getElementById('chess-outgoing-status').textContent.includes('отключил'));
+    } catch(error) {
+      throw Error('Blocked-invitation status: '+await a.locator('#chess-outgoing-status').textContent()+'; '+error.message);
+    }
     assert(await b.locator('#chess-invite-modal').isHidden());
     passed.push('server-blocked chess invitation');
     for (const tab of ['minigames','game','settings','inventory',...(closedTest?[]:['market']),'leaderboard','howto']) {
