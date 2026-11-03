@@ -32,3 +32,11 @@ guards remain fail-closed; deployed Edge source has not been reverified.
 
 No merge, deployment, production migration, data deletion or reward enablement
 was performed. This is not a production-ready sign-off.
+
+Further source stage: added peer history reconciliation and application ACKs for
+online chess, bounded invitation retries/reply caching and PvP callback ownership
+guards. Twenty-one related V8 fixture cases passed; runners are configured in CI
+but Node/browser/Realtime execution was not observed. See `audit-progress.md` for
+mixed-client, in-memory recovery, invitation identity/clock and remaining game
+coverage limits. Both chess clients must receive the updated source together
+after independent runtime approval; this change was not deployed.

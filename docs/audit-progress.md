@@ -79,8 +79,6 @@ the required tools/network are unavailable. SQL interleavings are statically
 identified; no claim is made that database race tests passed. Database runtime
 and the missing baseline remain release blockers.
 
-## Remaining release blockers / next areas
-
 ## Online chess lifecycle stage — limited fixes
 
 After SQL commit `b4f36ec`, fixed remote resignation so it sets the game's actual
@@ -94,6 +92,60 @@ Node and two-browser Realtime tests were not executed. Preserving the board
 does not recover moves missed while disconnected: ACK/replay/resynchronization,
 invitation expiry/settings, startup races and full chess rules tests remain open.
 
+## Chess delivery/recovery and PvP callback stage — 2026-11-03
+
+Continued from clean commit `74c4e9a`, using one primary agent and no subagents.
+Added `chess-delivery.js` before the main script. Updated peers exchange their
+accepted UCI history, compare common prefixes, and replay only one missing legal
+opponent move through the existing chess engine. No accepted prefix is replaced.
+Conflicts and unavailable peers block further local moves until synchronization.
+Reconnect retains the board; new-room/account callbacks are rejected after both
+membership lookup and asynchronous chess-library loading.
+
+Private-room chat and resignation now have application receipt ACKs, stable IDs,
+bounded retries and duplicate suppression. A transport `ok` is not a receipt.
+Delivery status has its own accessible chat element so periodic synchronization
+does not erase it. A resignation made while disconnected remains queued and is
+sent after reconnect. Session reset/account changes dispose timers and channels.
+
+Chess invitations reserve the outgoing slot before registration, expire even if
+registration hangs, retry the same ID and distinguish receipt from acceptance.
+The receiver validates room membership, caches its reply, replays answers when
+delivery repeats, rejects busy/disabled requests and expires pending dialogs.
+Disabling invitations answers an existing request. Unknown/surprising replies,
+wrong expected names and duplicate terminal replies cannot start another match.
+
+RPG PvP submit callbacks are now bound to the original room, match, account and
+pending command. Late success/error/finally cannot overwrite a replacement match
+or unlock its action. Uncertain transport failures retain the same action ID.
+
+Observed in functions.exec V8: **21 cases passed**: seven protocol cases, six
+invitation cases, four online-chess lifecycle cases and four PvP callback cases.
+Fixtures execute the actual protocol or extracted application functions with
+controlled packets, deferred RPCs and timers. They cover dropped moves/ACKs,
+reconnect, divergent histories, duplicate chat/resign/invites, unavailable peers,
+account changes, hanging registration and stable action retry identities. Main
+JavaScript compiled and `git diff --check` passed. Runners are wired into CI.
+
+Not executed: Node runners, real chess.js rules/CDN loading, live Realtime,
+browser E2E, Deno, PostgreSQL/pgTAP or remote CI. No claim of whole-site gameplay
+coverage or production readiness is made. Important protocol limits:
+
+- Both peers must load this updated client; old protocol clients do not complete
+  the new handshake. Mixed versions block moves instead of accepting unchecked state.
+- Recovery covers network reconnect with in-memory histories. Reload/loss of both
+  histories, durable server storage and multi-device recovery remain unimplemented.
+- Invitation expiry currently uses browser timestamps (30 seconds, with a small
+  skew allowance). A trusted server invitation lifecycle is still needed.
+- The shared invitation bus is not a signed proof of sender identity. Name/ID
+  checks and server room admission do not authenticate arbitrary bus ACK payloads.
+  Room delivery relies on existing private-channel membership RLS, unverified live.
+- Delivery expiry means receipt is unknown, not proof that a message was never
+  displayed. Explicit manual resending can produce a new message.
+- Chess results remain peer/client-adjudicated and ineligible for trusted rewards.
+- Other combat/arcade timers, RPG inbox expiry and cross-tab Auth behavior need
+  their own remaining checks; the PvP callback tests cover only the submit path.
+
 ## Outstanding release checks
 
 - SQL source corrections and regression harness are present; run PostgreSQL
@@ -101,8 +153,8 @@ invitation expiry/settings, startup races and full chess rules tests remain open
 - Production was missing seven PvP migrations at the read-only snapshot; two
   additional corrective versions are now pending. There are also 25 historical versions
   absent from tracked files. Economy baseline and full local runtime proof remain missing.
-- Gameplay: review other RPG combat and online PvP callbacks; repair online chess reconnect,
-  resignation, delivery/synchronization and invitation timeout/settings handling.
+- Gameplay: review remaining RPG combat/arcade timers and PvP callbacks; verify
+  chess delivery with real peers, durable recovery and server-mediated invitations.
 - Browser checks: real Web Audio, mobile rendering, pointer capture, CDN/library
   availability, two-account chess and RPG flows remain unverified.
 - Complete the whole-site feature inventory and remaining game/economy/Auth tests.

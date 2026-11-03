@@ -28,6 +28,12 @@ jobs:
         run: node tests/run-rpg-lifecycle.cjs
       - name: Test online chess lifecycle
         run: node tests/run-online-chess-lifecycle.cjs
+      - name: Test chess delivery and reconnect recovery
+        run: node tests/run-chess-delivery.cjs
+      - name: Test chess invitation delivery
+        run: node tests/run-chess-invitations.cjs
+      - name: Test PvP callback ownership and retry identity
+        run: node tests/run-pvp-callbacks.cjs
       - name: Check Supabase Edge Function
         run: deno check supabase/functions/award-coins/index.ts supabase/functions/rpg-pvp/index.ts
       - name: Test PvP error responses

@@ -583,6 +583,7 @@ async function logout() {
         return;
     }
     currentUser = null;
+    window.resetChessSession?.();
     currentAuthUserId = null;
     location.reload();
 }
@@ -597,6 +598,7 @@ async function finishAuthLogin(user) {
         throw new Error("Профиль игрока не найден: " + (profileError?.message || profileResponse?.error || "нет записи"));
     }
 
+    if (currentAuthUserId !== user.id) window.resetChessSession?.();
     currentUser = data.username;
     currentAuthUserId = user.id;
     currentHighScore = data.max_score || 0;
@@ -2004,6 +2006,8 @@ async function submitPvpIntent(kind, itemId = null) {
         return;
     }
     pvpPendingAction ||= { action_kind: kind, item_id: itemId, action_id: newPvpActionId(), expected_version: pvpMatchVersion };
+    const room = myRoomId, matchId = pvpMatchId, account = currentAuthUserId, pendingAction = pvpPendingAction;
+    const isCurrent = () => myRoomId === room && pvpMatchId === matchId && currentAuthUserId === account && pvpPendingAction === pendingAction;
     pvpActionBusy = true;
     disablePvpButtons();
     try {
@@ -2012,6 +2016,7 @@ async function submitPvpIntent(kind, itemId = null) {
             expected_version: pvpPendingAction.expected_version,
             action_kind: pvpPendingAction.action_kind, item_id: pvpPendingAction.item_id
         });
+        if (!isCurrent()) return;
         pvpPendingAction = null;
         const labels = { attack: 'Обычная атака', defend: 'Защита', skill: 'Способность', use_item: 'Предмет', leave: 'Сдача' };
         logPvp((labels[result.action] || 'Действие') + ((Number(result.damage) || 0) > 0 ? ': ' + result.damage + ' урона.' : '.') + (result.critical ? ' Критический удар.' : ''));
@@ -2022,10 +2027,12 @@ async function submitPvpIntent(kind, itemId = null) {
             updateUI();
         }
     } catch (error) {
+        if (!isCurrent()) return;
         if (/Stale match version|Not your turn|Match is not active|Match timed out|Not enough mana|Item is not owned|Item is not supported in PvP|Item action is unavailable/.test(error.message || '')) pvpPendingAction = null;
         logPvp('Сервер не подтвердил действие. ' + (error.message || 'Повтор безопасен.'));
         syncPvpMatch();
     } finally {
+        if (myRoomId !== room || pvpMatchId !== matchId || currentAuthUserId !== account) return;
         pvpActionBusy = false;
         if (!pvpBattleFinished && pvpGameState.isMyTurn) enablePvpButtons();
     }
@@ -3516,6 +3523,7 @@ document.getElementById("freeotp-modal")?.addEventListener("click", function(eve
   let engineSearchFen = null;
   let humanColor = 'w', level = 3, selectedSquare = null, legalTargets = [], ended = false;
   let onlineChessMode = false, onlineChessRoomId = null, onlineChessChannel = null, onlineChessOpponent = '', applyingRemoteChessMove = false;
+  window.appendOnlineChessChat = (...args) => appendOnlineChessChat(...args);
   const $ = id => document.getElementById(id);
   const boardEl = () => $('chess-board');
 
@@ -4027,6 +4035,7 @@ if (difference === 0) {
 }
     
   function onSquareClick(square) {
+    if (onlineChessMode && !window.onlineChessDelivery?.canPlay()) return;
     if (!game || ended || engineBusy || game.turn() !== humanColor) return;
     const piece = game.get(square);
     const target = legalTargets.find(m => m.to === square);
@@ -4049,11 +4058,7 @@ playMoveSound(playedMove);
       animatePieceMove(movingPiece, square);
       updateGameStatus();
       if (onlineChessMode && !applyingRemoteChessMove && onlineChessChannel) {
-        onlineChessChannel.send({
-          type: 'broadcast', event: 'chess_move',
-          payload: { roomId: onlineChessRoomId, from: currentUser,
-            move: playedMove.from + playedMove.to + (playedMove.promotion || '') }
-        });
+        window.onlineChessDelivery?.changed();
       } else if (!onlineChessMode && !ended) {
         engineBusy = false;
         askEngineMove();
@@ -4140,16 +4145,15 @@ playMoveSound(playedMove);
   function resign() {
     if (!game || ended) return;
     if (onlineChessMode && onlineChessChannel) {
-      onlineChessChannel.send({
-        type: 'broadcast', event: 'chess_resign',
-        payload: { roomId: onlineChessRoomId, from: currentUser }
-      });
+      window.onlineChessDelivery?.queue('resign');
     }
     ended = true; engineBusy = false;
     setStatus(onlineChessMode ? 'Ты сдался. Онлайн-партия завершена.' : 'Ты проебал. Нажми «Новая партия / сменить сложность», чтобы сыграть ещё.');
     if (onlineChessMode) setEngineStatus('ПАРТИЯ ЗАВЕРШЕНА');
   }
   function showSetup() {
+    window.onlineChessDelivery?.dispose();
+    window.cancelChessJoin?.();
     ended = true; engineBusy = false;
     onlineChessMode = false; onlineChessRoomId = null; onlineChessChannel = null; onlineChessOpponent = '';
     $('chess-opponent-name')?.classList.add('hidden');
@@ -4169,8 +4173,10 @@ playMoveSound(playedMove);
   };
 
   window.startOnlineChessBoard = async function(color, roomId, channel, opponentName) {
+    const account = currentAuthUserId;
     try {
       const chessModule = await import('https://cdn.jsdelivr.net/npm/chess.js@1.0.0/+esm');
+      if (currentAuthUserId !== account || !window.chessRoomIsCurrent?.(roomId, channel)) return false;
       const ChessClass = chessModule.Chess;
       if (typeof ChessClass !== 'function') throw new Error('chess.js не загрузилась');
       onlineChessMode = true; onlineChessRoomId = roomId; onlineChessChannel = channel; onlineChessOpponent = opponentName || 'Соперник';
@@ -4180,14 +4186,6 @@ const chatInput = $('chess-chat-input');
 const chatSend = $('chess-chat-send');
 
 if (chat) chat.classList.remove('hidden');
-if (onlineChessChannel && !onlineChessChannel.__pepenChessChatBound) {
-    onlineChessChannel.__pepenChessChatBound = true;
-    onlineChessChannel.on('broadcast', { event: 'chess_chat' }, ({ payload }) => {
-        if (!payload || payload.roomId !== onlineChessRoomId) return;
-        if (payload.from === currentUser) return;
-        appendOnlineChessChat(payload.from || 'Соперник', payload.text || '');
-    });
-}
 
 if (chatMessages) {
     chatMessages.replaceChildren();
@@ -4206,15 +4204,10 @@ if (chatInput && chatSend && !chat.dataset.ready) {
             return;
         }
 
-        onlineChessChannel.send({
-            type: 'broadcast',
-            event: 'chess_chat',
-            payload: {
-                roomId: onlineChessRoomId,
-                from: currentUser,
-                text: text
-            }
-        });
+        if (!window.onlineChessDelivery?.queue('chat', text)) {
+            setStatus('Сообщение не отправлено: нет соединения или превышен лимит.');
+            return;
+        }
 
         appendOnlineChessChat(currentUser, text);
         chatInput.value = '';
@@ -4250,6 +4243,11 @@ if (chatInput && chatSend && !chat.dataset.ready) {
     } catch (error) { setStatus('Не удалось запустить онлайн-шахматы: ' + error.message); return false; }
   };
 
+  window.getOnlineChessHistory = () => game ? game.history({ verbose: true }).map(move => move.from + move.to + (move.promotion || '')) : [];
+  window.reportOnlineChessDelivery = (text, kind) => {
+    if (onlineChessMode && !ended) setEngineStatus(text);
+    if (kind !== 'sync' && $('chess-chat-delivery-status')) $('chess-chat-delivery-status').textContent = text;
+  };
   window.applyOnlineChessMove = function(uci, roomId) {
     if (!onlineChessMode || !game || ended || roomId !== onlineChessRoomId || game.turn() === humanColor) return;
     try {
@@ -4263,6 +4261,7 @@ if (chatInput && chatSend && !chat.dataset.ready) {
         game.isCheck() ? (game.turn() === humanColor ? 'Шах! Твой ход.' : 'Тебе шах. Ход противника.') :
         game.turn() === humanColor ? 'Твой ход.' : 'Ход противника.');
       if (!ended) setOnlineTurnStatus();
+      return true;
     } catch (error) { console.warn('Ошибка хода соперника:', error); }
     finally { applyingRemoteChessMove = false; }
   };
@@ -4494,48 +4493,80 @@ document.addEventListener('DOMContentLoaded', () => {
     let chessInviteChannel = null;
     let incomingInvite = null;
     let outgoingInvite = null;
+    const chessInviteReplies = new Map();
+    const chessInviteLifetime = 30000;
+    async function sendChessInviteReply(invite, response) {
+        try {
+            return await chessInviteChannel.send({ type: 'broadcast', event: 'chess_invite_answer', payload: {
+                id: invite.id, from: currentUser, target: invite.from,
+                accepted: response === 'accepted', reason: response,
+            } });
+        } catch (_) { return 'error'; }
+    }
+    window.disablePendingChessInvite = () => answerChessInvite(false, 'disabled');
     let activeChessRoomChannel = null;
+    let chessJoinVersion = 0;
+    window.cancelChessJoin = () => {
+        chessJoinVersion++;
+        const room = activeChessRoomChannel;
+        activeChessRoomChannel = null;
+        if (room) supabaseClient.removeChannel(room).catch(() => {});
+    };
+    window.resetChessSession = () => {
+        window.onlineChessDelivery?.dispose(); window.cancelChessJoin();
+        if (outgoingInvite) { clearTimeout(outgoingInvite.timer); clearTimeout(outgoingInvite.expiryTimer); }
+        if (incomingInvite) clearTimeout(incomingInvite.timer);
+        outgoingInvite = null; incomingInvite = null; chessInviteReplies.clear();
+        inviteModal.classList.add('hidden');
+    };
 
     window.joinChessRoom = async function joinChessRoom(roomId, color, opponentName) {
+        const joinVersion = ++chessJoinVersion;
+        const account = currentAuthUserId;
         const { data: roomJoin, error: roomJoinError } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
             body: { action: 'join_room_membership', data: { topic: 'chess-room-' + roomId } }
         });
+        if (joinVersion !== chessJoinVersion || account !== currentAuthUserId) return;
         if (roomJoinError || !roomJoin?.success) {
             if (outgoingStatus) outgoingStatus.textContent = roomJoin?.error || 'Нет доступа к этой шахматной комнате.';
             if (status) status.textContent = roomJoin?.error || 'Нет доступа к этой шахматной комнате.';
             return;
         }
-        if (activeChessRoomChannel) {
-            await supabaseClient.removeChannel(activeChessRoomChannel);
-            activeChessRoomChannel = null;
-        }
+        window.onlineChessDelivery?.dispose();
+        const oldRoom = activeChessRoomChannel;
+        activeChessRoomChannel = null;
+        if (oldRoom) await supabaseClient.removeChannel(oldRoom);
+        if (joinVersion !== chessJoinVersion || account !== currentAuthUserId) return;
         const room = supabaseClient.channel('chess-room-' + roomId, {
             config: { broadcast: { self: false }, private: true }
         });
         activeChessRoomChannel = room;
+        const isCurrent = () => activeChessRoomChannel === room && account === currentAuthUserId && joinVersion === chessJoinVersion;
+        window.chessRoomIsCurrent = (id, channel) => isCurrent() && id === roomId && channel === room;
         let boardStarted = false;
-        room.on('broadcast', { event: 'chess_move' }, message => {
-            if (activeChessRoomChannel !== room) return;
-            const data = message.payload;
-            if (data && data.roomId === roomId && data.from !== currentUser && data.move) {
-                window.applyOnlineChessMove?.(data.move, roomId);
-            }
-        });
-        room.on('broadcast', { event: 'chess_resign' }, message => {
-            if (activeChessRoomChannel !== room) return;
-            const data = message.payload;
-            if (data && data.roomId === roomId && data.from !== currentUser) {
-                window.finishOnlineChessFromOpponent?.(roomId);
-            }
-        });
+        let delivery = null;
+        room.on('broadcast', { event: 'chess_delivery' }, message => { if (isCurrent()) delivery?.receive(message.payload); });
         room.subscribe(async state => {
-            if (activeChessRoomChannel !== room) return;
+            if (!isCurrent()) return;
             if (state === 'SUBSCRIBED') {
                 // Re-subscription must preserve the existing board and result.
-                if (boardStarted) return;
+                if (boardStarted) { delivery?.setConnected(true); return; }
                 boardStarted = true;
-                if (await window.startOnlineChessBoard?.(color, roomId, room, opponentName) === false) boardStarted = false;
-            } else if (state === 'CHANNEL_ERROR' || state === 'TIMED_OUT') {
+                if (await window.startOnlineChessBoard?.(color, roomId, room, opponentName) === false) { boardStarted = false; return; }
+                if (!isCurrent()) return;
+                delivery = createChessDelivery({ roomId, from: currentUser, peer: opponentName, isCurrent,
+                    send: payload => room.send({ type: 'broadcast', event: 'chess_delivery', payload }),
+                    history: () => window.getOnlineChessHistory(),
+                    applyMove: move => window.applyOnlineChessMove(move, roomId),
+                    status: (text, kind) => window.reportOnlineChessDelivery(text, kind),
+                    chat: (name, text) => window.appendOnlineChessChat(name, text),
+                    resign: () => window.finishOnlineChessFromOpponent(roomId),
+                    setTimer: setTimeout, clearTimer: clearTimeout, newId: () => crypto.randomUUID(),
+                });
+                window.onlineChessDelivery = delivery;
+                delivery.setConnected(true);
+            } else if (['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'].includes(state)) {
+                delivery?.setConnected(false);
                 if (outgoingStatus) outgoingStatus.textContent = 'Не удалось подключить шахматную комнату. Попробуй вызвать игрока снова.';
             }
         });
@@ -4578,119 +4609,92 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function sendChessInvite(target) {
-        if (!chessInviteChannel) {
-            if (outgoingStatus) {
-                outgoingStatus.textContent = 'Канал приглашений ещё подключается.';
-            }
+        if (!chessInviteChannel || outgoingInvite || incomingInvite) {
+            outgoingStatus.textContent = 'Канал недоступен или уже есть приглашение.';
             return;
         }
-
-        if (outgoingInvite) {
-            if (outgoingStatus) {
-                outgoingStatus.textContent = 'Ты уже отправил приглашение. Дождись ответа.';
+        const account = currentAuthUserId;
+        const pending = { id: crypto.randomUUID(), target, account, received: false, timer: null, expiresAt: Date.now() + chessInviteLifetime };
+        outgoingInvite = pending;
+        const current = () => outgoingInvite === pending && currentAuthUserId === account;
+        const retry = async () => {
+            if (!current()) return;
+            if (Date.now() >= pending.expiresAt) {
+                outgoingInvite = null;
+                outgoingStatus.textContent = pending.received ? 'Время ожидания ответа истекло.' : 'Получатель недоступен: доставка не подтверждена.';
+                return;
             }
-            return;
-        }
-
-        const inviteId = crypto.randomUUID();
-        const { data: roomRegistration, error: roomRegistrationError } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
-            body: { action: 'register_room_membership', data: {
-                topic: 'chess-room-' + inviteId, kind: 'chess', inviteeUsername: target, isPublic: false
-            } }
-        });
-        if (roomRegistrationError || !roomRegistration?.success) {
-            if (outgoingStatus) outgoingStatus.textContent = roomRegistration?.error || 'Не удалось создать защищённую шахматную комнату.';
-            return;
-        }
-
-        outgoingInvite = { id: inviteId, target };
-
-        if (outgoingStatus) {
-            outgoingStatus.textContent = 'Отправляем вызов игроку ' + target + '…';
-        }
-
-        const result = await chessInviteChannel.send({
-            type: 'broadcast',
-            event: 'chess_invite',
-            payload: {
-                id: inviteId,
-                from: currentUser,
-                target
-            }
-        });
-
-        if (result !== 'ok' && result?.status !== 'ok') {
-            outgoingInvite = null;
-            if (outgoingStatus) {
-                outgoingStatus.textContent = 'Не удалось отправить вызов. Попробуй ещё раз.';
-            }
-            return;
-        }
-
-        if (outgoingStatus) {
-            outgoingStatus.textContent = 'Вызов отправлен игроку ' + target + '. Ждём ответа…';
+            try {
+                await chessInviteChannel.send({ type: 'broadcast', event: 'chess_invite', payload: {
+                    id: pending.id, from: currentUser, target, expiresAt: pending.expiresAt,
+                } });
+            } catch (_) {}
+            if (!current()) return;
+            outgoingStatus.textContent = pending.received ? 'Получение подтверждено. Ожидаем решения…' : 'Ожидаем подтверждения доставки…';
+            pending.timer = setTimeout(retry, 3000);
+        };
+        pending.expiryTimer = setTimeout(() => {
+            if (!current()) return;
+            outgoingInvite = null; outgoingStatus.textContent = 'Время ожидания приглашения истекло.';
+        }, chessInviteLifetime);
+        try {
+            const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
+                body: { action: 'register_room_membership', data: { topic: 'chess-room-' + pending.id, kind: 'chess', inviteeUsername: target, isPublic: false } }
+            });
+            if (!current()) return;
+            if (error || !data?.success) throw new Error(data?.error || 'Не удалось создать защищённую шахматную комнату.');
+            await retry();
+        } catch (error) {
+            if (!current()) return;
+            clearTimeout(pending.timer); clearTimeout(pending.expiryTimer); outgoingInvite = null;
+            outgoingStatus.textContent = error.message || 'Ошибка сети при отправке приглашения.';
         }
     }
 
     async function handleIncomingInvite(payload) {
-        const data = payload?.payload;
-        if (!data || data.target !== currentUser || typeof data.id !== 'string') return;
+        const data = payload?.payload, account = currentAuthUserId;
+        if (!account || !data || data.target !== currentUser || typeof data.id !== 'string') return;
         if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(data.id)) return;
-
-        const { data: invitation, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
-            body: { action: 'validate_room_invitation', data: { topic: 'chess-room-' + data.id, kind: 'chess' } }
-        });
-        if (error || !invitation?.success || invitation.kind !== 'chess' || !invitation.hostUsername) return;
-
-        const trustedInvite = { id: data.id, from: String(invitation.hostUsername) };
-        if (localStorage.getItem('chessInvitesEnabled') === 'false') {
-            chessInviteChannel.send({
-                type: 'broadcast',
-                event: 'chess_invite_answer',
-                payload: {
-                    id: trustedInvite.id,
-                    from: currentUser,
-                    target: trustedInvite.from,
-                    accepted: false,
-                    reason: 'disabled'
-                }
-            });
-            return;
+        if (!Number.isFinite(data.expiresAt) || data.expiresAt <= Date.now() || data.expiresAt > Date.now() + chessInviteLifetime + 5000) return;
+        for (const [id, reply] of chessInviteReplies) if (reply.expiresAt <= Date.now() || reply.account !== account) chessInviteReplies.delete(id);
+        const cached = chessInviteReplies.get(data.id);
+        if (cached) { await sendChessInviteReply(cached, cached.response); return; }
+        let invitation, error;
+        try {
+            ({ data: invitation, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
+                body: { action: 'validate_room_invitation', data: { topic: 'chess-room-' + data.id, kind: 'chess' } }
+            }));
+        } catch (_) { return; }
+        if (account !== currentAuthUserId || error || !invitation?.success || invitation.kind !== 'chess' || !invitation.hostUsername || data.expiresAt <= Date.now()) return;
+        if (chessInviteReplies.has(data.id)) {
+            const reply = chessInviteReplies.get(data.id); await sendChessInviteReply(reply, reply.response); return;
         }
-
-        incomingInvite = trustedInvite;
-        if (inviteFrom) inviteFrom.textContent = trustedInvite.from;
-        if (inviteModal) inviteModal.classList.remove('hidden');
+        const invite = { id: data.id, from: String(invitation.hostUsername), account, expiresAt: data.expiresAt, response: 'received', timer: null };
+        if (localStorage.getItem('chessInvitesEnabled') === 'false') invite.response = 'disabled';
+        else if (incomingInvite || outgoingInvite || window.onlineChessDelivery?.isActive()) invite.response = 'busy';
+        if (chessInviteReplies.size >= 100) return;
+        chessInviteReplies.set(invite.id, invite);
+        if (invite.response === 'received') {
+            incomingInvite = invite;
+            inviteFrom.textContent = invite.from; inviteModal.classList.remove('hidden');
+            invite.timer = setTimeout(() => {
+                if (incomingInvite !== invite || currentAuthUserId !== account) return;
+                incomingInvite = null; invite.response = 'expired'; inviteModal.classList.add('hidden');
+            }, Math.max(0, invite.expiresAt - Date.now()));
+        }
+        await sendChessInviteReply(invite, invite.response);
     }
 
-    async function answerChessInvite(accepted) {
-        if (!incomingInvite || !chessInviteChannel) return;
-
+    async function answerChessInvite(accepted, reason = 'declined') {
         const invite = incomingInvite;
-        incomingInvite = null;
-
-        if (inviteModal) inviteModal.classList.add('hidden');
-
-        await chessInviteChannel.send({
-            type: 'broadcast',
-            event: 'chess_invite_answer',
-            payload: {
-                id: invite.id,
-                from: currentUser,
-                target: invite.from,
-                accepted
-            }
-        });
-
-        if (status) {
-            status.textContent = accepted
-                ? 'Вызов принят. Подключаем шахматную комнату…'
-                : 'Ты отклонил вызов игрока ' + invite.from + '.';
-        }
-        if (accepted) {
-            switchTab('chess');
-            await window.joinChessRoom(invite.id, 'b', invite.from);
-        }
+        if (!invite || invite.account !== currentAuthUserId || invite.expiresAt <= Date.now()) return;
+        incomingInvite = null; clearTimeout(invite.timer);
+        invite.response = accepted ? 'accepted' : reason;
+        inviteModal.classList.add('hidden');
+        const result = await sendChessInviteReply(invite, invite.response);
+        if (invite.account !== currentAuthUserId) return;
+        status.textContent = result === 'ok' ? (accepted ? 'Ответ отправлен. Подключаемся…' : 'Приглашение отклонено.') : 'Ответ не подтверждён каналом. Повторим при повторной доставке приглашения.';
+        if (accepted) { switchTab('chess'); await window.joinChessRoom(invite.id, 'b', invite.from); }
     }
 
     openButton.addEventListener('click', () => {
@@ -4732,16 +4736,23 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!data || !outgoingInvite) return;
             if (data.id !== outgoingInvite.id) return;
             if (data.target !== currentUser) return;
+            if (data.from !== outgoingInvite.target || outgoingInvite.account !== currentAuthUserId || outgoingInvite.expiresAt <= Date.now()) return;
+            if (!['received', 'accepted', 'declined', 'disabled', 'busy', 'expired'].includes(data.reason) || data.accepted !== (data.reason === 'accepted')) return;
+            if (data.reason === 'received') {
+                outgoingInvite.received = true;
+                outgoingStatus.textContent = 'Получение подтверждено. Ожидаем решения…';
+                return;
+            }
 
             const target = outgoingInvite.target;
+            clearTimeout(outgoingInvite.timer);
+            clearTimeout(outgoingInvite.expiryTimer);
             outgoingInvite = null;
 
             if (outgoingStatus) {
                 outgoingStatus.textContent = data.accepted
                     ? target + ' принял вызов! Подключаем шахматную комнату…'
-                    : (data.reason === 'disabled'
-                        ? target + ' отключил шахматные приглашения. Вызов не доставлен.'
-                        : target + ' отклонил шахматный вызов.');
+                    : target + ({ disabled: ' отключил шахматные приглашения.', busy: ' занят другой игрой или приглашением.', expired: ': приглашение истекло.', declined: ' отклонил шахматный вызов.' }[data.reason] || ' не подтвердил вызов.');
             }
             if (data.accepted) {
                 switchTab('chess');
@@ -4792,6 +4803,7 @@ document.addEventListener('DOMContentLoaded', () => {
         );
 
         if (!chessToggle.checked) {
+            window.disablePendingChessInvite?.();
             const modal = document.getElementById('chess-invite-modal');
             if (modal) modal.classList.add('hidden');
         }
