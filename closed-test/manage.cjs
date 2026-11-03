@@ -31,6 +31,13 @@ function localSettings(directory) {
   }
   return values;
 }
+function configureTestAuth(text) {
+  text=text.replace(/\[auth\]\n([\s\S]*?)(?=\n\[|$)/,(_whole,section)=>'[auth]\n'+section.replace(/^enable_signup\s*=.*$/m,'enable_signup = false').replace(/^jwt_expiry\s*=.*$/m,'jwt_expiry = 900')+'\njwt_secret = "env(PEPEN_TEST_JWT_SECRET)"\nanon_key = "env(PEPEN_TEST_ANON_KEY)"\nservice_role_key = "env(PEPEN_TEST_SERVICE_KEY)"\n');
+  // CLI 2.84.2 maps auth.email.enable_signup to GOTRUE_EXTERNAL_EMAIL_ENABLED:
+  // false disables issued-account password logins too. The parent auth option
+  // above maps to GOTRUE_DISABLE_SIGNUP and still forbids public registration.
+  return text.replace(/\[auth.email\]\n([\s\S]*?)(?=\n\[|$)/,(_whole,section)=>'[auth.email]\n'+section.replace(/^enable_signup\s*=.*$/m,'enable_signup = true'));
+}
 function prepare(directory) {
   if(fs.existsSync(directory)) throw Error('Refusing to reuse an existing directory; keep the old isolated data and choose another .runtime path');
   fs.mkdirSync(directory,{recursive:true,mode:0o700});
@@ -43,9 +50,7 @@ function prepare(directory) {
   const secret=crypto.randomBytes(48).toString('hex');
   const token=role=>{const header=Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url');const payload=Buffer.from(JSON.stringify({iss:'supabase',role,iat:Math.floor(Date.now()/1000),exp:Math.floor(Date.now()/1000)+172800})).toString('base64url');return header+'.'+payload+'.'+crypto.createHmac('sha256',secret).update(header+'.'+payload).digest('base64url');};
   fs.writeFileSync(path.join(directory,'.env'),'PEPEN_TEST_JWT_SECRET='+secret+'\nPEPEN_TEST_ANON_KEY='+token('anon')+'\nPEPEN_TEST_SERVICE_KEY='+token('service_role')+'\n',{mode:0o600});
-  // Only modify the [auth] section; email signup is disabled independently too.
-  text=text.replace(/\[auth\]\n([\s\S]*?)(?=\n\[|$)/,(_whole,section)=>'[auth]\n'+section.replace(/^enable_signup\s*=.*$/m,'enable_signup = false').replace(/^jwt_expiry\s*=.*$/m,'jwt_expiry = 900')+'\njwt_secret = "env(PEPEN_TEST_JWT_SECRET)"\nanon_key = "env(PEPEN_TEST_ANON_KEY)"\nservice_role_key = "env(PEPEN_TEST_SERVICE_KEY)"\n');
-  text=text.replace(/\[auth.email\]\n([\s\S]*?)(?=\n\[|$)/,(_whole,section)=>'[auth.email]\n'+section.replace(/^enable_signup\s*=.*$/m,'enable_signup = false'));
+  text=configureTestAuth(text);
   fs.writeFileSync(config,text);
   fs.writeFileSync(path.join(directory,'.closed-test-profile'),JSON.stringify({profile:'isolated-v1',projectId:id}));
   const functions=path.join(directory,'supabase/functions');fs.mkdirSync(functions,{recursive:true});
@@ -124,4 +129,4 @@ async function main() {
   throw Error('Expected prepare/start/apply/functions/test-db/seed-ci/add-user/serve/stop');
 }
 if(require.main===module) main().catch(error=>{console.error(error.message);process.exitCode=1;});
-module.exports={isolated,localSettings,prepare,start,apply,addUser};
+module.exports={isolated,localSettings,prepare,start,apply,addUser,configureTestAuth};

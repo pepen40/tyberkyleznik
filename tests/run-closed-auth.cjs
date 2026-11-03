@@ -1,0 +1,10 @@
+'use strict';
+const assert=require('node:assert/strict');
+const {configureTestAuth}=require('../closed-test/manage.cjs');
+const config=configureTestAuth('[auth]\nenable_signup = true\njwt_expiry = 3600\n[auth.email]\nenable_signup = true\n[auth.sms]\nenable_signup = false\n');
+const section=name=>config.split('['+name+']\n')[1].split('\n[')[0];
+assert.match(section('auth'),/^enable_signup = false$/m,'Public signup must stay disabled');
+assert.match(section('auth.email'),/^enable_signup = true$/m,'CLI maps this option to the email/password provider; issued accounts must be able to log in');
+assert.match(section('auth.sms'),/^enable_signup = false$/m);
+assert.match(section('auth'),/^jwt_expiry = 900$/m);
+console.log('PASS: private test accounts can use the password provider while public registration remains disabled');
