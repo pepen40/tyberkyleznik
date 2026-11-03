@@ -78,12 +78,8 @@ serve(async (req) => {
           (actionKind !== 'use_item' && itemId !== null)) {
         return json({ success: false, error: 'Некорректное боевое действие.' }, 400)
       }
-      const { data: timeout, error: timeoutError } = await admin.rpc('expire_rpg_pvp_turn', {
-        p_user_id: userId, p_room_topic: roomTopic,
-      })
-      if (timeoutError) throw timeoutError
-      if (timeout?.timed_out) return json({ success: false, error: 'Match timed out' }, 409)
-      else {
+      // SQL checks expiry under the same lock as the action. Replays must reach
+      // the action ledger first, even if a later turn has already timed out.
         const { data: rpcData, error } = await admin.rpc('apply_rpg_pvp_action', {
           p_user_id: userId,
           p_room_topic: roomTopic,
@@ -94,7 +90,6 @@ serve(async (req) => {
         })
         if (error) throw error
         result = rpcData
-      }
     } else if (action === 'get_match') {
       const roomTopic = String(data.room_topic || '')
       if (!/^room_[a-z0-9]{9}$/.test(roomTopic)) return json({ success: false, error: 'Некорректная комната.' }, 400)

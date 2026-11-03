@@ -48,11 +48,43 @@ and healing as well as stale success, failure, timer and account-change cases.
 into CI but was not executed locally because Node is unavailable. This does not
 verify live reward validation, online PvP callbacks or every other combat timer.
 
+## SQL admission and deadline stage — source complete, database runtime unverified
+
+Added corrective migrations `20261103150000` and `20261103160000` without editing
+historical migration files. Create/join acquire a transaction advisory lock keyed
+by the participant before room/match locks, so the existing cross-role live-match
+check is serialized under the service API's READ COMMITTED transactions. Hash
+collisions only serialize unrelated participants; they cannot bypass the check.
+
+Action application retains its match row lock while checking expiry. Wall time
+is read after acquiring that lock rather than using transaction start time.
+Timeout completion is returned and committed, not raised and rolled back. Exact
+ledger replays still precede expiry; outsiders cannot trigger expiry. The Edge
+submit path uses one action RPC and requires the new deadline migration. No
+reward path has been enabled.
+
+Added 12 pgTAP assertions for direct late actions, wall time within an older
+transaction, persisted terminal state, inventory/ledger preservation, replay,
+outsider rejection and browser ACL. Added a local-only two-connection harness:
+uncommitted host creation versus guest admission by the same actor, followed by
+an action waiting on a row lock until its deadline passes. These fixtures run
+only in the disposable CI stack and do not delete existing data. Both migrations
+and tests are included in the existing PostgreSQL workflow.
+
+Observed: Bash syntax check passed; the real extracted Edge submit branch passed
+two V8 cases / four assertions (duplicate replay and terminal timeout, one RPC
+each); diff whitespace checks passed. PostgreSQL/pgTAP, the two-connection runtime
+test, Supabase CLI/Docker, Deno typecheck and remote CI were **not run** because
+the required tools/network are unavailable. SQL interleavings are statically
+identified; no claim is made that database race tests passed. Database runtime
+and the missing baseline remain release blockers.
+
 ## Remaining release blockers / next areas
 
-- SQL: serialize cross-role create/join per participant and enforce timeout in
-  the same transaction/lock as action application; add actual PostgreSQL race tests.
-- Production has seven missing PvP migrations and 25 applied historical versions
+- SQL source corrections and regression harness are present; run PostgreSQL
+  race/deadline tests and review runtime results before rollout.
+- Production was missing seven PvP migrations at the read-only snapshot; two
+  additional corrective versions are now pending. There are also 25 historical versions
   absent from tracked files. Economy baseline and full local runtime proof remain missing.
 - Gameplay: review other RPG combat and online PvP callbacks; repair online chess reconnect,
   resignation, delivery/synchronization and invitation timeout/settings handling.

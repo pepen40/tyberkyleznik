@@ -36,7 +36,7 @@ Verify a test account's direct attempts to claim `pvp_result`, `rpg_win`, `chess
 
 Production metadata lists 34 applied versions ending at `20261101160151`.
 Only nine of those applied migrations are present in this repository; 25 older
-versions, including the economy foundation, are missing. The seven pending PvP
+versions, including the economy foundation, are missing. The nine pending PvP
 migrations below do not provide a complete bootstrap.
 
 **Block database rollout until the original missing migration SQL has been
@@ -69,6 +69,8 @@ The dry run must show exactly these unapplied migrations, in order, and no other
 20261103120000_rpg_pvp_atomic_actions.sql
 20261103130000_rpg_pvp_waiting_cancel.sql
 20261103140000_rpg_pvp_turn_timeout.sql
+20261103150000_serialize_rpg_pvp_admission.sql
+20261103160000_atomic_rpg_pvp_deadline.sql
 ```
 
 Stop if the pending list differs. Save the dry-run output for review. After approval, apply only the reviewed migration set:
@@ -78,7 +80,14 @@ supabase db push --linked
 supabase migration list --linked
 ```
 
-Verify all seven target migration versions are recorded. The migration set is additive; rollback means keeping the fail-closed `award-coins` active, disabling the client/PvP feature, and pausing rollout. Do not restore deployed v50 or any Edge Function source that accepts client results. Do not drop tables or rewrite migration history as a rollback.
+Verify all nine target migration versions are recorded. The migration set is additive; rollback means keeping the fail-closed `award-coins` active, disabling the client/PvP feature, and pausing rollout. Do not restore deployed v50 or any Edge Function source that accepts client results. Do not drop tables or rewrite migration history as a rollback.
+
+Before deploying the matching `rpg-pvp` Edge version, verify the admission-race
+and deadline tests pass on PostgreSQL 17. Its action path now delegates expiry to
+the atomic SQL action RPC and therefore requires migration `20261103160000`.
+Keep the corrective lock/deadline definitions on application rollback: restoring
+their older definitions would reopen the races. A function-only reversal must
+be a separately reviewed change; no destructive down migration is supplied.
 
 ## Server-function rollout
 
