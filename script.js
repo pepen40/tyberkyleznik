@@ -1,7 +1,9 @@
 const SUPABASE_URL = 'https://zfvinbamwavibnhmfwnz.supabase.co'; 
 const SUPABASE_KEY = 'sb_publishable_ytzpwBslnHFtTsheZGDTJw_ouursAih';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let authSessionGeneration = 0;
 supabaseClient.auth.onAuthStateChange((event) => {
+    if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') authSessionGeneration++;
     if (event === 'SIGNED_OUT') {
         // Also covers session revocation/expiry and signout from another tab.
         // Invalidate actor guards synchronously; navigation retires all channels,
@@ -619,9 +621,11 @@ async function logout() {
 
 async function finishAuthLogin(user) {
     if (!user?.id) throw new Error("Не удалось определить пользователя.");
+    const generation = authSessionGeneration;
     const { data: profileResponse, error: profileError } = await supabaseClient.functions.invoke('award-coins', {
         body: { action: 'get_player_profile', data: {} }
     });
+    if (generation !== authSessionGeneration) return;
     const data = profileResponse?.profile;
     if (profileError || !profileResponse?.success || !data) {
         throw new Error("Профиль игрока не найден: " + (profileError?.message || profileResponse?.error || "нет записи"));
@@ -632,6 +636,7 @@ async function finishAuthLogin(user) {
     currentUser = data.username;
     currentAuthUserId = user.id;
     await window.syncServerInviteSettings?.();
+    if (generation !== authSessionGeneration) return;
     currentHighScore = data.max_score || 0;
     currentCoins = data.coins || 0;
     currentInventory = data.inventory || [];
@@ -641,6 +646,7 @@ async function finishAuthLogin(user) {
     ensureRpgGear();
     currentMaxFloors = data.rpg_max_floors || {"ashab":0,"apostol":0,"mee":0};
     const rpgInvitationInboxReady = await initRpgInvitationInbox(user.id);
+    if (generation !== authSessionGeneration) return;
 
     document.getElementById('auth-screen').classList.add('hidden');
     document.getElementById('main-screen').classList.remove('hidden');

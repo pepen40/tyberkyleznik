@@ -9,3 +9,17 @@ assert.equal(env.currentAuthUserId,null,'Auth signout left old actor active');
 assert.equal(env.currentUser,null);
 assert.equal(reloads,1,'Old document and its channels must be retired');
 console.log('PASS: SDK signout invalidates actor and retires the old document');
+async function checkLateProfile(){
+  let resolve;
+  const noop=()=>{};
+  const state={authSessionGeneration:0,currentAuthUserId:null,currentUser:null,currentHighScore:0,currentCoins:0,currentInventory:[],currentItemPoints:0,currentPvpPts:0,currentUpgrades:{},currentMaxFloors:{},
+    window:{},supabaseClient:{functions:{invoke:()=>new Promise(ok=>{resolve=ok;})}},ensureRpgGear:noop,initRpgInvitationInbox:async()=>false,
+    document:{getElementById:()=>({classList:{add:noop,remove:noop}})},startSheep:noop,startRoachSchedule:noop,ROACH_FIRST_DELAY:1,preloadSounds:noop,initOnlineCounter:noop,initSiteGlobalChat:noop,updateUI:noop,resetGame:noop,renderCharStats:noop,switchTab:noop};
+  const text=source.slice(source.indexOf('async function finishAuthLogin('),source.indexOf('async function restoreAuthSession('));
+  const fn=new Function('env','with(env){return ('+text.trim()+');}')(state);
+  const request=fn({id:'old'});state.authSessionGeneration++;
+  resolve({data:{success:true,profile:{user_id:'old',username:'old'}}});await request;
+  assert.equal(state.currentAuthUserId,null,'Late profile restored a signed-out actor');
+  console.log('PASS: late profile cannot resurrect a retired Auth session');
+}
+checkLateProfile().catch(error=>{console.error(error);process.exitCode=1;});
