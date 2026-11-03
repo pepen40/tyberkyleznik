@@ -234,6 +234,23 @@ async function run() {
     assert.deepEqual(await balances(), beforeBalances, 'Unverified PvP reward was enabled');
     passed.push('two-user RPG PvP action replay and unchanged currency');
     if(closedTest) {
+      stage('PvP room chat and real item consumption');
+      await b.waitForFunction(()=>pvpGameState.isMyTurn && !pvpActionBusy);
+      await b.locator('#pvp-chat-input').fill('room-chat-<i>literal</i>');
+      await b.locator('#pvp-chat-input').press('Enter');
+      await a.waitForFunction(()=>document.getElementById('pvp-log').textContent.includes('room-chat-<i>literal</i>'));
+      assert.equal(await a.locator('#pvp-log i').count(),0,'Room chat interpreted HTML');
+      assert.equal(await b.evaluate(()=>currentInventory.length),1,'Disposable starter item missing');
+      await b.locator('#pvp-item-btn').click();
+      await b.locator('#rpg-item-list button').click();
+      await b.waitForFunction(version=>currentInventory.length===0 && pvpMatchVersion>version,afterActionVersion);
+      const itemState=await b.evaluate(async()=>{
+        const result=await supabaseClient.functions.invoke('award-coins',{body:{action:'get_player_profile',data:{}}});
+        if(result.error||!result.data?.success)throw Error('Cannot confirm item consumption on server');
+        return {count:result.data.profile.inventory.length,points:result.data.profile.item_points};
+      });
+      assert.deepEqual(itemState,{count:0,points:0});
+      passed.push('private PvP chat and UI item consumption confirmed by actual server inventory');
       const observer=await browser.newContext();contexts.push(observer);
       const page=await observer.newPage();await page.goto(frontend,{waitUntil:'domcontentloaded'});
       const room=await a.evaluate(()=>myRoomId);
