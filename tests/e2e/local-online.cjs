@@ -103,7 +103,11 @@ async function run() {
       await a.locator('#site-global-chat-input').fill('closed-chat-<b>literal</b>');
       await a.locator('#site-global-chat-send').click();
       await b.waitForFunction(()=>document.getElementById('site-global-chat-messages').textContent.includes('closed-chat-<b>literal</b>'));
-      assert.equal(await b.locator('#site-global-chat-messages b').count(),0,'Chat interpreted user HTML');
+      // The nickname intentionally uses <b>; inspect only the untrusted body.
+      const chatBody=b.locator('#site-global-chat-messages .site-global-chat-message').filter({hasText:'closed-chat-<b>literal</b>'}).locator('span');
+      assert.equal(await chatBody.count(),1,'Message was duplicated');
+      assert.equal(await chatBody.textContent(),'closed-chat-<b>literal</b>');
+      assert.equal(await chatBody.locator('*').count(),0,'Chat interpreted user HTML');
       passed.push('authenticated global chat with literal user content');
     }
     const openChessPlayers = async page => {
