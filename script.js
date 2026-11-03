@@ -1149,6 +1149,12 @@ async function initializeRpgInvitationInbox(userId) {
         };
         const failChannel = status => {
             if (channelEnded || rpgInvitationChannel !== channel) return;
+            if (readinessSettled) {
+                // An established channel automatically rejoins after transport
+                // recovery. Removing it here permanently loses incoming invites.
+                rpgInvitationChannelStatus = status;
+                return;
+            }
             channelEnded = true;
             rpgInvitationChannelStatus = status;
             console.error('[RPG inbox] Realtime subscription failed.', { status });
