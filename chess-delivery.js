@@ -1,6 +1,6 @@
 // Peer delivery for the existing private room. This is not a trusted result engine.
 function createChessDelivery(options) {
-  const { roomId, from, peer, send, history, applyMove, status, chat, resign, isCurrent } = options;
+  const { roomId, from, peer, send, history, applyMove, status, chat, resign, isCurrent, setTimer, clearTimer } = options;
   const pending = new Map(), seen = new Set();
   let timer = null, connected = false, disposed = false, synchronized = false, missed = 0;
   const current = () => !disposed && isCurrent();
@@ -23,7 +23,7 @@ function createChessDelivery(options) {
         pending.delete(id); report('Получатель не подтвердил сообщение. Можно отправить повторно.');
       } else transmit(packet);
     }
-    timer = options.setTimer(tick, 3000);
+    timer = setTimer(tick, 3000);
   }
   function queue(kind, text, id = options.newId()) {
     if (!current() || (!connected && kind !== 'resign') || pending.size >= 20) return false;
@@ -68,7 +68,7 @@ function createChessDelivery(options) {
   }
   function dispose() {
     disposed = true; synchronized = false;
-    if (timer !== null) options.clearTimer(timer);
+    if (timer !== null) clearTimer(timer);
     timer = null; pending.clear();
   }
   return {
@@ -76,9 +76,9 @@ function createChessDelivery(options) {
     changed() { synchronized = false; missed = 0; sync(); },
     setConnected(value) {
       connected = value; synchronized = false; missed = 0;
-      if (timer !== null) options.clearTimer(timer);
+      if (timer !== null) clearTimer(timer);
       timer = null;
-      if (current() && value) { sync(); pending.forEach(transmit); timer = options.setTimer(tick, 3000); }
+      if (current() && value) { sync(); pending.forEach(transmit); timer = setTimer(tick, 3000); }
     },
     canPlay: () => current() && connected && synchronized,
     isActive: current,
@@ -88,6 +88,7 @@ function createChessDelivery(options) {
 // Compatibility adapter for the existing chess invitation UI. No shared
 // Realtime topic is opened: all event-shaped data comes from authenticated SQL.
 function createServerChessInvitations(options) {
+  const { setTimer, clearTimer } = options;
   const handlers = new Map();
   let timer = null, polling = false, stopped = false, readyAccount = null, lastDeadline = null, onState = () => {};
   async function command(op, topic = '', value = '') {
@@ -120,7 +121,7 @@ function createServerChessInvitations(options) {
     } catch (_) { if (!stopped && options.account() === account) onState('CHANNEL_ERROR'); }
     finally {
       polling = false;
-      if (!stopped) timer = options.setTimer(poll, 2000);
+      if (!stopped) timer = setTimer(poll, 2000);
     }
   }
   return {
@@ -141,6 +142,6 @@ function createServerChessInvitations(options) {
     },
     deadline(id) { return lastDeadline?.id === id ? lastDeadline.time : null; },
     async cancel(id) { try { await command('cancel', 'chess-room-' + id); } catch (_) {} },
-    stop() { stopped = true; if (timer !== null) options.clearTimer(timer); },
+    stop() { stopped = true; if (timer !== null) clearTimer(timer); },
   };
 }

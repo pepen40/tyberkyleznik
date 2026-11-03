@@ -20,7 +20,7 @@ async function run() {
       });
       await context.routeWebSocket('**/*', socket => socket.close());
       const page = await context.newPage();
-      page.on('pageerror', error => errors.push(error.message));
+      page.on('pageerror', error => errors.push(error.stack || error.message));
       page.on('dialog', dialog => dialog.dismiss());
       await page.goto(frontend, {waitUntil:'load'});
       assert(await page.locator('#auth-screen').isVisible(), 'Login screen missing');
