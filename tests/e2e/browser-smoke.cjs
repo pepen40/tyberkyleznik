@@ -60,7 +60,7 @@ async function run() {
     assert.equal(await contexts[1].pages()[0].evaluate(() => localStorage.getItem('smoke-context-only')), null);
     assert.deepEqual(productionAttempts, [], 'Application attempted a production backend request');
     assert.deepEqual(errors, [], 'Browser page errors');
-    return {status:'PASSED',scope:'DOM smoke only',passed,onlineE2E:'BLOCKED by historical baseline and missing full-schema fixtures'};
+    return {status:'PASSED',scope:'DOM smoke only',passed,onlineE2E:'Not executed in this job; see the separate isolated closed-test job. Historical production bootstrap remains BLOCKED.'};
   } finally {
     await Promise.allSettled(contexts.map(context => context.close()));
     if (browser) await browser.close();

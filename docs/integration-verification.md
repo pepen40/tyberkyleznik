@@ -1,6 +1,14 @@
 # Runtime verification — 2026-11-03
 
-## Latest observed hosted verification
+## Separate closed-test profile — current work
+
+The user authorized a NEW isolated test schema without reconstructing production
+history. [Current scope, observed browser results and limitations](closed-test-verification.md)
+record actual Auth/SQL/two-player execution. Partial chess E2E has run; complete
+closed-profile E2E is pending. The historical full-bootstrap gate remains BLOCKED.
+The earlier result table below describes its exact earlier commit, not this profile.
+
+## Earlier observed hosted verification
 
 [Completed run 41621630675](https://github.com/pepen40/tyberkyleznik/actions/runs/41621630675)
 tested `b027f4a3825e27c517213adf9de638583e3a7640`. Exact public metadata is saved in

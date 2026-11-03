@@ -1,5 +1,32 @@
 # Audit progress — 2026-11-03
 
+## Resume checkpoint — 2026-11-04
+
+Continue in the existing audit branch, one agent, no production operations.
+The latest separate-test scope and actual results are in
+[closed-test-verification.md](closed-test-verification.md). Historical source
+recovery is complete within available sources; do not repeat it.
+
+Before the interruption, `2f0f8a2` fixed three reproduced expiry/cancellation races
+but had not been pushed. Six documentation/workflow-scope changes and a new
+closed-test report were uncommitted; they were preserved on resumption.
+
+Run `41634076402` on `8d8c813` passed source/Deno/PowerShell, component PostgreSQL,
+pgTAP/concurrency, invitation Auth/Realtime/Edge and DOM smoke. Its actual browser
+flow passed login, access/reward gates, chess invitation/moves/reconnect/chat/
+resignation/blocking, tabs and a real PvE fight/character switch. It FAILED waiting
+for the RPG recipient dialog; full multiplayer readiness was not achieved.
+
+Resumed Auth work confirmed that SDK `SIGNED_OUT` retained the old actor in memory
+and late profile loading could restore it. `bd984f3` invalidates the actor and
+retires the document on signout; `c988b27` guards profile-loading phases with an
+Auth generation. Both regressions failed before and passed after. All 16 local
+Node entrypoints passed after these changes. The browser now checks the actual
+SDK-triggered reload and captures bounded RPG invitation failure diagnostics.
+
+No production SQL/deployment/settings/rewards were changed. Closed-test readiness
+still depends on a successful full isolated two-player run and a private host.
+
 Working branch: `audit/site-completion-20261103`. Base: integration branch
 `f639cb6dd39cf7817b4b0cc12d1aba6cc4bb5907`. This clone preserves the original
 Documents checkout and its uncommitted reward changes. Remote freshness and PR

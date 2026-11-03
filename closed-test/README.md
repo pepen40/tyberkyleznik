@@ -5,11 +5,13 @@ It combines an explicit minimal test foundation with the unchanged, reviewed
 component migrations. The production historical bootstrap gate remains BLOCKED.
 Do not apply these SQL files to a hosted/production project.
 
-Status: implementation prepared; real two-player E2E results must be recorded
-before claiming this profile ready for friends.
+Status and exact observed runs: [closed-test verification](../docs/closed-test-verification.md).
+The profile is separate from production and still requires a private test host;
+this repository does not provision a live friend-access endpoint.
 
 The server allows only issued test accounts while the 24-hour environment is
-active. Auth signup is disabled. Private player rows use RLS; Realtime has a
+active. Public Auth signup is disabled, while password login for issued accounts
+remains enabled. Private player rows use RLS; Realtime has a
 restrictive participant policy. Rewards/rating/currency, purchases, cases, sales,
 daily claims and offline item consumption are closed on the server, regardless
 of client flags. RPG battles and online PvP remain playable without payouts;
@@ -86,7 +88,8 @@ directory/session rather than resetting, repairing or repurposing production.
 
 ## Real CI gate
 
-`closed-test.yml` creates two allowed users and an Auth-only outsider, runs SQL
+`closed-test.yml` creates three allowed users (two players and an observer) plus
+an Auth-only outsider, verifies actual password login and rejected public signup, runs SQL
 authorization tests and the actual two-player browser flow through the same-origin
 proxy. Generated passwords/private signing data are never uploaded as artifacts.
 Only sanitized test logs/statuses are retained. The schema is explicitly a new

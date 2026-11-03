@@ -24,11 +24,11 @@ jobs:
         run: node scripts/ci/run.cjs chromium-install node .runtime/e2e/node_modules/playwright/cli.js install --with-deps chromium
       - name: Two independent desktop/mobile contexts, DOM only
         run: node scripts/ci/run.cjs browser-dom-smoke node tests/e2e/browser-smoke.cjs
-      - name: Explicit online gate
+      - name: Explicit DOM-only scope
         if: always()
         run: |
-          echo '## Full online browser E2E: BLOCKED' >> "$GITHUB_STEP_SUMMARY"
-          echo 'DOM smoke uses no Auth identity or backend. See the separate bootstrap gate and invitation/PvP fixture jobs. Chess delivery, RPG invitations, live account switching and stale callbacks still require full-schema two-client E2E.' >> "$GITHUB_STEP_SUMMARY"
+          echo '## This job checks DOM only' >> "$GITHUB_STEP_SUMMARY"
+          echo 'No Auth identity or backend is used here. Actual two-player scenarios have a separate closed-test job for the NEW isolated profile. Historical production-schema bootstrap has its own BLOCKED gate.' >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

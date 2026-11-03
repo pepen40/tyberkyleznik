@@ -60,7 +60,7 @@ jobs:
       - name: Enforce BLOCKED as a failing check, never a green skip
         if: steps.baseline.outputs.status == 'BLOCKED'
         run: |
-          echo '::error title=BLOCKED historical baseline::Missing original SQL and unverified baseline. Exact list is in the job summary and full-bootstrap artifact. Full online E2E is also BLOCKED.'
+          echo '::error title=BLOCKED historical baseline::Missing original SQL and unverified baseline. Exact list is in the job summary and full-bootstrap artifact. Production-schema E2E is BLOCKED; the NEW isolated closed-test profile has a separate job.'
           exit 1
       - uses: actions/upload-artifact@v4
         if: always()
