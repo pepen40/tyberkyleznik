@@ -4159,6 +4159,15 @@ playMoveSound(playedMove);
     setStatus('Выбери цвет и сложность.');
   }
 
+  window.finishOnlineChessFromOpponent = function(roomId) {
+    if (!onlineChessMode || !game || ended || roomId !== onlineChessRoomId) return;
+    ended = true; engineBusy = false;
+    selectedSquare = null; legalTargets = [];
+    renderBoard();
+    setStatus(onlineChessOpponent + ' сдался. Ты победил!');
+    setEngineStatus('ПАРТИЯ ЗАВЕРШЕНА');
+  };
+
   window.startOnlineChessBoard = async function(color, roomId, channel, opponentName) {
     try {
       const chessModule = await import('https://cdn.jsdelivr.net/npm/chess.js@1.0.0/+esm');
@@ -4237,7 +4246,8 @@ if (chatInput && chatSend && !chat.dataset.ready) {
       renderBoard();
       setStatus(color === 'w' ? 'Твой ход.' : 'Ход противника.');
       setOnlineTurnStatus();
-    } catch (error) { setStatus('Не удалось запустить онлайн-шахматы: ' + error.message); }
+      return true;
+    } catch (error) { setStatus('Не удалось запустить онлайн-шахматы: ' + error.message); return false; }
   };
 
   window.applyOnlineChessMove = function(uci, roomId) {
@@ -4503,24 +4513,28 @@ document.addEventListener('DOMContentLoaded', () => {
             config: { broadcast: { self: false }, private: true }
         });
         activeChessRoomChannel = room;
+        let boardStarted = false;
         room.on('broadcast', { event: 'chess_move' }, message => {
+            if (activeChessRoomChannel !== room) return;
             const data = message.payload;
             if (data && data.roomId === roomId && data.from !== currentUser && data.move) {
                 window.applyOnlineChessMove?.(data.move, roomId);
             }
         });
         room.on('broadcast', { event: 'chess_resign' }, message => {
+            if (activeChessRoomChannel !== room) return;
             const data = message.payload;
             if (data && data.roomId === roomId && data.from !== currentUser) {
-                const statusEl = document.getElementById('chess-status');
-                if (statusEl) statusEl.textContent = data.from + ' сдался. Ты победил!';
-                const engineStatusEl = document.getElementById('chess-engine-status');
-                if (engineStatusEl) engineStatusEl.textContent = 'ПАРТИЯ ЗАВЕРШЕНА';
+                window.finishOnlineChessFromOpponent?.(roomId);
             }
         });
         room.subscribe(async state => {
+            if (activeChessRoomChannel !== room) return;
             if (state === 'SUBSCRIBED') {
-                await window.startOnlineChessBoard?.(color, roomId, room, opponentName);
+                // Re-subscription must preserve the existing board and result.
+                if (boardStarted) return;
+                boardStarted = true;
+                if (await window.startOnlineChessBoard?.(color, roomId, room, opponentName) === false) boardStarted = false;
             } else if (state === 'CHANNEL_ERROR' || state === 'TIMED_OUT') {
                 if (outgoingStatus) outgoingStatus.textContent = 'Не удалось подключить шахматную комнату. Попробуй вызвать игрока снова.';
             }

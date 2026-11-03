@@ -81,6 +81,21 @@ and the missing baseline remain release blockers.
 
 ## Remaining release blockers / next areas
 
+## Online chess lifecycle stage — limited fixes
+
+After SQL commit `b4f36ec`, fixed remote resignation so it sets the game's actual
+terminal flag, clears selection/legal targets and uses the known opponent label.
+Old channel callbacks are ignored. Repeated SUBSCRIBED on the same channel no
+longer reconstructs the board; a failed startup can retry on later subscription.
+Three actual-source cases passed with V8 fixtures (foreign room ignored,
+resignation ends logical play, reconnect/removed-channel startup). JavaScript
+compiled and diff whitespace checks passed. The Node runner is wired into CI;
+Node and two-browser Realtime tests were not executed. Preserving the board
+does not recover moves missed while disconnected: ACK/replay/resynchronization,
+invitation expiry/settings, startup races and full chess rules tests remain open.
+
+## Outstanding release checks
+
 - SQL source corrections and regression harness are present; run PostgreSQL
   race/deadline tests and review runtime results before rollout.
 - Production was missing seven PvP migrations at the read-only snapshot; two
