@@ -16,6 +16,7 @@ function marker(directory) {
   if (result.profile!=='isolated-v1') throw Error('Closed-test marker required');
   return result;
 }
+function localCommand(directory,args) { return command('supabase',['--network-id',marker(directory).projectId+'_loopback',...args],directory); }
 function localSettings(directory) {
   marker(directory);
   const text=execFileSync('supabase',['status','-o','env'],{cwd:directory,encoding:'utf8',stdio:['ignore','pipe','pipe']});
@@ -67,7 +68,7 @@ function apply(directory) {
   fs.mkdirSync(path.join(directory,'supabase/migrations'),{recursive:true});
   fs.mkdirSync(path.join(directory,'supabase/tests'),{recursive:true});
   for(const name of names) fs.copyFileSync(path.join(root,'supabase/migrations',name),path.join(directory,'supabase/migrations',name));
-  command('supabase',['migration','up','--local'],directory);
+  localCommand(directory,['migration','up','--local']);
   command('psql',[values.DB_URL,'-X','-v','ON_ERROR_STOP=1','-f',path.join(__dirname,'sql/020_realtime_guard.sql')],directory);
 }
 async function request(values,route,body,service=true) {
@@ -90,8 +91,9 @@ async function main() {
   marker(directory);
   if(operation==='start') return start(directory);
   if(operation==='apply') return apply(directory);
-  if(operation==='functions') return command('supabase',['functions','serve'],directory);
-  if(operation==='stop') return command('supabase',['stop'],directory);
+  if(operation==='functions') return localCommand(directory,['functions','serve']);
+  if(operation==='stop') return localCommand(directory,['stop']);
+  if(operation==='test-db') { localSettings(directory); return localCommand(directory,['test','db','--local']); }
   if(operation==='seed-ci') {
     if(process.env.GITHUB_ACTIONS!=='true') throw Error('seed-ci is only for ephemeral CI accounts');
     const users=[];for(const [name,allowed] of [['tester_a',true],['tester_b',true],['outsider',false]]) users.push(await addUser(directory,name,allowed));
@@ -109,7 +111,7 @@ async function main() {
     console.log('Closed test on '+frontend+'; expose ONLY this port through authenticated SSH forwarding. Backend stays loopback.');
     const timer=setTimeout(stop,24*60*60*1000);timer.unref();return;
   }
-  throw Error('Expected prepare/start/apply/functions/seed-ci/add-user/serve/stop');
+  throw Error('Expected prepare/start/apply/functions/test-db/seed-ci/add-user/serve/stop');
 }
 if(require.main===module) main().catch(error=>{console.error(error.message);process.exitCode=1;});
 module.exports={isolated,localSettings,prepare,start,apply,addUser};

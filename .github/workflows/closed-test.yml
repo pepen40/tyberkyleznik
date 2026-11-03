@@ -27,7 +27,7 @@ jobs:
       - name: Closed-test database authorization assertions
         run: |
           cp closed-test/sql/test_access.sql .runtime/closed-test-stack/supabase/tests/closed_access.sql
-          node scripts/ci/run.cjs closed-rls supabase --workdir .runtime/closed-test-stack test db --local
+          node scripts/ci/run.cjs closed-rls node closed-test/manage.cjs test-db
       - name: Create two allowed testers and a rejected outsider
         run: node scripts/ci/run.cjs closed-users node closed-test/manage.cjs seed-ci
       - name: Serve matching Edge Functions in the test stack
