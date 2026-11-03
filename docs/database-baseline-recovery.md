@@ -137,3 +137,87 @@ On a test runner where PowerShell script execution is permitted:
 The second command is expected to fail while history is missing. Neither command
 connects to a database or applies migrations. Both file invocations were blocked
 by this host's execution policy; only their parser/metadata checks were observed.
+
+## Scoped original-source search
+
+This follow-up started at clean HEAD `ddb76da9976bc78f119e72f1f86ebe0a40eba1ca`
+on the existing audit branch. It did not repeat the site audit, install tools,
+connect to Supabase, read credential stores or execute SQL. Only documentation
+changes result; all 25 original applied sources and initial bootstrap stay BLOCKED.
+
+| Source checked | Observed result | Next step |
+| --- | --- | --- |
+| Existing audit Git SQL/document objects | Reused known SQL hashes; no missing applied identity found | Original sources R0–R4 from owner |
+| `C:/Users/user/Documents/tyberkyleznik` local/security refs | 21 commits absent from the audit reachable history; four commits change only the differently versioned Auth draft | Candidate provenance below; do not relabel as an applied migration |
+| All advertised GitHub refs | 14 branch heads, 12 pull head refs, no tags; every tip already present in one of the two local stores | No fetch, checkout, history rewrite or PR creation needed |
+| Documents repository object recovery | Read-only fsck: 9 unreachable blobs, 8 trees, no unreachable commits; no new SQL/DDL candidate; no stashes | No original SQL recovered |
+| Historical SQL/document content | 90 additional unique text blobs checked; candidates are Auth drafts, later PvP/invitation revisions and explicit CI fixtures | None proves initial schema or any missing applied version |
+| Linked `pvp-mainline-integration` worktree | 26 SQL paths checked; only known later migrations, tests, fixtures and archived draft | Existing modified Edge/reward-test files left untouched |
+| Downloads project ZIPs | 80 ZIPs / 315 entries; all 173 source/text entries scanned, no SQL member, target DDL or exact missing filename | Owner needs a different original backup/export |
+| Loose project source/text copies | 60 files across Downloads and its project snapshot/rollback folders; no target DDL or missing filename | No original source recovered |
+
+ZIP directory checks also found no nested ZIP/JSON/database export member. UTF16/
+UTF32 BOM checks found no missed encoded source candidates. Archives were read in
+memory, never extracted/executed. Player/marketplace CSV rows, unrelated software
+archives, credentials and application-session logs were not read. No archive/source
+file contents or secrets are copied into this report.
+
+### Confirmed Git provenance of rejected draft candidates
+
+Every row below refers to the complete Git blob at the exact historical path
+`supabase/migrations/20261101000100_auth_profile_access.sql`. These are original
+Git revisions of a **draft**, not confirmed originals of any of the 25 applied
+identities. Both raw-byte SHA-256 and canonical Git blob identity were verified.
+The complete bytes remain accessible with `git show COMMIT:PATH`; no reconstructed
+SQL or executable migration copy is supplied.
+
+| Candidate | Commit storing exact blob | Git blob SHA-1 | Raw SQL SHA-256 | Assessment / next step |
+| --- | --- | --- | --- | --- |
+| D1, 2947 bytes | `dcfa6ce181c971ac6522216efb9c977d924435a2` | `6a253ed21cd35f12d1b810f09845491bf758eada` | `356faa3c5a5424376d0cf482890c8ad2cf3f74d96bd9757db3917ef1ab2ebc18` | Cooldown draft; players already assumed. Owner must supply R0/R2, not rename this source |
+| D2, 6236 bytes | `22d46972f4102b6e0c8cba0109b790f37fc1df26` | `8c7b1058f219c6f4558f694f76ed9208511313e2` | `7fac3513d16c7e50f9e29dfe82668e93f259b5ea6f4ea5332d990f4bff1388e7` | Profile table/trigger + cooldown draft; no applied-version correspondence |
+| D3, 6028 bytes | `1f5ff75fabbbb1627bba2ee422b6458018e8ce9f` | `9b16bc37d998034a28e1d88a3532affe17756452` | `5aba36a1c3ebad1929a162bcb4f8b7f7538de9ff802fdc6653e25f0e6bd589e0` | Prior unattributed blob now mapped to a real Git revision; still a draft, requires R2 |
+| D4, 1568 bytes | `2c867695d49b30956737b6709d2f3e3eb0868676` | `0ee18fa8f5797efadcd0901eddba2b8e2a42781c` | `3582c081222dd55eea3ea6ee76ba84b3e412afa2d91a27417821c882ca124fc2` | Prior unattributed ACL draft now has provenance; does not create the initial tables |
+
+All four start from altering an existing players table. None creates players or
+marketplace. This newly confirmed provenance does not invalidate the recorded
+unapplied-draft status or establish what production applied under another name.
+The original production SQL hashes for all 25 identities remain unavailable.
+
+### Initial-schema coverage and remaining blockers
+
+| Required component | Found original initial source? | Provenance/hash status | Owner action |
+| --- | --- | --- | --- |
+| players creation, defaults, constraints and sequences | No; only later test fixture creations | No original hash | R0: original creation SQL and sequence/default grants |
+| marketplace creation and initial transaction foundations | No | No original hash | R0 and exact R3 files |
+| public profiles and synchronization trigger | Draft D2/D3 only; initial/applied definition not confirmed | Git provenance/hashes above, not an applied baseline hash | R2: applied Auth foundation and original trigger dependencies |
+| cooldown table/check function | Draft D1/D2/D3 only | Candidate hashes above; applied definition unknown | Original creation source plus relevant R1/R2/R3 statements |
+| reward guardrails/budget creation | No original source | No original hash | R3: exact `20261101140242` source and prerequisites |
+| atomic economy/PvP/floor/case/gear/claim RPCs and overload corrections | Missing applied versions not recovered; later PvP source is already known | No hashes for missing originals | Complete R3 ordered statements |
+| initial grants, ACL changes and sequences | Draft ACLs and later tracked grants only | Candidate/later provenance does not prove initial state | R0/R1 plus original role/default privilege changes |
+| initial Realtime policies/publication setup | Later tracked room/inbox definitions only | No original hash for the missing initial policies | R4 and any pre-migration publication/policy creation source |
+
+R0–R4 are defined with the exact 25-row status table in
+[missing-migration-sources.md](missing-migration-sources.md). The three historical
+timestamp aliases still have the recorded identical blobs and remain excluded;
+none of the candidates maps to them. No alias or Auth draft is promoted to a
+missing production version. No inventory status or bootstrap-ready flag changed.
+
+Full bootstrap remains blocked by (1) all 25 original SQL sources, (2) original
+pre-security schema/ordered creation semantics and (3) unverified correspondence
+to applied history. After owner-supplied originals are reviewed, the isolated full
+job must actually apply the complete sequence and pass tests before readiness can
+change. Production access/export is outside this stage's authorization.
+
+### Checks actually run in this follow-up
+
+- Git status/HEAD/log, ref/object-set comparison, read-only ls-remote and fsck;
+  complete existing history was preserved in both repositories.
+- Existing bundled Python standard library: ZIP/source metadata/content-pattern
+  search, BOM/coverage checks, Git-blob/raw SHA-256 verification and table consistency.
+- `git diff --check` and documentary-only scope checks before committing.
+
+Application suites, PostgreSQL/pgTAP, Deno and browser tests were not rerun: no
+application code or original migration was added/changed. Full CI bootstrap was
+not rerun and is not passing; earlier component CI results remain historical
+evidence only. No push/PR, merge, deployment, production action or reward change
+is part of this documentary recovery result.
