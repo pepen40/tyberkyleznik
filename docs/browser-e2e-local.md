@@ -1,5 +1,22 @@
 # Prepared two-client E2E — NOT EXECUTED
 
+## Separate CI DOM smoke
+
+`browser-smoke.yml` installs test-only Playwright 1.58.2 and Chromium on the hosted
+runner. `tests/e2e/browser-smoke.cjs` opens independent desktop/mobile contexts,
+blocks backend access and verifies tabs, persisted background/FPS, chess setup
+controls and Simon start/tab cancellation. It exposes the main DOM for testing
+without assigning an Auth identity. This is UI smoke, not a successful login or
+online game simulation. External widgets/media are blocked.
+
+The existing online runner and smoke share `local-server.cjs`; backend rewriting
+remains in memory. Full online E2E is separately BLOCKED until full historical
+schema and disposable user fixtures are recovered. RPG invitation UI, live
+account switches, stale callbacks and full mini-game behavior are not established
+by a DOM smoke pass. See [CI scopes and status](ci-verification.md).
+
+The following full-online commands remain prepared and unexecuted:
+
 `tests/e2e/local-online.cjs` is a prepared Playwright library runner. Only its
 JavaScript syntax compiled in V8. Node, Playwright and the backend/browser flow
 have not been executed here.
@@ -33,7 +50,7 @@ From repository root:
 
 ```sh
 node -e "const f=require('node:fs');f.mkdirSync('.runtime/e2e',{recursive:true});if(!f.existsSync('.runtime/e2e/package.json'))f.writeFileSync('.runtime/e2e/package.json',JSON.stringify({private:true}));"
-npm install --prefix .runtime/e2e --save-exact playwright
+npm install --prefix .runtime/e2e --save-exact playwright@1.58.2
 node .runtime/e2e/node_modules/playwright/cli.js install chromium
 node .runtime/e2e/node_modules/playwright/cli.js --version
 node --check tests/e2e/local-online.cjs

@@ -1,5 +1,30 @@
 # Runtime verification — 2026-11-03
 
+## Isolated CI stage — local observations
+
+Implementation commit: `38e8d85`. Workflow/scopes/artifact details and run commands
+are in [CI verification](ci-verification.md). Exact missing source identities and
+owner actions are in [recovery checklist](missing-migration-sources.md).
+
+| Actually executed now | Observed result |
+| --- | --- |
+| Existing bundled Python `-B tests/ci_plan_test.py` | 7 passed; real config generation/staging, no SQL |
+| Git Bash `.github/ci/test-safety.sh` | 4 passed; remote DB URL/non-CI/hosted credential rejection with harmless command stubs |
+| Prior concurrency source with remote URL + psql stub | Reproduced reaching psql; corrected source rejects before psql |
+| functions.exec V8 `runCiControlsTests` | 9 passed; bootstrap gate and artifact redaction only |
+| Existing ruamel.yaml parser + local reusable references | 5 workflows parsed/resolved; not actionlint or GitHub semantic validation |
+| `bash -n` | 7 shell files passed |
+| V8 compilation of new CI/browser JavaScript | Passed; not Node/browser execution |
+| `git diff --check` | Passed |
+
+No new Node/Deno/PowerShell/database/browser runtime pass is claimed locally.
+The embedded Python was already present; no installer or system setting changed.
+Native Semgrep itself failed to initialize its X509 store; its Python/ruamel tools
+provided the available parser checks without weakening certificate verification.
+The default sandbox could not connect to GitHub; a separately approved read-only
+network retry succeeded and found no published audit branch. Remote publication
+and Actions outcomes are recorded only after an actual attempt.
+
 ## Observed environment
 
 ### Latest recovery attempt

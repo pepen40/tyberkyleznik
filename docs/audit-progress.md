@@ -246,6 +246,46 @@ chat, resignation, invitation blocking, tabs/FPS and RPG PvP action replay;
 real timeout observation is an explicit opt-in. V8 syntax compilation is not
 Node or browser execution. None of these E2E assertions has been observed passing.
 
+## Isolated CI implementation stage
+
+Preserved starting HEAD `16b5265`; no migration history inventory was repeated and
+no local runtime installation was retried. Commit `38e8d85` adds the orchestrator
+`site-verification.yml`, reusable source/PvP/invitation jobs and a separate pinned
+Playwright DOM smoke job. It configures Node22/Deno2/CLI2.84.2, local PostgreSQL17,
+all ten pgTAP files, both SQL concurrency harnesses, Auth/Realtime/Edge integration
+and existing JavaScript/PowerShell tests. Safe diagnostic artifacts record command
+status/duration and sanitized output. Full bootstrap reports BLOCKED and exits
+nonzero with all 25 missing filenames; component fixture passes cannot override it.
+
+Confirmed CI source-order defect: invitation fixture timestamp `20261102125900`
+sorted after room migrations requiring players. Both fixture workflows now start
+an empty stack, apply the external preflight directly, then copy/apply unchanged
+original SQL through `migration up --local`. No reset or invented historical
+timestamp is used. Sixteen originals have explicit component fixture scopes;
+three need the missing foundation. See `ci-verification.md` and the exact owner
+recovery checklist `missing-migration-sources.md`. The three known aliases remain
+excluded with matching recorded Git blobs.
+
+The original action-concurrency script accepted any nonempty DB URL. A harmless
+psql stub reproduced it reaching psql with a remote URL; the corrected script
+rejects it before psql. Four actual shell safety cases passed. Nine new CI-control
+cases passed in functions.exec V8, not Node. Seven actual Python configuration/
+staging tests passed using an already-installed interpreter discovered through
+the Semgrep launcher. YAML parsing/reusable-reference resolution passed for five
+workflows using its existing ruamel.yaml; seven shell files passed `bash -n`.
+New JavaScript compiled in V8 and diff whitespace checks passed. No PostgreSQL,
+Deno, actionlint, Auth/Realtime or browser pass follows from these results.
+
+The DOM smoke opens two independent desktop/mobile contexts without an Auth
+identity or backend. It covers tabs, background/FPS persistence, chess setup and
+Simon start/tab cancellation. The existing full online runner shares its local
+server; chess delivery/RPG invitations/account-switch browser scenarios remain
+blocked on the full schema and fixtures, regardless of DOM smoke results.
+
+Restricted-shell GitHub access failed to connect; an approved read-only network
+retry succeeded and found no remote audit branch. Publication/remote CI results
+will be recorded separately after an actual attempt.
+
 ## Remaining production gates
 
 - SQL source corrections and regression harness are present; run PostgreSQL

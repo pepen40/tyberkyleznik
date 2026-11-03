@@ -2,6 +2,12 @@
 
 ## Result
 
+The CI follow-up does not repeat this historical inventory. It reuses the recorded
+JSON and adds [the exact missing-source checklist](missing-migration-sources.md)
+and [dependency/scope map](ci-verification.md). Three excluded aliases are checked
+against their kept source blob identities by the new Python regression suite.
+No historical timestamp, SQL content or migration-history record was changed.
+
 **Full historical bootstrap is not recovered and cannot be declared safe.** No
 SQL was executed against production, no snapshot baseline was invented, and no
 historical runner file was added, renamed, removed or repaired.
@@ -82,6 +88,14 @@ recovered rather than guessed from current client property names.
 The isolated CI preflights deliberately supply minimal fixtures for selected
 features. They are not recovered production history and do not establish that
 applying the whole migration directory from scratch works.
+
+CI now keeps those fixtures outside the migration runner, applies each preflight
+before staging original migrations and uses `migration up --local` on a fresh
+stack. The prior invitation preflight timestamp sorted after its dependencies.
+Sixteen of 19 originals are selected for component scopes; username normalization,
+public-profile projection and historical foreign keys still require the missing
+foundation. The full job fails explicitly as BLOCKED with all missing filenames
+instead of passing a synthetic schema as historical bootstrap.
 
 ## Safe recovery options
 
