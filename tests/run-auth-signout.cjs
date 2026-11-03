@@ -1,0 +1,11 @@
+'use strict';
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const source=fs.readFileSync('script.js','utf8');
+let handler,reloads=0;
+const env={supabase:{createClient:()=>({auth:{onAuthStateChange:fn=>{handler=fn;}}})},window:{location:{reload:()=>reloads++}},queueMicrotask:fn=>fn(),currentAuthUserId:'old',currentUser:'old',rpgChar:{},rpgEnemy:{}};
+vm.runInNewContext(source.slice(0,source.indexOf('const EDGE_FUNCTION_NAME')),env);
+handler('SIGNED_OUT');
+assert.equal(env.currentAuthUserId,null,'Auth signout left old actor active');
+assert.equal(env.currentUser,null);
+assert.equal(reloads,1,'Old document and its channels must be retired');
+console.log('PASS: SDK signout invalidates actor and retires the old document');

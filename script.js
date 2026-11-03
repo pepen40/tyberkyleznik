@@ -2,6 +2,15 @@ const SUPABASE_URL = 'https://zfvinbamwavibnhmfwnz.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ytzpwBslnHFtTsheZGDTJw_ouursAih';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 supabaseClient.auth.onAuthStateChange((event) => {
+    if (event === 'SIGNED_OUT') {
+        // Also covers session revocation/expiry and signout from another tab.
+        // Invalidate actor guards synchronously; navigation retires all channels,
+        // event handlers and timers without calling Auth again under its lock.
+        currentAuthUserId = null;
+        currentUser = null;
+        queueMicrotask(() => window.location.reload());
+        return;
+    }
     if (event === 'PASSWORD_RECOVERY') {
         queueMicrotask(() => {
             (async () => {

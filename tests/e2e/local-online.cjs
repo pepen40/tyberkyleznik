@@ -27,6 +27,7 @@ async function run() {
   let browser;
   const contexts = [];
   const pageErrors = [];
+  const dialogs=[];
   const passed = [], skipped = [];
   const stage = text => console.log('SCENARIO: ' + text);
   const bounded = (promise, label) => new Promise((resolve,reject)=>{
@@ -55,7 +56,7 @@ async function run() {
       });
       page.on('requestfailed',request=>{const pathname=new URL(request.url()).pathname;if(pathname.includes('/auth/v1/'))authTransport.push({path:pathname,failed:request.failure()?.errorText});});
       page.on('pageerror', error => pageErrors.push(String(error.stack || error.message)));
-      page.on('dialog', dialog => dialog.dismiss());
+      page.on('dialog', dialog => {dialogs.push(dialog.message());return dialog.dismiss();});
       await page.goto(frontend, { waitUntil: 'domcontentloaded' });
       await page.evaluate(async credentials => {
         document.getElementById('username').value = credentials.u;
@@ -208,7 +209,12 @@ async function run() {
       passed.push('real PvE fight and stale victory response rejected after character switch');
       await a.evaluate(name=>challengePlayer(name),users[1].u);
       await a.locator('#pvp-challenge-modal button[onclick="executeChallenge()"]') .click();
-      await b.locator('#pvp-receive-modal').waitFor({state:'visible'});
+      try { await b.locator('#pvp-receive-modal').waitFor({state:'visible'}); }
+      catch(error) {
+        const host=await a.evaluate(()=>({log:document.getElementById('pvp-log').textContent,hasRoom:!!myRoomId,hasMatch:!!pvpMatchId,inbox:rpgInvitationChannelStatus}));
+        const guest=await b.evaluate(()=>({inbox:rpgInvitationChannelStatus,pending:!!pendingChallengeRoomId}));
+        throw Error('RPG invitation not received: '+JSON.stringify({host,guest,dialogs})+'; '+error.message);
+      }
       await b.locator('#pvp-receive-char-select').selectOption('apostol');
       await b.locator('#pvp-receive-modal button[onclick="executeAcceptChallenge()"]') .click();
     } else {
@@ -280,8 +286,7 @@ async function run() {
       const delay=async route=>{if(route.request().postDataJSON()?.action!=='get_match'||delayed)return route.continue();delayed=true;const response=await route.fetch();caughtResolve();await released;try{await route.fulfill({response});}catch(_){}};
       await b.route('**/functions/v1/rpg-pvp',delay);
       await b.evaluate(()=>{void syncPvpMatch();});await bounded(caught,'in-flight match response');
-      await b.evaluate(async()=>{await supabaseClient.auth.signOut();});
-      await b.reload({waitUntil:'domcontentloaded'});
+      await Promise.all([b.waitForEvent('load'),b.evaluate(async()=>{await supabaseClient.auth.signOut();}).catch(error=>{if(!/Execution context was destroyed/.test(error.message))throw error;})]);
       await b.evaluate(async credentials=>{document.getElementById('username').value=credentials.user;document.getElementById('password').value=credentials.password;await login();},{user:required('E2E_USER_OBSERVER'),password:required('E2E_PASS_OBSERVER')});
       await b.waitForFunction(name=>currentUser===name,required('E2E_USER_OBSERVER'));
       releaseOld();await b.unroute('**/functions/v1/rpg-pvp',delay);
