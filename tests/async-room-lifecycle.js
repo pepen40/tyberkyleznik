@@ -46,6 +46,25 @@ async function runAsyncRoomLifecycleTests(source, reportFailures = false) {
     const pending=fn(false);env.myRoomId='new-room';env.pvpMatchId='new-match';resolve();await pending;
     if(env.myRoomId!=='new-room')throw new Error('Late removal cleared replacement room');
   });
+  for(const name of ['createPvpRoom','joinPvpRoom']) await test(name+' retires the previous offline battle only after admission',async()=>{
+    const nodes=new Map(),cleared=[];
+    const node=id=>{if(!nodes.has(id)){const classes=new Set();nodes.set(id,{value:'ashab',classList:{add:x=>classes.add(x),remove:x=>classes.delete(x),contains:x=>classes.has(x)}});}return nodes.get(id);};
+    const noop=()=>{};
+    const env={currentAuthUserId:'user',myRoomId:null,pvpMatchId:null,pvpMatchVersion:null,isPvpHost:false,currentPvpChar:null,pvpBattleFinished:false,pvpPendingAction:null,pvpOpponentName:null,
+      currentUser:'user',currentPvpPts:0,lobbyChannel:null,EDGE_FUNCTION_NAME:'award-coins',document:{getElementById:node},
+      rpgChar:{hp:100},rpgEnemy:{hp:50},isPlayerTurn:true,enemyTurnTimeout:42,clearTimeout:id=>cleared.push(id),
+      supabaseClient:{functions:{invoke:async()=>({data:{success:true}})}},invokeRpgPvp:async()=>({match_id:'new-match',version:0}),
+      newPvpActionId:()=> 'id',alert:noop,closePvpLobby:noop,attachPvpRoomChannel:noop,switchTab:noop,startPvpMatchSync:noop};
+    const bind=text=>new Function('env','with(env){return ('+text+');}')(env);
+    if(source.includes('function stopOfflineBattleForPvp()'))env.stopOfflineBattleForPvp=bind(cut('function stopOfflineBattleForPvp()', 'function changeBackground()'));
+    const end=name==='createPvpRoom'?'async function joinPvpRoom(':'async function leavePvpRoom(';
+    await bind(cut('async function '+name+'(',end))('room_new0001','ashab');
+    if(!node('rpg-battle-screen').classList.contains('hidden')||env.rpgChar!==null||env.rpgEnemy!==null||env.isPlayerTurn||!cleared.includes(42))throw Error('Admitted PvP left the offline fight/timers active');
+    // A denied room must preserve the offline game.
+    env.myRoomId=null;env.pvpMatchId=null;env.rpgChar={hp:100};env.supabaseClient.functions.invoke=async()=>({data:{success:false}});
+    await bind(cut('async function '+name+'(',end))('room_denied001','ashab');
+    if(!env.rpgChar)throw Error('Denied admission cancelled the offline fight');
+  });
   await test('removed PvP channel callbacks cannot render into current chat',()=>{
     let onMessage,onState,messages=0,syncs=0;
     const channel={on(_type,_filter,fn){onMessage=fn;return channel;},subscribe(fn){onState=fn;}};

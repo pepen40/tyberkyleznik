@@ -1791,6 +1791,7 @@ async function executeChallenge() {
 
     initPvpChat(roomId);
     switchTab('rpg');
+    stopOfflineBattleForPvp();
     document.getElementById('rpg-char-select').classList.add('hidden');
     document.getElementById('pvp-battle-screen').classList.remove('hidden');
     document.getElementById('pvp-player-img').src = img;
@@ -2177,6 +2178,7 @@ async function createPvpRoom() {
         await lobbyChannel?.track({ room: { roomId: roomTopic, roomName: document.getElementById('pvp-room-name').value.trim() || 'Комната ' + currentUser, hostName: currentUser, hostPts: currentPvpPts, charName: charType, hp: 0, atk: 0 } });
         if (account !== currentAuthUserId || myRoomId !== roomTopic || pvpMatchId !== match.match_id) return;
         closePvpLobby(); attachPvpRoomChannel(roomTopic); switchTab('rpg');
+        stopOfflineBattleForPvp();
         document.getElementById('rpg-char-select').classList.add('hidden'); document.getElementById('pvp-battle-screen').classList.remove('hidden');
         startPvpMatchSync();
     } catch (error) { if (account === currentAuthUserId) alert(error.message || 'Не удалось создать матч.'); }
@@ -2194,6 +2196,7 @@ async function joinPvpRoom(roomId, charType) {
         myRoomId = roomId; pvpMatchId = match.match_id; pvpMatchVersion = Number(match.version);
         isPvpHost = false; currentPvpChar = charType; pvpBattleFinished = false; pvpPendingAction = null;
         closePvpLobby(); switchTab('rpg');
+        stopOfflineBattleForPvp();
         document.getElementById('rpg-char-select').classList.add('hidden'); document.getElementById('pvp-battle-screen').classList.remove('hidden');
         attachPvpRoomChannel(roomId); startPvpMatchSync();
         return true;
@@ -2329,6 +2332,16 @@ let rpgPotatoBuff = false;
 let rpgPlayerBorisHp = 0; let rpgEnemyBorisHp = 0; let rpgPlayerParashnikHp = 0; let rpgEnemyParashnikHp = 0;
 let rpgItemUsed = false; let rpgPlayerDefending = false; let rpgEnemyStunned = false;
 let enemyTurnTimeout = null;
+
+function stopOfflineBattleForPvp() {
+    if (enemyTurnTimeout) clearTimeout(enemyTurnTimeout);
+    enemyTurnTimeout = null;
+    // Retiring these identities also invalidates already queued timers and
+    // in-flight victory/item callbacks captured by captureRpgBattle().
+    rpgChar = null; rpgEnemy = null; isPlayerTurn = false;
+    document.getElementById('rpg-battle-screen').classList.add('hidden');
+    document.getElementById('rpg-item-modal').classList.add('hidden');
+}
 
 function changeBackground() {
     let newIndex; do { newIndex = Math.floor(Math.random() * battleBackgrounds.length); } while (newIndex === currentBgIndex && battleBackgrounds.length > 1);
