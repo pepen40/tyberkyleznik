@@ -28,10 +28,16 @@ async function run() {
   const contexts = [];
   const pageErrors = [];
   const passed = [], skipped = [];
+  const stage = text => console.log('SCENARIO: ' + text);
+  const bounded = (promise, label) => new Promise((resolve,reject)=>{
+    const timer=setTimeout(()=>reject(Error('Timed out: '+label)),60000);
+    promise.then(value=>{clearTimeout(timer);resolve(value);},error=>{clearTimeout(timer);reject(error);});
+  });
   try {
     browser = await chromium.launch({ headless: true, chromiumSandbox: true });
     const pages = [];
     for (const user of users) {
+      stage('real tester login');
       const context = await browser.newContext(); contexts.push(context);
       await context.route('**/*', route => {
         const url = new URL(route.request().url());
@@ -48,6 +54,8 @@ async function run() {
         document.getElementById('password').value = credentials.p;
         await login();
       }, user);
+      const loginState=await page.evaluate(()=>({user:currentUser,hasAuth:!!currentAuthUserId,error:document.getElementById('auth-msg').textContent,inbox:rpgInvitationChannelStatus}));
+      assert.equal(loginState.user,user.u,'Real login failed: '+JSON.stringify(loginState));
       await page.waitForFunction(name => currentUser === name && !!currentAuthUserId, user.u);
       assert(await page.evaluate(async () => {
         document.getElementById('rpg-invites-toggle').checked = true;
@@ -56,6 +64,7 @@ async function run() {
       }), 'Could not initialize local fixture invitation settings');
     }
     const [a, b] = pages;
+    stage('closed-test authorization');
     if (closedTest) {
       const denied = await a.evaluate(async () => {
         const results=[];
@@ -80,11 +89,20 @@ async function run() {
       await outsider.close();contexts.pop();
       passed.push('server closed-test membership and all reward/economy gates');
     }
+    stage('two-player presence');
     for (const page of pages) await page.waitForFunction(() => onlineChannel && Object.keys(onlineChannel.presenceState()).length >= 2);
+    if (closedTest) {
+      await a.locator('#site-global-chat-input').fill('closed-chat-<b>literal</b>');
+      await a.locator('#site-global-chat-send').click();
+      await b.waitForFunction(()=>document.getElementById('site-global-chat-messages').textContent.includes('closed-chat-<b>literal</b>'));
+      assert.equal(await b.locator('#site-global-chat-messages b').count(),0,'Chat interpreted user HTML');
+      passed.push('authenticated global chat with literal user content');
+    }
     const openChessPlayers = async page => {
       await page.evaluate(() => switchTab('chess'));
       await page.locator('#chess-multiplayer-open').click();
     };
+    stage('chess invitation and acceptance');
     await openChessPlayers(a);
     await a.locator('#chess-online-players .pvp-room-item').filter({ hasText: users[1].u }).getByRole('button').click();
     await b.locator('#chess-invite-modal').waitFor({ state: 'visible' });
@@ -101,6 +119,7 @@ async function run() {
     assert(hostSpoofDenied, 'Host forged guest acceptance');
     await b.locator('#chess-invite-accept').click();
     for (const page of pages) await page.waitForFunction(() => window.onlineChessDelivery?.canPlay());
+    stage('chess moves and reconnect');
     const move = async (page, from, to) => { await page.locator('#chess-board [aria-label="' + from + '"]').click(); await page.locator('#chess-board [aria-label="' + to + '"]').click(); };
     const waitHistory = (page, length) => page.waitForFunction(n => window.getOnlineChessHistory?.().length === n, length, { timeout: 30000 });
     await move(a, 'e2', 'e4'); await waitHistory(b, 1);
@@ -114,6 +133,7 @@ async function run() {
     await waitHistory(b, 3);
     assert.deepEqual(await a.evaluate(() => window.getOnlineChessHistory()), await b.evaluate(() => window.getOnlineChessHistory()));
     passed.push('two-user chess moves, forged acceptance denial and reconnect recovery');
+    stage('chess chat, resignation and blocking');
     await a.waitForFunction(() => window.onlineChessDelivery?.canPlay());
     await a.locator('#chess-chat-input').fill('isolated-e2e-chat');
     await a.locator('#chess-chat-send').click();
@@ -139,17 +159,59 @@ async function run() {
     assert(await a.evaluate(() => document.getElementById('performance-overlay').hidden));
     await a.locator('#fps-overlay-toggle').setChecked(fpsBefore);
     passed.push('main tabs and FPS setting smoke');
-    await a.evaluate(() => createPvpRoom());
-    await a.waitForFunction(() => !!myRoomId && !!pvpMatchId);
-    const room = await a.evaluate(() => myRoomId);
-    assert(await b.evaluate(topic => joinPvpRoom(topic, 'apostol'), room));
+    stage('RPG battle and invitation');
+    if (closedTest) {
+      // Play a real PvE fight; hold its actual denied reward response across a
+      // character switch. No HP, random roll, result or server clock is mocked.
+      let capturedResolve, releaseResponse;
+      const captured=new Promise(resolve=>{capturedResolve=resolve;});
+      const release=new Promise(resolve=>{releaseResponse=resolve;});
+      let held=false;
+      const hold=async route=>{
+        if(route.request().postDataJSON()?.action!=='rpg_win' || held)return route.continue();
+        held=true;const response=await route.fetch();capturedResolve();await release;await route.fulfill({response});
+      };
+      await a.route('**/functions/v1/award-coins',hold);
+      await a.evaluate(()=>{window.__testOriginalWin=winRpg;winRpg=function(){return window.__testWinPromise=window.__testOriginalWin();};switchTab('rpg');selectChar('ashab');});
+      for(let turn=0;turn<20;turn++) {
+        await a.waitForFunction(()=>isPlayerTurn || rpgEnemy.hp<=0 || rpgChar.hp<=0);
+        const state=await a.evaluate(()=>({won:rpgEnemy.hp<=0,dead:rpgChar.hp<=0}));
+        assert(!state.dead,'The real PvE fixture lost; investigate the encounter instead of forging a win');
+        if(state.won)break;
+        await a.evaluate(()=>rpgAttack());
+      }
+      await bounded(captured,'real PvE victory request');
+      await a.evaluate(()=>selectChar('mee'));
+      releaseResponse();await a.evaluate(async()=>{await window.__testWinPromise;winRpg=window.__testOriginalWin;});
+      assert(await a.evaluate(()=>currentCharType==='mee' && rpgFloorMain===1 && rpgFloorSub===1),'Old victory changed the replacement character');
+      await a.unroute('**/functions/v1/award-coins',hold);
+      passed.push('real PvE fight and stale victory response rejected after character switch');
+      await a.evaluate(name=>challengePlayer(name),users[1].u);
+      await a.locator('#pvp-challenge-modal button[onclick="executeChallenge()"]') .click();
+      await b.locator('#pvp-receive-modal').waitFor({state:'visible'});
+      await b.locator('#pvp-receive-char-select').selectOption('apostol');
+      await b.locator('#pvp-receive-modal button[onclick="executeAcceptChallenge()"]') .click();
+    } else {
+      await a.evaluate(() => createPvpRoom());
+      await a.waitForFunction(() => !!myRoomId && !!pvpMatchId);
+      const room = await a.evaluate(() => myRoomId);
+      assert(await b.evaluate(topic => joinPvpRoom(topic, 'apostol'), room));
+    }
     await a.waitForFunction(() => pvpBattleStarted && pvpGameState.isMyTurn);
+    await b.waitForFunction(()=>pvpBattleStarted);
+    if(closedTest) {
+      assert.equal(await a.evaluate(()=>myRoomId),await b.evaluate(()=>myRoomId));
+      assert.equal(await a.evaluate(()=>pvpMatchId),await b.evaluate(()=>pvpMatchId));
+      assert(await a.locator('#rpg-battle-screen').isHidden(),'Offline battle remains visible during PvP');
+      passed.push('RPG invitation and acceptance join the same authoritative match');
+    }
     const balances = () => Promise.all(pages.map(page => page.evaluate(async () => {
       const result = await supabaseClient.functions.invoke('award-coins', { body: { action: 'get_player_profile', data: {} } });
       if (result.error || !result.data?.success) throw new Error('Cannot read fixture server balances');
       return { coins: result.data.profile.coins, rating: result.data.profile.pvp_pts };
     })));
     const beforeBalances = await balances();
+    stage('authoritative PvP action replay');
     const requestPromise = a.waitForRequest(request => request.url().endsWith('/functions/v1/rpg-pvp') && request.postDataJSON()?.action === 'submit_action');
     await a.evaluate(() => pvpAttack());
     const afterActionVersion = await a.evaluate(() => pvpMatchVersion);
@@ -159,7 +221,38 @@ async function run() {
     assert.equal(Number(duplicate.version), afterActionVersion, 'Replay changed the action version');
     assert.deepEqual(await balances(), beforeBalances, 'Unverified PvP reward was enabled');
     passed.push('two-user RPG PvP action replay and unchanged currency');
+    if(closedTest) {
+      const observer=await browser.newContext();contexts.push(observer);
+      const page=await observer.newPage();await page.goto(frontend,{waitUntil:'domcontentloaded'});
+      const room=await a.evaluate(()=>myRoomId);
+      assert(await page.evaluate(async fixture=>{
+        const auth=await supabaseClient.auth.signInWithPassword({email:usernameAuthEmail(fixture.user),password:fixture.password});
+        if(auth.error)throw Error('Observer fixture login failed');
+        const match=await supabaseClient.functions.invoke('rpg-pvp',{body:{action:'get_match',data:{room_topic:fixture.room,user_id:fixture.host}}});
+        const inbox=await supabaseClient.functions.invoke('award-coins',{body:{action:'game_invitation',data:{op:'read',topic:fixture.room,user_id:fixture.host}}});
+        return match.error?.context?.status===403 && inbox.error?.context?.status===400;
+      },{user:required('E2E_USER_OBSERVER'),password:required('E2E_PASS_OBSERVER'),room,host:await a.evaluate(()=>currentAuthUserId)}),'Unrelated allowed tester read another match/invitation');
+      await observer.close();contexts.pop();
+      const refresh=await a.evaluate(async()=>!(await supabaseClient.auth.refreshSession()).error);assert(refresh,'Real session refresh failed');
+      passed.push('allowed outsider cannot impersonate a participant; real Auth refresh succeeds');
+      // Actual account switch while a get_match response is in flight. The old
+      // document/request must not populate the new account's room or inventory.
+      let caughtResolve, releaseOld;
+      const caught=new Promise(resolve=>{caughtResolve=resolve;});
+      const released=new Promise(resolve=>{releaseOld=resolve;});let delayed=false;
+      const delay=async route=>{if(route.request().postDataJSON()?.action!=='get_match'||delayed)return route.continue();delayed=true;const response=await route.fetch();caughtResolve();await released;try{await route.fulfill({response});}catch(_){}};
+      await b.route('**/functions/v1/rpg-pvp',delay);
+      await b.evaluate(()=>{void syncPvpMatch();});await bounded(caught,'in-flight match response');
+      await b.evaluate(async()=>{await supabaseClient.auth.signOut();});
+      await b.reload({waitUntil:'domcontentloaded'});
+      await b.evaluate(async credentials=>{document.getElementById('username').value=credentials.user;document.getElementById('password').value=credentials.password;await login();},{user:required('E2E_USER_OBSERVER'),password:required('E2E_PASS_OBSERVER')});
+      await b.waitForFunction(name=>currentUser===name,required('E2E_USER_OBSERVER'));
+      releaseOld();await b.unroute('**/functions/v1/rpg-pvp',delay);
+      assert(await b.evaluate(()=>myRoomId===null && pvpMatchId===null),'Stale match populated the new account');
+      passed.push('account switch discards an in-flight previous-session match response');
+    }
     if (process.env.E2E_RUN_REAL_TIMEOUT === 'true') {
+      stage('real three-minute server timeout');
       assert(await a.evaluate(() => pvpBattleStarted && !pvpBattleFinished), 'Timeout fixture must survive the first attack');
       await a.waitForFunction(() => document.getElementById('pvp-log').textContent.includes('Сервер подтвердил победу'), null, { timeout: 205000 });
       passed.push('real three-minute PvP timeout');
@@ -175,8 +268,8 @@ async function run() {
 }
 
 run().then(result => console.log(JSON.stringify(result, null, 2))).catch(error => {
-  let message = String(error.message || error);
-  for (const name of ['E2E_PASS_A','E2E_PASS_B','SUPABASE_TEST_PUBLIC_KEY']) {
+  let message = String(error.stack || error.message || error);
+  for (const name of Object.keys(process.env).filter(name=>name.startsWith('E2E_PASS_') || name==='SUPABASE_TEST_PUBLIC_KEY')) {
     if (process.env[name]) message = message.split(process.env[name]).join('[redacted]');
   }
   message = message.replace(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, '[redacted JWT]');

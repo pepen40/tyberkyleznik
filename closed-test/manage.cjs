@@ -96,10 +96,10 @@ async function main() {
   if(operation==='test-db') { localSettings(directory); return localCommand(directory,['test','db','--local']); }
   if(operation==='seed-ci') {
     if(process.env.GITHUB_ACTIONS!=='true') throw Error('seed-ci is only for ephemeral CI accounts');
-    const users=[];for(const [name,allowed] of [['tester_a',true],['tester_b',true],['outsider',false]]) users.push(await addUser(directory,name,allowed));
+    const users=[];for(const [name,allowed] of [['tester_a',true],['tester_b',true],['observer',true],['outsider',false]]) users.push(await addUser(directory,name,allowed));
     const values=localSettings(directory);
     fs.writeFileSync(path.join(directory,'ci-users.json'),JSON.stringify({url:values.API_URL,publicKey:values.ANON_KEY,users}),{mode:0o600});
-    return console.log('Three disposable CI identities created; credentials are NOT logged or uploaded');
+    return console.log('Four disposable CI identities created; credentials are NOT logged or uploaded');
   }
   if(operation==='add-user') {
     if(!process.stdout.isTTY) throw Error('add-user must be run in a private interactive terminal');

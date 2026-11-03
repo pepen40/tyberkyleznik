@@ -7,6 +7,7 @@ Object.assign(process.env,{
   SUPABASE_TEST_URL:fixture.url,SUPABASE_TEST_PUBLIC_KEY:fixture.publicKey,
   E2E_USER_A:fixture.users[0].username,E2E_PASS_A:fixture.users[0].password,
   E2E_USER_B:fixture.users[1].username,E2E_PASS_B:fixture.users[1].password,
-  E2E_USER_OUT:fixture.users[2].username,E2E_PASS_OUT:fixture.users[2].password,
+  E2E_USER_OBSERVER:fixture.users[2].username,E2E_PASS_OBSERVER:fixture.users[2].password,
+  E2E_USER_OUT:fixture.users[3].username,E2E_PASS_OUT:fixture.users[3].password,
 });
 require('../tests/e2e/local-online.cjs');
