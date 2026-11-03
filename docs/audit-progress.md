@@ -2,6 +2,14 @@
 
 ## Resume checkpoint — 2026-11-04
 
+Final observed gate: run [41664446369](https://github.com/pepen40/tyberkyleznik/actions/runs/41664446369)
+on source `3d32a59636482b0595bf069335deb24f3f73fc90` PASSED all five available
+source/backend/DOM/closed-test jobs, including complete two-player browser play,
+account switching and actual three-minute PvP timeout. Historical full bootstrap
+remains BLOCKED. See closed-test-verification.md for exact scope and limitations.
+The remaining operational step is a separate private test host and issued accounts;
+no live friend endpoint, production deployment or PR has been created.
+
 Continue in the existing audit branch, one agent, no production operations.
 The latest separate-test scope and actual results are in
 [closed-test-verification.md](closed-test-verification.md). Historical source
@@ -24,8 +32,8 @@ Auth generation. Both regressions failed before and passed after. All 16 local
 Node entrypoints passed after these changes. The browser now checks the actual
 SDK-triggered reload and captures bounded RPG invitation failure diagnostics.
 
-No production SQL/deployment/settings/rewards were changed. Closed-test readiness
-still depends on a successful full isolated two-player run and a private host.
+No production SQL/deployment/settings/rewards were changed. The full isolated
+two-player run subsequently passed as recorded above; a private host is still needed.
 
 Working branch: `audit/site-completion-20261103`. Base: integration branch
 `f639cb6dd39cf7817b4b0cc12d1aba6cc4bb5907`. This clone preserves the original

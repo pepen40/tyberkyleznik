@@ -4,8 +4,9 @@
 
 The user authorized a NEW isolated test schema without reconstructing production
 history. [Current scope, observed browser results and limitations](closed-test-verification.md)
-record actual Auth/SQL/two-player execution. Partial chess E2E has run; complete
-closed-profile E2E is pending. The historical full-bootstrap gate remains BLOCKED.
+record actual Auth/SQL/two-player execution. Complete closed-profile E2E PASSED in
+run `41664446369` on `3d32a59636482b0595bf069335deb24f3f73fc90`, including the real
+three-minute PvP timeout and account switching. The historical full-bootstrap gate remains BLOCKED.
 The earlier result table below describes its exact earlier commit, not this profile.
 
 ## Earlier observed hosted verification

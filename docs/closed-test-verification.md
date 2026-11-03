@@ -1,7 +1,33 @@
 # Isolated closed-test verification — resumed 2026-11-04
 
-Current status: full two-player run is pending; do not claim the profile ready yet.
+Current status: the complete isolated two-player gate PASSED. This supports a
+limited closed playtest on a separate private host, not production readiness.
 No live test host, production deployment or PR has been created. Work is single-agent.
+
+## Final observed result
+
+[Run 41664446369](https://github.com/pepen40/tyberkyleznik/actions/runs/41664446369)
+tested source `3d32a59636482b0595bf069335deb24f3f73fc90`. All five available jobs
+PASSED: source/Deno/PowerShell/Python/actionlint; PostgreSQL PvP/pgTAP/concurrency;
+invitation Auth/Realtime/Edge/pgTAP; desktop/mobile DOM smoke; and full isolated
+closed-test browser flow. The historical full-bootstrap job remains explicitly
+BLOCKED/failing because 25 original migration sources and the initial baseline
+are missing. Aggregate workflow failure must not be reported as aggregate success.
+
+The complete closed-test job applied the new test foundation and 16 unchanged
+component migrations, passed 12 additional access assertions, authenticated four
+disposable identities and verified disabled public signup. Sandboxed independent
+Chromium contexts passed real login, server reward/access gates, global chat,
+chess invitation/forged acceptance denial/moves/disconnect recovery/chat/resign/
+new-game/blocking, main tabs/FPS, real PvE fight with character switch, RPG
+invitation/admission/action replay/private chat/actual item consumption, unrelated
+tester denial, Auth refresh, signout-triggered reload/account switch with delayed
+response, real three-minute PvP timeout and zero page errors. No outcome, combat
+HP, server clock or successful backend response was fabricated.
+
+Evidence is public run/job/step metadata plus sanitized failure annotations from
+earlier runs. Protected artifact contents were not downloaded. The final
+documentation commit changes no tested application or test-runner source.
 
 ## Scope and isolation
 
@@ -29,6 +55,24 @@ session-only; real authoritative PvP can consume the issued disposable starter i
 Existing production Edge behavior has not been deployed or claimed verified.
 
 ## Observed results so far
+
+Resumed run [41663712700](https://github.com/pepen40/tyberkyleznik/actions/runs/41663712700)
+on `bb6446f` passed the RPG invitation after chess disconnect/reconnect, actual
+two-player PvP admission/action replay, private chat and server-confirmed starter
+item consumption. It then failed the unrelated-player HTTP assertion: SQL already
+denied the read, but `Match not found for participant` was incorrectly mapped to
+500. `3d32a59` maps that known authorization failure to a generic 403. The actual
+function failed a local Node TypeScript regression before and passed after; Deno
+coverage was extended too. This was an incorrect error mapping, not observed data
+disclosure. Final run `41664446369` tests this exact code SHA.
+
+The RPG delivery root cause was confirmed by `41662813955`: the receiver's inbox
+was CHANNEL_ERROR after the earlier disconnection. The client had removed an
+established channel permanently. `bb6446f` retains it for Realtime rejoin. Its new
+regression failed before and passed after, and the actual two-player invitation
+subsequently passed. All 17 local Node entrypoints passed. The Deno cancellation
+test's old unguarded-timer expectation was corrected in `de24e9a` to require the
+stronger ownership guard; the latest hosted source/Deno job passed.
 
 Latest completed observation: [run 41634076402](https://github.com/pepen40/tyberkyleznik/actions/runs/41634076402)
 on `8d8c813` passed the four existing source/backend/DOM jobs. The closed-test run

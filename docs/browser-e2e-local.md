@@ -1,6 +1,6 @@
 # Browser verification
 
-The NEW isolated closed-test profile now has actual partial authenticated two-player
+The NEW isolated closed-test profile now has a passing complete authenticated two-player
 evidence and its own workflow. See [current results](closed-test-verification.md)
 and [private launch procedure](../closed-test/README.md). Historical full-schema
 E2E remains BLOCKED; it is distinct from the new profile. The sections below
