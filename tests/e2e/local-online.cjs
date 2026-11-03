@@ -6,6 +6,7 @@ const root = path.resolve(__dirname, '../..');
 const required = name => { const value = process.env[name]; if (!value) throw new Error('Missing ' + name); return value; };
 
 async function run() {
+  const closedTest = process.env.E2E_CLOSED_TEST === 'true';
   assert.equal(required('E2E_DISPOSABLE_LOCAL'), 'true', 'A disposable local project must be explicitly selected');
   const backend = new URL(required('SUPABASE_TEST_URL'));
   assert(['127.0.0.1', 'localhost', '[::1]'].includes(backend.hostname), 'Only loopback backend URLs are allowed');
@@ -22,7 +23,7 @@ async function run() {
   assert.notEqual(users[0].u, users[1].u, 'Two independent identities are required');
   // Service-role credentials are deliberately not read by this process.
   const { chromium } = require(path.join(root, '.runtime/e2e/node_modules/playwright'));
-  const { server, frontend } = await require('./local-server.cjs').startLocalSite(backend, publicKey);
+  const { server, frontend } = await require('./local-server.cjs').startLocalSite(backend, publicKey, { closedTest });
   let browser;
   const contexts = [];
   const pageErrors = [];
@@ -39,7 +40,7 @@ async function run() {
         return local || staticCdn ? route.continue() : route.abort();
       });
       const page = await context.newPage(); pages.push(page);
-      page.on('pageerror', error => pageErrors.push(String(error.message)));
+      page.on('pageerror', error => pageErrors.push(String(error.stack || error.message)));
       page.on('dialog', dialog => dialog.dismiss());
       await page.goto(frontend, { waitUntil: 'domcontentloaded' });
       await page.evaluate(async credentials => {
@@ -55,6 +56,31 @@ async function run() {
       }), 'Could not initialize local fixture invitation settings');
     }
     const [a, b] = pages;
+    if (closedTest) {
+      const denied = await a.evaluate(async () => {
+        const results=[];
+        for (const action of ['pvp_result','rpg_win','score','chess_reward','claim_rpg_reward','open_case','buy_upgrade']) {
+          const result=await supabaseClient.functions.invoke('award-coins',{body:{action,data:{win:true,coins:999999,kind:'daily',id:'spend500'}}});
+          results.push(!result.error && result.data?.success===false && result.data?.rewardPaused===true);
+        }
+        return results.every(Boolean);
+      });
+      assert(denied,'Closed-test reward/economy path was open');
+      const outsider = await browser.newContext(); contexts.push(outsider);
+      const outsiderPage = await outsider.newPage();
+      await outsiderPage.goto(frontend,{waitUntil:'domcontentloaded'});
+      const rejected=await outsiderPage.evaluate(async credentials=>{
+        const login=await supabaseClient.auth.signInWithPassword({email:usernameAuthEmail(credentials.u),password:credentials.p});
+        if(login.error) throw Error('Outsider Auth fixture could not log in');
+        const result=await supabaseClient.functions.invoke('award-coins',{body:{action:'get_player_profile',data:{}}});
+        const pvp=await supabaseClient.functions.invoke('rpg-pvp',{body:{action:'get_match',data:{room_topic:'room_abc123xyz'}}});
+        return result.error?.context?.status===403 && pvp.error?.context?.status===403;
+      },{u:required('E2E_USER_OUT'),p:required('E2E_PASS_OUT')});
+      assert(rejected,'An Auth account without a test invitation gained access');
+      await outsider.close();contexts.pop();
+      passed.push('server closed-test membership and all reward/economy gates');
+    }
+    for (const page of pages) await page.waitForFunction(() => onlineChannel && Object.keys(onlineChannel.presenceState()).length >= 2);
     const openChessPlayers = async page => {
       await page.evaluate(() => switchTab('chess'));
       await page.locator('#chess-multiplayer-open').click();
@@ -103,7 +129,7 @@ async function run() {
     await a.waitForFunction(() => document.getElementById('chess-outgoing-status').textContent.includes('отключил'));
     assert(await b.locator('#chess-invite-modal').isHidden());
     passed.push('server-blocked chess invitation');
-    for (const tab of ['minigames','game','settings','inventory','market','leaderboard','howto']) {
+    for (const tab of ['minigames','game','settings','inventory',...(closedTest?[]:['market']),'leaderboard','howto']) {
       await a.evaluate(name => switchTab(name), tab);
       assert(await a.locator('#tab-' + tab).isVisible(), 'Main tab is not visible: ' + tab);
     }

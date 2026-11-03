@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -uo pipefail
 failed=0
-for source in script.js chess-delivery.js scripts/ci/*.cjs .github/ci/*.cjs tests/e2e/*.cjs; do
+for source in script.js chess-delivery.js scripts/ci/*.cjs .github/ci/*.cjs tests/e2e/*.cjs closed-test/*.cjs; do
   name="syntax-$(basename "$source" .cjs)"
   name="${name//./-}"
   node scripts/ci/run.cjs "$name" node --check "$source" || failed=1

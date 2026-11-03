@@ -1,0 +1,56 @@
+name: Closed test / real two-player browser scenarios
+permissions:
+  contents: read
+on:
+  workflow_call:
+  workflow_dispatch:
+jobs:
+  closed-test:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: supabase/setup-cli@v3
+        with:
+          version: 2.84.2
+      - name: Install local PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install --yes postgresql-client
+      - name: Prepare NEW closed-test schema and private signing keys
+        run: node scripts/ci/run.cjs closed-prepare node closed-test/manage.cjs prepare
+      - name: Start loopback-only disposable Supabase
+        run: node scripts/ci/run.cjs closed-start node closed-test/manage.cjs start
+      - name: Apply explicit test foundation, original component migrations and test-only guards
+        run: node scripts/ci/run.cjs closed-schema node closed-test/manage.cjs apply
+      - name: Closed-test database authorization assertions
+        run: |
+          cp closed-test/sql/test_access.sql .runtime/closed-test-stack/supabase/tests/closed_access.sql
+          node scripts/ci/run.cjs closed-rls supabase --workdir .runtime/closed-test-stack test db --local
+      - name: Create two allowed testers and a rejected outsider
+        run: node scripts/ci/run.cjs closed-users node closed-test/manage.cjs seed-ci
+      - name: Serve matching Edge Functions in the test stack
+        run: |
+          nohup node closed-test/manage.cjs functions > "$RUNNER_TEMP/closed-test-edge.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/closed-test-edge.pid"
+      - name: Install pinned Playwright and sandboxed Chromium
+        run: |
+          mkdir -p .runtime/e2e
+          node -e "require('node:fs').writeFileSync('.runtime/e2e/package.json',JSON.stringify({private:true}))"
+          node scripts/ci/run.cjs closed-playwright npm install --prefix .runtime/e2e --save-exact --no-audit --no-fund playwright@1.58.2
+          node scripts/ci/run.cjs closed-chromium node .runtime/e2e/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Real login, two-player chess/reconnect/chat, PvP and deadline
+        run: node scripts/ci/run.cjs closed-online node closed-test/e2e.cjs
+      - name: Stop only this disposable test stack
+        if: always()
+        run: |
+          if [[ -f "$RUNNER_TEMP/closed-test-edge.pid" ]]; then kill "$(cat "$RUNNER_TEMP/closed-test-edge.pid")" 2>/dev/null || true; fi
+          if [[ -f .runtime/closed-test-stack/.closed-test-profile ]]; then node scripts/ci/run.cjs closed-stop node closed-test/manage.cjs stop; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: closed-test-results
+          path: .runtime/ci/safe/
+          retention-days: 7
+          if-no-files-found: error

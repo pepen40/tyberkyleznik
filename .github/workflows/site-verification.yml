@@ -16,6 +16,8 @@ jobs:
     uses: ./.github/workflows/rpg-invitation-runtime.yml
   browser-smoke:
     uses: ./.github/workflows/browser-smoke.yml
+  closed-test:
+    uses: ./.github/workflows/closed-test.yml
   full-bootstrap:
     name: Full historical bootstrap / explicit BLOCKED gate
     runs-on: ubuntu-24.04

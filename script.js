@@ -20,6 +20,18 @@ supabaseClient.auth.onAuthStateChange((event) => {
     }
 });
 const EDGE_FUNCTION_NAME = 'award-coins';
+// Set only by the isolated test server; server/SQL enforce all restrictions too.
+let closedTestMode = window.PEPEN_CLOSED_TEST === true;
+function showClosedTestNotice() {
+    if (!closedTestMode || document.getElementById('closed-test-notice')) return;
+    const notice = document.createElement('div');
+    notice.id = 'closed-test-notice';
+    notice.setAttribute('role', 'status');
+    notice.textContent = 'ЗАКРЫТЫЙ ТЕСТ · отдельные аккаунты и данные · награды, рейтинг, покупки и продажа отключены · прогресс PvE только на время сессии';
+    notice.style.cssText = 'background:#ffffcc;color:#000;border:2px outset #fff;padding:10px;font:14px Tahoma,sans-serif;';
+    document.body.prepend(notice);
+}
+window.addEventListener('DOMContentLoaded', showClosedTestNotice);
 
 function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, ch => ({
@@ -605,6 +617,7 @@ async function finishAuthLogin(user) {
     if (profileError || !profileResponse?.success || !data) {
         throw new Error("Профиль игрока не найден: " + (profileError?.message || profileResponse?.error || "нет записи"));
     }
+    if (profileResponse.closedTest === true) { closedTestMode = true; showClosedTestNotice(); }
 
     if (currentAuthUserId !== user.id) window.resetChessSession?.();
     currentUser = data.username;
@@ -659,6 +672,7 @@ function usernameAuthEmail(username) {
 }
 
 async function register() {
+    if (closedTestMode) { document.getElementById('auth-msg').textContent = 'Закрытый тест: аккаунт выдаёт организатор. Используй кнопку входа.'; return; }
     const u = document.getElementById('username').value.trim();
     const passwordInput = document.getElementById('password');
     let p = passwordInput.value;
@@ -798,6 +812,7 @@ async function loadRpgContracts() {
     const dailyEl = document.getElementById('rpg-daily-contracts');
     const achEl = document.getElementById('rpg-achievements');
     if (!dailyEl || !achEl || !currentUser) return;
+    if (typeof closedTestMode !== 'undefined' && closedTestMode) { dailyEl.textContent = 'Закрытый тест: задания и начисления отключены. Бои доступны без наград.'; achEl.textContent = ''; return; }
     dailyEl.innerHTML = '<p>Обновляем контракты...</p>';
     try {
         const { data, error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, { body: { action: 'daily_status', username: currentUser, data: {} } });
@@ -1464,6 +1479,10 @@ function renderCharStats() {
 }
 
 function switchTab(tab) {
+    if (typeof closedTestMode !== 'undefined' && closedTestMode && ['market', 'cases'].includes(tab)) {
+        alert('Закрытый тест: экономика, кейсы и торговля отключены. Доступны игры, чат и тестовый инвентарь.');
+        return;
+    }
     if (tab !== 'game' && typeof cancelSimonGame === 'function') cancelSimonGame();
 ['minigames', 'game', 'chess', 'rpg', 'cases', 'inventory', 'market', 'leaderboard', 'howto', 'settings'].forEach(t => {
         const el = document.getElementById('tab-' + t);
@@ -3106,7 +3125,7 @@ async function openCase(price) {
 
 async function renderInventory() {
     const list = document.getElementById('inventory-list'); list.innerHTML = 'Загрузка...';
-    const { data: myListings } = await supabaseClient.from('marketplace').select('*').eq('seller', currentUser);
+    const { data: myListings } = closedTestMode ? { data: [] } : await supabaseClient.from('marketplace').select('*').eq('seller', currentUser);
     list.innerHTML = ''; let processedInv = getProcessedInventory();
     if (processedInv.length === 0 && (!myListings || myListings.length === 0)) { list.innerHTML = '<p style="grid-column: 1/-1; text-align:center;">Пусто.</p>'; return; }
     processedInv.forEach((item) => {
@@ -3116,7 +3135,7 @@ async function renderInventory() {
             ${getImgTag(item.img)}
             <div class="inv-card-name"><span class="rarity-${escapeHtml(item.rarity)}">${escapeHtml(item.name)}</span></div>
             <div class="inv-card-buttons">
-                <button onclick="sellItem(${safeInlineArg(item.name)})" style="background-color: #90ee90;">Продать</button>
+                <button onclick="sellItem(${safeInlineArg(item.name)})" ${closedTestMode ? 'disabled title="Торговля отключена в закрытом тесте"' : ''} style="background-color: #90ee90;">Продать</button>
                 <button class="info-btn" onclick="openItemInfo(${safeInlineArg(item.name)})">Подробнее</button>
             </div>
         `;
@@ -3277,7 +3296,7 @@ async function viewProfile(username) {
         <span style="color: #d32f2f;">Apostol:</span> Этаж ${safeNumber(maxF.apostol).toFixed(1)} | HP ур.${safeNumber(ups.apostol?.hp)} | ATK ур.${safeNumber(ups.apostol?.atk)}<br>
         <span style="color: #d32f2f;">Мээ:</span> Этаж ${safeNumber(maxF.mee).toFixed(1)} | HP ур.${safeNumber(ups.mee?.hp)} | ATK ур.${safeNumber(ups.mee?.atk)}
     `;
-    const { data: marketItems } = await supabaseClient.from('marketplace').select('*').eq('seller', username);
+    const { data: marketItems } = closedTestMode ? { data: [] } : await supabaseClient.from('marketplace').select('*').eq('seller', username);
     let inv = Array.isArray(data.inventory) ? data.inventory : [];
     let grouped = Object.create(null); inv.forEach(item => { const key = String(item?.name ?? ''); if (!grouped[key]) grouped[key] = { ...item, qty: 0 }; grouped[key].qty++; });
     let processedInv = Object.values(grouped).sort((a, b) => (rarityWeight[b.rarity] || 0) - (rarityWeight[a.rarity] || 0));

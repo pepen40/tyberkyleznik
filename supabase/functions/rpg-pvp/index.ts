@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { getPvpErrorResponse } from '../_shared/pvp-errors.ts'
+import { closedTestAccess } from '../_shared/closed-test-policy.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -35,6 +36,9 @@ serve(async (req) => {
     const { data: auth, error: authError } = await admin.auth.getUser(token)
     if (authError || !auth.user?.id) return json({ success: false, error: 'Сессия недействительна.' }, 401)
     const userId = auth.user.id
+    if (Deno.env.get('PEPEN_CLOSED_TEST') === 'true' && !await closedTestAccess(admin, userId)) {
+      return json({ success: false, error: 'Доступ к закрытому тесту не выдан или истёк.' }, 403)
+    }
     const action = body.action
     const data = body.data && typeof body.data === 'object' && !Array.isArray(body.data) ? body.data : {}
 

@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { isServerVerifiedRpgRewardClaim } from '../_shared/reward-policy.ts'
 import { validateMarketplaceSale } from '../_shared/marketplace-policy.ts'
+import { CLOSED_TEST_ACTIONS, closedTestAccess } from '../_shared/closed-test-policy.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -132,6 +133,12 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401
       });
     }
+    const closedTest = Deno.env.get('PEPEN_CLOSED_TEST') === 'true';
+    if (closedTest && !await closedTestAccess(supabaseAdmin, authData.user.id)) {
+      return new Response(JSON.stringify({ success: false, error: 'Доступ к закрытому тесту не выдан или истёк.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403
+      });
+    }
     const rawBody = await req.text();
     if (rawBody.length > 16384) {
       return new Response(JSON.stringify({ success: false, error: 'Слишком большой запрос.' }), {
@@ -160,6 +167,12 @@ serve(async (req) => {
     if (data !== undefined && data !== null && (typeof data !== 'object' || Array.isArray(data))) {
       return new Response(JSON.stringify({ success: false, error: 'Некорректные параметры действия.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400
+      });
+    }
+    if (closedTest && !CLOSED_TEST_ACTIONS.has(action)) {
+      return new Response(JSON.stringify({ success: false, rewardPaused: true, closedTest: true,
+        error: 'Закрытый тест: награды, рейтинговые начисления и экономика отключены. Бои доступны без начислений.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200
       });
     }
     const allowedActions = new Set([
@@ -194,6 +207,7 @@ serve(async (req) => {
     if (action === 'get_player_profile') {
       return new Response(JSON.stringify({
         success: true,
+        closedTest,
         profile: {
           id: player.id,
           username: player.username,
