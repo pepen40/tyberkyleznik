@@ -1,59 +1,56 @@
-name: Auth migration checks
-
+name: Source, Deno and PowerShell checks
 permissions:
   contents: read
-
 on:
-  pull_request:
-    branches: [main]
-  push:
-    branches: [main, security/auth-migration]
-
+  workflow_call:
+  workflow_dispatch:
 jobs:
   syntax:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: Verify migration source inventory (does not bootstrap a database)
-        shell: pwsh
-        run: ./tests/migration-inventory.tests.ps1
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - name: Check browser JavaScript syntax
-        run: |
-          node --check script.js
-          node --check tests/e2e/local-online.cjs
-      - name: Test frontend widgets
-        run: node tests/run-frontend-widgets.cjs
-      - name: Test RPG async lifecycle
-        run: node tests/run-rpg-lifecycle.cjs
-      - name: Test online chess lifecycle
-        run: node tests/run-online-chess-lifecycle.cjs
-      - name: Test chess delivery and reconnect recovery
-        run: node tests/run-chess-delivery.cjs
-      - name: Test chess invitation delivery
-        run: node tests/run-chess-invitations.cjs
-      - name: Test PvP callback ownership and retry identity
-        run: node tests/run-pvp-callbacks.cjs
-      - name: Test invitation authentication boundary
-        run: node tests/run-server-invitations.cjs
-      - name: Test game timer ownership
-        run: node tests/run-game-timers.cjs
-      - name: Test account-bound economy callbacks
-        run: node tests/run-account-callbacks.cjs
-      - name: Test migration of invitation preferences
-        run: node tests/run-invitation-preferences.cjs
-      - name: Test polling and inbox lifecycle
-        run: node tests/run-async-room-lifecycle.cjs
-      - name: Check Supabase Edge Function
-        run: deno check supabase/functions/award-coins/index.ts supabase/functions/rpg-pvp/index.ts
-      - name: Test PvP error responses
-        run: deno test supabase/functions/_shared/pvp-errors.test.ts
-      - name: Test atomic PvP action routing
-        run: deno test --allow-read=supabase/functions/rpg-pvp/index.ts supabase/functions/_shared/pvp-action-routing.test.ts
-      - name: Test RPG invitation delivery protocol
-        run: deno test --allow-read=script.js,supabase/functions/award-coins/index.ts supabase/functions/_shared/rpg-invitations.test.ts supabase/functions/_shared/profile-access.test.ts supabase/functions/_shared/reward-policy.test.ts supabase/functions/_shared/marketplace-policy.test.ts
+      - name: Existing JavaScript/V8 suites, CI controls and syntax
+        run: bash .github/ci/test-sources.sh
+      - name: Validate GitHub Actions semantics with pinned actionlint
+        if: always()
+        run: >-
+          node scripts/ci/run.cjs workflow-lint docker run --rm --network none
+          -v "$GITHUB_WORKSPACE:/repo:ro" -w /repo rhysd/actionlint:1.7.7 -color
+      - name: PowerShell migration-source checks (no database)
+        if: always()
+        run: node scripts/ci/run.cjs powershell-inventory pwsh -NoProfile -File tests/migration-inventory.tests.ps1
+      - name: CI migration scope and configuration regression tests (no SQL execution)
+        if: always()
+        run: node scripts/ci/run.cjs ci-plans python3 -B tests/ci_plan_test.py
+      - name: Deno typecheck for both Edge Functions
+        if: always()
+        run: node scripts/ci/run.cjs deno-check deno check supabase/functions/award-coins/index.ts supabase/functions/rpg-pvp/index.ts
+      - name: Deno PvP error tests
+        if: always()
+        run: node scripts/ci/run.cjs deno-pvp-errors deno test supabase/functions/_shared/pvp-errors.test.ts
+      - name: Deno atomic action routing
+        if: always()
+        run: node scripts/ci/run.cjs deno-pvp-routing deno test --allow-read=supabase/functions/rpg-pvp/index.ts supabase/functions/_shared/pvp-action-routing.test.ts
+      - name: Deno invitation, profile, reward and marketplace policies
+        if: always()
+        run: >-
+          node scripts/ci/run.cjs deno-policies deno test
+          --allow-read=script.js,supabase/functions/award-coins/index.ts
+          supabase/functions/_shared/rpg-invitations.test.ts
+          supabase/functions/_shared/profile-access.test.ts
+          supabase/functions/_shared/reward-policy.test.ts
+          supabase/functions/_shared/marketplace-policy.test.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: source-check-results
+          path: .runtime/ci/safe/
+          retention-days: 7
+          if-no-files-found: error

@@ -1,0 +1,42 @@
+{
+  "pvp": {
+    "fixture": ".github/pvp-schema-test/preflight.sql",
+    "migrations": [
+      "20261102120000_create_pvp_match_storage.sql",
+      "20261103100000_add_rpg_pvp_server_build.sql",
+      "20261103110000_rpg_pvp_match_lifecycle.sql",
+      "20261103120000_rpg_pvp_atomic_actions.sql",
+      "20261103130000_rpg_pvp_waiting_cancel.sql",
+      "20261103140000_rpg_pvp_turn_timeout.sql",
+      "20261103150000_serialize_rpg_pvp_admission.sql",
+      "20261103160000_atomic_rpg_pvp_deadline.sql"
+    ],
+    "tests": [
+      "pvp_match_storage_test.sql",
+      "rpg_pvp_server_build_test.sql",
+      "rpg_pvp_match_lifecycle_test.sql",
+      "rpg_pvp_atomic_actions_test.sql",
+      "rpg_pvp_gameplay_test.sql",
+      "rpg_pvp_items_test.sql",
+      "rpg_pvp_combat_rules_test.sql",
+      "rpg_pvp_deadline_test.sql"
+    ]
+  },
+  "invitation": {
+    "fixture": ".github/rpg-invitation-test/preflight.sql",
+    "migrations": [
+      "20261101145407_secure_realtime_room_membership.sql",
+      "20261101145936_move_room_membership_management_to_edge.sql",
+      "20261101150657_index_realtime_room_access.sql",
+      "20261101152421_lock_down_default_privileges.sql",
+      "20261101152713_validate_realtime_room_invitations.sql",
+      "20261101155354_restrict_direct_realtime_chat_sends.sql",
+      "20261102130000_add_private_rpg_invitation_inbox.sql",
+      "20261103170000_authoritative_game_invitations.sql"
+    ],
+    "tests": [
+      "rpg_invitation_inbox_test.sql",
+      "game_invitation_security_test.sql"
+    ]
+  }
+}

@@ -1,0 +1,36 @@
+name: Browser DOM smoke (no backend)
+permissions:
+  contents: read
+on:
+  workflow_call:
+  workflow_dispatch:
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install pinned, test-only Playwright library
+        run: |
+          mkdir -p .runtime/e2e
+          node -e "require('node:fs').writeFileSync('.runtime/e2e/package.json',JSON.stringify({private:true}))"
+          node scripts/ci/run.cjs playwright-install npm install --prefix .runtime/e2e --save-exact --no-audit --no-fund playwright@1.58.2
+      - name: Install sandboxed Chromium and runner OS dependencies
+        run: node scripts/ci/run.cjs chromium-install node .runtime/e2e/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Two independent desktop/mobile contexts, DOM only
+        run: node scripts/ci/run.cjs browser-dom-smoke node tests/e2e/browser-smoke.cjs
+      - name: Explicit online gate
+        if: always()
+        run: |
+          echo '## Full online browser E2E: BLOCKED' >> "$GITHUB_STEP_SUMMARY"
+          echo 'DOM smoke uses no Auth identity or backend. See the separate bootstrap gate and invitation/PvP fixture jobs. Chess delivery, RPG invitations, live account switching and stale callbacks still require full-schema two-client E2E.' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-dom-smoke-results
+          path: .runtime/ci/safe/
+          retention-days: 7
+          if-no-files-found: error

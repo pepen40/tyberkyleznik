@@ -2,8 +2,8 @@
 set -euo pipefail
 
 db_url="$(supabase status -o env | sed -nE 's/^DB_URL="?([^" ]+)"?$/\1/p')"
-if [[ -z "$db_url" ]]; then
-  echo "Could not read local Supabase DB_URL" >&2
+if [[ ! "$db_url" =~ ^postgres(ql)?://[^/]+@127\.0\.0\.1:[0-9]+/postgres$ ]]; then
+  echo "Expected a disposable local Supabase DB_URL" >&2
   exit 1
 fi
 

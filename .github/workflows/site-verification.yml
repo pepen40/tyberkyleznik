@@ -1,0 +1,69 @@
+name: Site verification (isolated, no deployment)
+permissions:
+  contents: read
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, security/auth-migration, audit/site-completion-20261103]
+  workflow_dispatch:
+jobs:
+  source:
+    uses: ./.github/workflows/auth-migration-checks.yml
+  pvp:
+    uses: ./.github/workflows/pvp-schema-runtime.yml
+  invitations:
+    uses: ./.github/workflows/rpg-invitation-runtime.yml
+  browser-smoke:
+    uses: ./.github/workflows/browser-smoke.yml
+  full-bootstrap:
+    name: Full historical bootstrap / explicit BLOCKED gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Report exact missing sources before any database operation
+        id: baseline
+        run: node scripts/ci/baseline-gate.cjs
+      - uses: supabase/setup-cli@v3
+        if: steps.baseline.outputs.status == 'READY'
+        with:
+          version: 2.84.2
+      - name: Install PostgreSQL client
+        if: steps.baseline.outputs.status == 'READY'
+        run: sudo apt-get update && sudo apt-get install --yes postgresql-client
+      - name: Prepare full scope without feature fixtures
+        if: steps.baseline.outputs.status == 'READY'
+        run: node scripts/ci/run.cjs full-prepare bash .github/ci/backend.sh prepare full
+      - name: Start clean disposable stack
+        if: steps.baseline.outputs.status == 'READY'
+        working-directory: ${{ runner.temp }}/site-full-supabase
+        run: >-
+          node "${{ github.workspace }}/scripts/ci/run.cjs" full-start supabase start
+          --exclude imgproxy,storage-api,mailpit,postgres-meta,studio,logflare,vector,supavisor
+      - name: Apply all original migration files from scratch, no fixture baseline
+        if: steps.baseline.outputs.status == 'READY'
+        working-directory: ${{ runner.temp }}/site-full-supabase
+        run: node "${{ github.workspace }}/scripts/ci/run.cjs" full-migrations bash "${{ github.workspace }}/.github/ci/backend.sh" apply full
+      - name: Full-schema pgTAP
+        if: steps.baseline.outputs.status == 'READY'
+        working-directory: ${{ runner.temp }}/site-full-supabase
+        run: node "${{ github.workspace }}/scripts/ci/run.cjs" full-pgtap supabase test db --local
+      - name: Stop disposable stack
+        if: always() && steps.baseline.outputs.status == 'READY'
+        run: node scripts/ci/run.cjs full-stop bash .github/ci/stop-backend.sh full
+      - name: Enforce BLOCKED as a failing check, never a green skip
+        if: steps.baseline.outputs.status == 'BLOCKED'
+        run: |
+          echo '::error title=BLOCKED historical baseline::Missing original SQL and unverified baseline. Exact list is in the job summary and full-bootstrap artifact. Full online E2E is also BLOCKED.'
+          exit 1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: full-bootstrap-status
+          path: .runtime/ci/safe/
+          retention-days: 7
+          if-no-files-found: error

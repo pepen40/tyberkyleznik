@@ -1,174 +1,50 @@
 name: PvP schema runtime tests
-
 permissions:
   contents: read
-
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - supabase/migrations/20261102120000_create_pvp_match_storage.sql
-      - supabase/migrations/20261103100000_add_rpg_pvp_server_build.sql
-      - supabase/migrations/20261103110000_rpg_pvp_match_lifecycle.sql
-      - supabase/migrations/20261103120000_rpg_pvp_atomic_actions.sql
-      - supabase/migrations/20261103130000_rpg_pvp_waiting_cancel.sql
-      - supabase/migrations/20261103140000_rpg_pvp_turn_timeout.sql
-      - supabase/migrations/20261103150000_serialize_rpg_pvp_admission.sql
-      - supabase/migrations/20261103160000_atomic_rpg_pvp_deadline.sql
-      - supabase/tests/database/rpg_pvp_deadline_test.sql
-      - .github/pvp-schema-test/admission-race.sh
-      - supabase/tests/database/pvp_match_storage_test.sql
-      - supabase/tests/database/rpg_pvp_server_build_test.sql
-      - supabase/tests/database/rpg_pvp_match_lifecycle_test.sql
-      - supabase/tests/database/rpg_pvp_atomic_actions_test.sql
-      - supabase/tests/database/rpg_pvp_gameplay_test.sql
-      - supabase/tests/database/rpg_pvp_items_test.sql
-      - supabase/tests/database/rpg_pvp_combat_rules_test.sql
-      - supabase/functions/rpg-pvp/index.ts
-      - supabase/functions/_shared/pvp-errors.ts
-      - supabase/functions/_shared/pvp-errors.test.ts
-      - supabase/functions/award-coins/index.ts
-      - script.js
-      - .github/pvp-schema-test/preflight.sql
-      - .github/pvp-schema-test/concurrency.sh
-      - .github/workflows/pvp-schema-runtime.yml
-  push:
-    branches: [main]
-    paths:
-      - supabase/migrations/20261102120000_create_pvp_match_storage.sql
-      - supabase/migrations/20261103100000_add_rpg_pvp_server_build.sql
-      - supabase/migrations/20261103110000_rpg_pvp_match_lifecycle.sql
-      - supabase/migrations/20261103120000_rpg_pvp_atomic_actions.sql
-      - supabase/migrations/20261103130000_rpg_pvp_waiting_cancel.sql
-      - supabase/migrations/20261103140000_rpg_pvp_turn_timeout.sql
-      - supabase/migrations/20261103150000_serialize_rpg_pvp_admission.sql
-      - supabase/migrations/20261103160000_atomic_rpg_pvp_deadline.sql
-      - .github/pvp-schema-test/admission-race.sh
-      - supabase/tests/database/**
-      - supabase/functions/rpg-pvp/index.ts
-      - supabase/functions/_shared/pvp-errors.ts
-      - supabase/functions/_shared/pvp-errors.test.ts
-      - supabase/functions/award-coins/index.ts
-      - script.js
-      - .github/pvp-schema-test/preflight.sql
-      - .github/pvp-schema-test/concurrency.sh
-      - .github/workflows/pvp-schema-runtime.yml
+  workflow_call:
   workflow_dispatch:
-
 jobs:
   pvp-schema:
-    name: PostgreSQL 17 + local Supabase + pgTAP
-    runs-on: ubuntu-latest
+    name: Fixture scope / PostgreSQL 17 PvP, pgTAP and concurrency
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
-
     steps:
       - uses: actions/checkout@v4
-
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
       - uses: supabase/setup-cli@v3
         with:
           version: 2.84.2
-
-      - uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-
-      - name: Check PvP client and Edge Function syntax
-        run: |
-          node --check script.js
-          deno check supabase/functions/rpg-pvp/index.ts
-          deno check supabase/functions/award-coins/index.ts
-
-      - name: Create isolated Supabase test project
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          harness_dir="$RUNNER_TEMP/pvp-schema-supabase"
-          mkdir -p "$harness_dir"
-          cd "$harness_dir"
-          supabase init
-
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
-
-          config = Path("supabase/config.toml")
-          contents = config.read_text(encoding="utf-8")
-          contents, version_count = re.subn(
-              r"(?m)^(\s*major_version\s*=\s*)\d+(\s*)$",
-              r"\g<1>17\g<2>",
-              contents,
-          )
-          if version_count != 1:
-              raise SystemExit(
-                  f"Expected exactly one db.major_version entry in {config}, found {version_count}"
-              )
-          contents, project_count = re.subn(
-              r'(?m)^\s*project_id\s*=\s*"[^"]*"\s*$',
-              'project_id = "pvp_schema_ci"',
-              contents,
-          )
-          if project_count != 1:
-              raise SystemExit(
-                  f"Expected exactly one project_id entry in {config}, found {project_count}"
-              )
-          config.write_text(contents, encoding="utf-8")
-          PY
-
-          mkdir -p supabase/migrations supabase/tests/database
-          cp "$GITHUB_WORKSPACE/.github/pvp-schema-test/preflight.sql" \
-            supabase/migrations/20261102115900_pvp_test_preflight.sql
-          for migration in \
-            20261102120000_create_pvp_match_storage.sql \
-            20261103100000_add_rpg_pvp_server_build.sql \
-            20261103110000_rpg_pvp_match_lifecycle.sql \
-            20261103120000_rpg_pvp_atomic_actions.sql \
-            20261103130000_rpg_pvp_waiting_cancel.sql \
-            20261103140000_rpg_pvp_turn_timeout.sql \
-            20261103150000_serialize_rpg_pvp_admission.sql \
-            20261103160000_atomic_rpg_pvp_deadline.sql; do
-            cp "$GITHUB_WORKSPACE/supabase/migrations/$migration" supabase/migrations/
-          done
-          for test in \
-            pvp_match_storage_test.sql \
-            rpg_pvp_server_build_test.sql \
-            rpg_pvp_match_lifecycle_test.sql \
-            rpg_pvp_atomic_actions_test.sql \
-            rpg_pvp_gameplay_test.sql \
-            rpg_pvp_items_test.sql \
-            rpg_pvp_combat_rules_test.sql \
-            rpg_pvp_deadline_test.sql; do
-            cp "$GITHUB_WORKSPACE/supabase/tests/database/$test" supabase/tests/database/
-          done
-
-      - name: Start disposable Supabase Auth and Realtime with PostgreSQL
-        working-directory: ${{ runner.temp }}/pvp-schema-supabase
+      - name: Install PostgreSQL client (server is supplied by the local stack)
+        run: sudo apt-get update && sudo apt-get install --yes postgresql-client
+      - name: Prepare fixture scope, without invented migration timestamps
+        run: node scripts/ci/run.cjs pvp-prepare bash .github/ci/backend.sh prepare pvp
+      - name: Start empty disposable Supabase stack / PostgreSQL 17
+        working-directory: ${{ runner.temp }}/site-pvp-supabase
         run: >-
-          supabase start
+          node "${{ github.workspace }}/scripts/ci/run.cjs" pvp-start supabase start
           --exclude imgproxy,storage-api,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
-
-      - name: Apply only the PvP migration and test harness preflight
-        working-directory: ${{ runner.temp }}/pvp-schema-supabase
-        run: supabase db reset --local --yes
-
-      - name: Verify concurrent actions serialize and reject stale state
-        working-directory: ${{ runner.temp }}/pvp-schema-supabase
-        shell: bash
-        run: bash "$GITHUB_WORKSPACE/.github/pvp-schema-test/concurrency.sh"
-
-      - name: Verify cross-role admission and deadline under lock contention
-        working-directory: ${{ runner.temp }}/pvp-schema-supabase
-        run: bash "$GITHUB_WORKSPACE/.github/pvp-schema-test/admission-race.sh"
-
-      - name: Run the PvP pgTAP assertions
-        working-directory: ${{ runner.temp }}/pvp-schema-supabase
-        run: supabase test db --local
-
-      - name: Stop disposable Supabase stack
+      - name: Apply fixture, then original PvP migration chain
+        working-directory: ${{ runner.temp }}/site-pvp-supabase
+        run: node "${{ github.workspace }}/scripts/ci/run.cjs" pvp-migrations bash "${{ github.workspace }}/.github/ci/backend.sh" apply pvp
+      - name: Competing action versions and idempotency
+        working-directory: ${{ runner.temp }}/site-pvp-supabase
+        run: node "${{ github.workspace }}/scripts/ci/run.cjs" pvp-concurrency bash "${{ github.workspace }}/.github/pvp-schema-test/concurrency.sh"
+      - name: Admission and deadline under multi-connection lock contention
+        working-directory: ${{ runner.temp }}/site-pvp-supabase
+        run: node "${{ github.workspace }}/scripts/ci/run.cjs" pvp-admission-deadline bash "${{ github.workspace }}/.github/pvp-schema-test/admission-race.sh"
+      - name: Run all eight PvP pgTAP suites
+        working-directory: ${{ runner.temp }}/site-pvp-supabase
+        run: node "${{ github.workspace }}/scripts/ci/run.cjs" pvp-pgtap supabase test db --local
+      - name: Stop disposable stack
         if: always()
-        shell: bash
-        run: |
-          harness_dir="$RUNNER_TEMP/pvp-schema-supabase"
-          if [[ -f "$harness_dir/supabase/config.toml" ]]; then
-            supabase --workdir "$harness_dir" stop --no-backup || true
-          fi
+        run: node scripts/ci/run.cjs pvp-stop bash .github/ci/stop-backend.sh pvp
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pvp-fixture-results
+          path: .runtime/ci/safe/
+          retention-days: 7
+          if-no-files-found: error
