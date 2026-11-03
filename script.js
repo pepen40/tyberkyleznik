@@ -1172,31 +1172,39 @@ async function initializeRpgInvitationInbox(userId) {
 async function clearOutgoingRpgChallenge(message) {
     const pending = pendingOutgoingChallenge;
     if (!pending) return;
+    const account = currentAuthUserId, room = myRoomId, matchId = pvpMatchId;
+    let clearing = false;
+    const isCurrent = () => currentAuthUserId === account && myRoomId === room && pvpMatchId === matchId &&
+        pendingOutgoingChallenge === (clearing ? null : pending);
     const ownsServerMatch = myRoomId === pending.roomId && pvpMatchId;
     if (ownsServerMatch) {
         try {
             await invokeRpgPvp('cancel_match', { room_topic: pending.roomId });
         } catch (_) {
+            if (!isCurrent()) return;
             let match;
             try {
                 match = await invokeRpgPvp('get_match', { room_topic: pending.roomId });
             } catch (_) {
                 match = null;
             }
+            if (!isCurrent()) return;
             if (match?.status === 'active' || match?.status === 'completed') {
                 applyAuthoritativePvpMatch(match);
                 return;
             }
             if (!match || !['cancelled', 'expired'].includes(match.status)) {
                 if (pending.timer) clearTimeout(pending.timer);
-                pending.timer = setTimeout(() => clearOutgoingRpgChallenge(message), 5000);
+                pending.timer = setTimeout(() => { if (isCurrent()) clearOutgoingRpgChallenge(message); }, 5000);
                 const log = document.getElementById('pvp-log');
                 if (log) log.textContent = 'Не удалось подтвердить отмену матча. Проверяем состояние и сохраняем комнату.';
                 return;
             }
         }
     }
+    if (!isCurrent()) return;
     clearTimeout(pending.timer);
+    clearing = true;
     pendingOutgoingChallenge = null;
     outgoingChallengeRegistrationInProgress = false;
     void supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
@@ -1207,9 +1215,11 @@ async function clearOutgoingRpgChallenge(message) {
         roomChannel = null;
         try { await supabaseClient.removeChannel(oldChannel); } catch (_) {}
     }
+    if (!isCurrent()) return;
     if (pvpSyncTimer) clearInterval(pvpSyncTimer);
     pvpSyncTimer = null;
     if (lobbyChannel) { try { await lobbyChannel.track({ online: true }); } catch (_) {} }
+    if (!isCurrent()) return;
     myRoomId = null;
     pvpMatchId = null;
     pvpMatchVersion = null;
@@ -1830,13 +1840,17 @@ async function executeChallenge() {
 async function expireOutgoingRpgChallenge(roomId) {
     const pending = pendingOutgoingChallenge;
     if (!pending || pending.roomId !== roomId) return;
+    const account = currentAuthUserId, matchId = pvpMatchId;
+    const isCurrent = () => currentAuthUserId === account && myRoomId === roomId && pvpMatchId === matchId && pendingOutgoingChallenge === pending;
     try {
         const match = await invokeRpgPvp('get_match', { room_topic: roomId });
+        if (!isCurrent()) return;
         if (match.status === 'active' || match.status === 'completed') {
             applyAuthoritativePvpMatch(match);
             return;
         }
     } catch (_) {}
+    if (!isCurrent()) return;
     await clearOutgoingRpgChallenge('Игрок не ответил или приглашение истекло. Можно повторить вызов.');
 }
 

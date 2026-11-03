@@ -60,6 +60,28 @@ async function runAsyncRoomLifecycleTests(source, reportFailures = false) {
     await pending;
     if(env.myRoomId!=='new-account-room')throw Error('Late private registration cleared another account room');
   });
+  for(const status of ['waiting','active']) await test('old invitation expiry '+status+' result cannot affect replacement room',async()=>{
+    let resolve,applied=0,cleared=0;
+    const env={currentAuthUserId:'old',myRoomId:'old-room',pvpMatchId:'old-match',pendingOutgoingChallenge:{roomId:'old-room'},
+      invokeRpgPvp:()=>new Promise(ok=>{resolve=ok;}),applyAuthoritativePvpMatch:()=>applied++,clearOutgoingRpgChallenge:async()=>cleared++};
+    const fn=new Function('env','with(env){return ('+cut('async function expireOutgoingRpgChallenge(', 'function listenForChallenges(')+');}')(env);
+    const pending=fn('old-room');env.currentAuthUserId='new';env.myRoomId='new-room';env.pendingOutgoingChallenge={roomId:'new-room'};
+    resolve({status,match_id:'old-match'});await pending;
+    if(applied||cleared)throw Error('Old expiry changed the replacement room');
+  });
+  await test('late confirmed invitation cancellation cannot reset a replacement room',async()=>{
+    let resolve;
+    const noop=()=>{};
+    const env={currentAuthUserId:'old',myRoomId:'old-room',pvpMatchId:'old-match',pendingOutgoingChallenge:{roomId:'old-room',timer:42},
+      outgoingChallengeRegistrationInProgress:false,invokeRpgPvp:()=>new Promise(ok=>{resolve=ok;}),clearTimeout:noop,clearInterval:noop,
+      supabaseClient:{functions:{invoke:async()=>({})}},EDGE_FUNCTION_NAME:'award-coins',roomChannel:null,pvpSyncTimer:null,lobbyChannel:null,
+      pvpMatchVersion:0,isPvpHost:true,currentPvpChar:'ashab',pvpBattleStarted:false,pvpBattleFinished:false,pvpPendingAction:null,pvpOpponentName:'peer',
+      document:{getElementById:()=>({classList:{add:noop,remove:noop}})}};
+    const fn=new Function('env','with(env){return ('+cut('async function clearOutgoingRpgChallenge(', 'const soundCache =')+');}')(env);
+    const pending=fn('expired');env.currentAuthUserId='new';env.myRoomId='new-room';env.pvpMatchId='new-match';env.pendingOutgoingChallenge={roomId:'new-room'};
+    resolve({success:true});await pending;
+    if(env.myRoomId!=='new-room'||env.pvpMatchId!=='new-match'||env.pendingOutgoingChallenge?.roomId!=='new-room')throw Error('Old cancellation cleared the replacement room');
+  });
   for(const name of ['createPvpRoom','joinPvpRoom']) await test(name+' retires the previous offline battle only after admission',async()=>{
     const nodes=new Map(),cleared=[];
     const node=id=>{if(!nodes.has(id)){const classes=new Set();nodes.set(id,{value:'ashab',classList:{add:x=>classes.add(x),remove:x=>classes.delete(x),contains:x=>classes.has(x)}});}return nodes.get(id);};
