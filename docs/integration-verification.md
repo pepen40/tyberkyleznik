@@ -1,5 +1,9 @@
 # Runtime verification — 2026-11-03
 
+Current launch target: [ordinary GitHub Pages + existing Supabase](public-playtest.md).
+No private host/SSH is required. Existing isolated results below are retained;
+deployed backend and two-user play on the current public site are not attested.
+
 ## Separate closed-test profile — current work
 
 The user authorized a NEW isolated test schema without reconstructing production

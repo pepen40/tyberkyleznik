@@ -1,5 +1,9 @@
 # Isolated closed-test verification — resumed 2026-11-04
 
+Current product goal has changed to ordinary GitHub Pages + existing Supabase.
+See [public launch status](public-playtest.md). The isolated profile below remains
+test evidence; neither its Linux host nor its SSH access is required for friends.
+
 Current status: the complete isolated two-player gate PASSED. This supports a
 limited closed playtest on a separate private host, not production readiness.
 No live test host, production deployment or PR has been created. Work is single-agent.

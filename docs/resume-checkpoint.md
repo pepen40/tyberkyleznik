@@ -1,5 +1,39 @@
 # Resume checkpoint — 2026-11-04
 
+## CURRENT GOAL: ordinary GitHub Pages + existing Supabase
+
+Owner explicitly cancelled Linux/VPS/SSH friend hosting. Do not provision a host,
+recommend buying one, run host.sh or repeat migration recovery/game audits.
+Starting HEAD: `8f3ca35663ba99e21bf99fdcd3a6e326b138962f`, clean/synced.
+See public-playtest.md for current facts, capabilities and exact approval sequence.
+
+Read-only public GET: Pages returned200; published JS uses existing hosted Supabase
+and Auth, still sends client `pvp_result`, and lacks new caller-profile/authoritative
+invitation/PvP adapter calls. It is not the verified audit client. Public main SHA
+was `27fcc2ece27db3cba2c435c5c024c1bd7ab62f3b`; Pages source config is unverified.
+Supabase list_migrations failed OAuth token refresh; no fallback SQL was executed.
+
+Prepared common server-side economy gate for ordinary clients as well as test
+clients: awards/claims/trade/cases/purchases pause before dispatch. Browser flags
+cannot enable it. Gameplay, Auth, invitations/chat and existing item use remain.
+This source is not deployed; existing production protection is unverified.
+
+Economy source commit: `7204de7fbe5d69e258ed991daf9e681f00de7b33`.
+Focused checks passed: public-economy source regression (failed before guard,
+passed after), server invitations5, account callbacks10 stale+10 current, actual
+TS policy under Node22 type stripping, workflow YAML parse, git diff --check.
+New Deno cases wired into CI, not run locally. No production Auth/game tests,
+SQL or deployment. Existing full E2E results were not rerun or reclassified.
+
+Next step: owner restores Supabase connector through normal authorization and
+confirms Settings/Pages publishing source. Read deployed source/schema metadata,
+produce exact scoped backend/client rollout for separate permission. No production
+SQL/migrations/RLS/Edge/Pages publication or merge without that permission.
+Friends will use the existing URL and normal Auth; no extra computer/software.
+Previous isolated E2E remains evidence for its SHA, not live-site sign-off.
+
+### Previous stage (superseded host plan; preserve as history)
+
 ## New stage: operator-provided Linux host
 
 Starting HEAD was `389ed0258c08db9156db32d86005b5674e7e4f3c`, clean and synced.

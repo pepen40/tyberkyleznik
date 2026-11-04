@@ -1,5 +1,12 @@
 # RPG PvP production rollout runbook
 
+Current target is the existing public GitHub Pages site and hosted Supabase;
+see [public-playtest.md](public-playtest.md) for current observations and sequence.
+No Linux host/SSH/closed-test allowlist is required. The prepared normal-mode
+economy gate must remain paused; the spending-claim allowance described in older
+sections below is superseded by the common gate. All commands remain conditional
+on fresh read-only comparison and separate explicit production approval.
+
 This runbook is for a separately approved production change. No command below has been run against production. Do not merge or publish the client before the database and Edge Function steps are verified.
 
 ## Current production blockers

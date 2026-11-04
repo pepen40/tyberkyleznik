@@ -1,5 +1,16 @@
 # Audit progress — 2026-11-03
 
+## Current scope: public friend play through existing Pages/Supabase
+
+Owner replaced private-host testing with the ordinary public site. No new host,
+SSH or payment is needed. See public-playtest.md and the current resume checkpoint.
+Read-only HTTP200 and public JS inspection confirmed the site exists but still
+uses the older client-result PvP pathway. Authenticated backend metadata remains
+unavailable (OAuth refresh parse failure). No production calls modified state.
+Prepared a normal-mode server economy pause independent of closed-test flags;
+preserved games/Auth/navigation/invitations/chat. Rollout needs exact deployed
+schema/source comparison and separate owner permission, not automatic deployment.
+
 ## Resume checkpoint — 2026-11-04
 
 Final observed gate: run [41664446369](https://github.com/pepen40/tyberkyleznik/actions/runs/41664446369)

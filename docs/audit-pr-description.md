@@ -1,5 +1,13 @@
 # Draft PR — not submitted
 
+Current intended launch: ordinary GitHub Pages with the existing Supabase project.
+The new common server economy gate pauses unverified awards/claims/purchases/item
+issuance for normal clients too, while retaining gameplay and Auth. VPS/SSH/closed
+test hosting is optional internal tooling, not a public launch prerequisite.
+Current production readiness and required permissions are in public-playtest.md.
+The old historical validation narrative below is retained for provenance; full
+isolated browser E2E has since passed, but deployed Pages/backend sign-off has not.
+
 Suggested title: Harden game lifecycle and invitations; add isolated verification gates
 
 This branch closes spoofable invitation/client-reward paths in source, preserves

@@ -1,5 +1,10 @@
 # Isolated closed-test profile v1
 
+**Необязательный внутренний стенд.** Текущая цель — обычный сайт на GitHub Pages
+с существующим Supabase: [актуальный план](../docs/public-playtest.md).
+Для друзей Linux-хост, closed-test и SSH не требуются. Следующие инструкции
+сохранены только для отдельного изолированного стенда, а не как путь запуска сайта.
+
 Полный сценарий для владельца на русском: [запуск/аккаунты/остановка](HOST-RU.md)
 и [ограниченная SSH-конфигурация и её приёмка](SSH-RU.md). Read-only checks:
 `bash closed-test/host.sh doctor` and `bash closed-test/host.sh verify`.
