@@ -3,6 +3,7 @@ import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supa
 import { isServerVerifiedRpgRewardClaim } from '../_shared/reward-policy.ts'
 import { validateMarketplaceSale } from '../_shared/marketplace-policy.ts'
 import { CLOSED_TEST_ACTIONS, closedTestAccess } from '../_shared/closed-test-policy.ts'
+import { isEconomyPausedAction } from '../_shared/economy-policy.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -187,6 +188,11 @@ serve(async (req) => {
       return new Response(JSON.stringify({ success: false, error: 'Неизвестное действие.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400
       });
+    }
+    if (isEconomyPausedAction(action)) {
+      return new Response(JSON.stringify({ success: false, rewardPaused: true,
+        error: 'Начисления, покупки и выдача предметов приостановлены до проверки серверных операций. Играть можно без начислений.'
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
     }
     if (action === 'game_invitation') {
       const { data: result, error: commandError } = await supabaseAdmin.rpc('game_invitation_command', {
