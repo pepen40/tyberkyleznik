@@ -1,5 +1,29 @@
 # Resume checkpoint — 2026-11-04
 
+## New stage: operator-provided Linux host
+
+Starting HEAD was `389ed0258c08db9156db32d86005b5674e7e4f3c`, clean and synced.
+Prepared closed-test/HOST-RU.md and SSH-RU.md, workspace-only pinned tool installer,
+host.sh launcher, host-check.cjs doctor/verify and sshd-friends.conf. No host has
+been provided or provisioned. No cloud purchase/public endpoint/system SSH change.
+
+New focused checks actually passed: run-closed-host (unit scope), existing proxy
+contract run-closed-server, Node syntax, Bash -n for both new scripts, changed
+workflow YAML parse and git diff --check. doctor actually rejected this Windows
+machine as intended. Docker/sshd are unavailable here; actual Linux installation,
+host preflight, manual account issuance and real restricted SSH tunnel remain
+UNEXECUTED. CI now includes doctor and port8080 frontend/backend verification;
+record its observed result separately, never assume it passed from configuration.
+
+Next: owner supplies a separate Linux x86_64 host and follows HOST-RU.md, validates
+effective sshd group policy, then runs the positive tunnel/login and negative
+shell/other-port/reverse-forward tests in SSH-RU.md. No need to repeat the previous
+game audit, migration recovery or completed two-player verification. Rewards and
+economy remain disabled. Check final answer/git log for the launch-stage commit
+and compare HEAD/upstream before continuing.
+
+## Previous completed gameplay stage
+
 - Branch: audit/site-completion-20261103. One agent. No production changes allowed.
 - Current source: `3d32a59636482b0595bf069335deb24f3f73fc90`, pushed. Worktree was
   clean before this documentation update. Historical commits and original checkout preserved.

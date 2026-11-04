@@ -18,6 +18,8 @@ jobs:
           version: 2.84.2
       - name: Install local PostgreSQL client
         run: sudo apt-get update && sudo apt-get install --yes postgresql-client
+      - name: Read-only Linux host prerequisites
+        run: node scripts/ci/run.cjs closed-host-doctor node closed-test/host-check.cjs doctor
       - name: Prepare NEW closed-test schema and private signing keys
         run: node scripts/ci/run.cjs closed-prepare node closed-test/manage.cjs prepare
       - name: Start loopback-only disposable Supabase
@@ -42,9 +44,19 @@ jobs:
           node scripts/ci/run.cjs closed-chromium node .runtime/e2e/node_modules/playwright/cli.js install --with-deps chromium
       - name: Real login, two-player chess/reconnect/chat, PvP and deadline
         run: node scripts/ci/run.cjs closed-online node closed-test/e2e.cjs
+      - name: Operator frontend on port 8080 and backend readiness
+        run: |
+          nohup node closed-test/manage.cjs serve > "$RUNNER_TEMP/closed-test-web.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/closed-test-web.pid"
+          for attempt in {1..10}; do
+            if curl --fail --silent --output /dev/null http://127.0.0.1:8080/backend/auth/v1/health; then break; fi
+            sleep 1
+          done
+          node scripts/ci/run.cjs closed-host-verify node closed-test/host-check.cjs verify
       - name: Stop only this disposable test stack
         if: always()
         run: |
+          if [[ -f "$RUNNER_TEMP/closed-test-web.pid" ]]; then kill "$(cat "$RUNNER_TEMP/closed-test-web.pid")" 2>/dev/null || true; fi
           if [[ -f "$RUNNER_TEMP/closed-test-edge.pid" ]]; then kill "$(cat "$RUNNER_TEMP/closed-test-edge.pid")" 2>/dev/null || true; fi
           if [[ -f .runtime/closed-test-stack/.closed-test-profile ]]; then node scripts/ci/run.cjs closed-stop node closed-test/manage.cjs stop; fi
       - uses: actions/upload-artifact@v4

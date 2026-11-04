@@ -1,5 +1,9 @@
 # Isolated closed-test profile v1
 
+Полный сценарий для владельца на русском: [запуск/аккаунты/остановка](HOST-RU.md)
+и [ограниченная SSH-конфигурация и её приёмка](SSH-RU.md). Read-only checks:
+`bash closed-test/host.sh doctor` and `bash closed-test/host.sh verify`.
+
 This is a NEW disposable application schema, not recovered production history.
 It combines an explicit minimal test foundation with the unchanged, reviewed
 component migrations. The production historical bootstrap gate remains BLOCKED.
@@ -62,6 +66,11 @@ An administrator can install it in a dedicated forwarding account's authorized_k
 ```text
 restrict,port-forwarding,permitopen="127.0.0.1:8080",command="/bin/false" ssh-ed25519 FRIEND_PUBLIC_KEY
 ```
+
+Also install/validate `sshd-friends.conf` as described in SSH-RU.md. The key line
+alone does not prohibit reverse TCP forwards; the group policy enforces local-only
+TCP forwarding and denies Unix socket forwarding. Validate effective sshd policy
+before granting access. No SSH configuration was applied by this repository.
 
 The friend connects using their own SSH key, then opens localhost in the browser:
 

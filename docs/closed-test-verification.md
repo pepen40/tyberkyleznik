@@ -4,6 +4,23 @@ Current status: the complete isolated two-player gate PASSED. This supports a
 limited closed playtest on a separate private host, not production readiness.
 No live test host, production deployment or PR has been created. Work is single-agent.
 
+## Host launch preparation (separate scope)
+
+The Russian operator procedure is now in closed-test/HOST-RU.md and SSH-RU.md.
+New host.sh/host-check.cjs provide explicit preflight and readiness checks; the
+workspace tool installer pins Node22.23.4 and CLI2.84.2 without global installation.
+The SSH group policy restricts TCP forwarding to local-only port8080 and disables
+Unix-socket forwarding; an authorized_keys restriction alone was insufficient to
+enforce the intended ban on reverse forwarding. No host configuration was applied.
+
+Focused Node host unit checks, the existing HTTP proxy contract, Node syntax,
+Bash syntax and YAML parsing passed locally. Live Linux setup, installer downloads,
+sshd syntax/effective configuration and actual SSH forwarding were NOT RUN here:
+this is Windows, with no Docker/sshd/test-host endpoint. Prior gameplay evidence
+below remains valid for its exact SHA; it does not certify a future host. New CI
+doctor/port8080 readiness checks are configured and must be observed before being
+reported passing. No whole-game audit or migration search was repeated.
+
 ## Final observed result
 
 [Run 41664446369](https://github.com/pepen40/tyberkyleznik/actions/runs/41664446369)
